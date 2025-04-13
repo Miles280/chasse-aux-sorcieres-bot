@@ -55,7 +55,6 @@ module.exports = {
 
         await interaction.followUp({
           embeds: [bourseEmbed(member, 0, 0, "Aucune transaction.")],
-          flags: 64,
         });
       } else {
         const { gems, rubies } = rows[0];

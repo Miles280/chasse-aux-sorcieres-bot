@@ -75,6 +75,19 @@ module.exports = {
 
       const current = rows[0][monnaie];
 
+      if (current === 0) {
+        return interaction.reply({
+          embeds: [
+            errorEmbed(
+              `${membre} n'a pas de  ${
+                monnaie === "gems" ? "💎 gemmes" : "🔴 rubis"
+              }.`
+            ),
+          ],
+          flags: 64,
+        });
+      }
+
       if (current < valeur) {
         const row = new ActionRowBuilder().addComponents(
           new ButtonBuilder()
@@ -125,7 +138,6 @@ module.exports = {
             await i.deferUpdate(); // Ne modifie pas le message initial (éphémère)
             await interaction.followUp({
               embeds: [transactionEmbed("remove", current, monnaie, membre)],
-              ephemeral: false, // important pour que ce soit public
             });
           } else {
             await i.update({
