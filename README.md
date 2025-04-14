@@ -1,6 +1,7 @@
 # 🔮 Bot Discord – Chasse aux Sorcières
 
 Bienvenue sur le dépôt du **Bot Discord** officiel du jeu de rôle **Chasse aux Sorcières de Nistrium**, un jeu inspiré du Loup-Garou de Thiercelieux, dans un univers médiéval fantastique sombre.
+
 Ce bot gère les monnaies, les joueurs, les transactions, et sera, dans le futur, au cœur de la gestion des parties.
 
 ## ✨ Fonctionnalités
@@ -45,7 +46,7 @@ DISCORD_TOKEN=ton_token_discord
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=mot_de_passe
-DB_NAME=chasseAuxSorcieresDiscord
+DB_NAME=chasse-aux-sorcieres-discord
 ```
 
 > ⚠️ Ce fichier est ignoré par Git (grâce au .gitignore) pour des raisons de sécurité.
@@ -55,9 +56,14 @@ DB_NAME=chasseAuxSorcieresDiscord
 Utilise le fichier `schema.sql` fourni dans le dossier `../database` pour générer la structure de la base :
 
 ```bash
-mysql -u root -p chasseAuxSorcieresDiscord < ../database/schema.sql
+mysql -u root -p < ./database/schema.sql
 ```
-
+> ⬆️ Si tu utilises un terminal Git Bash
+```powershell
+Get-Content ./database/schema.sql | mysql -u root -p
+```
+> ⬆️ Si tu utilises un terminal Windows PowerShell
+> 
 ### 5. Lancer le bot
 
 ```bash
@@ -73,3 +79,7 @@ node main.js
 - Rôles cachés, votes, interactions de jeu
 
 - Connexion avec le site web et affichage de statistiques
+
+## 📞 Me contacter
+
+Si tu as des questions, des suggestions ou simplement que tu comptes utiliser mon code, n'hésite pas à me contacter sur Discord : @miles28.
