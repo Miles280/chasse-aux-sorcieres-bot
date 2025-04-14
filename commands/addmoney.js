@@ -87,15 +87,14 @@ module.exports = {
         await interaction.reply({
           embeds: [
             successEmbed(
-              `${member} n'avait pas encore de compte. Un compte lui a été créé !`
+              `${membre} n'avait pas encore de compte. Un compte lui a été créé !`
             ),
           ],
           flags: 64,
         });
 
         await interaction.followUp({
-          embeds: [bourseEmbed(member, 0, 0, "Aucune transaction.")],
-          flags: 64,
+          embeds: [transactionEmbed("add", valeur, monnaie, membre)],
         });
 
         return;
