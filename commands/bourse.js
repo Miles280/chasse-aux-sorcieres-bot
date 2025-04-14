@@ -30,20 +30,20 @@ module.exports = {
       });
     }
 
-    const user = interaction.options.getUser("membre") || interaction.user;
-    const member = await interaction.guild.members.fetch(user.id);
+    const usersQuery = require("../database/queries/users")(bot.db);
+    const transactionsQuery = require("../database/queries/transactions")(
+      bot.db
+    );
+    const targetUser =
+      interaction.options.getUser("membre") || interaction.user;
+    const member = await interaction.guild.members.fetch(targetUser.id);
 
     try {
-      const [rows] = await bot.db.query(
-        "SELECT * FROM users WHERE discord_id = ?",
-        [member.id]
-      );
+      const dbUser = await usersQuery.getUserByDiscordId(member.id);
 
-      if (rows.length === 0) {
-        await bot.db.query(
-          "INSERT INTO users (discord_id, gems, rubies) VALUES (?, 0, 0)",
-          [member.id]
-        );
+      if (!dbUser) {
+        await usersQuery.createUser(member.id);
+
         await interaction.reply({
           embeds: [
             successEmbed(
@@ -57,11 +57,11 @@ module.exports = {
           embeds: [bourseEmbed(member, 0, 0, "Aucune transaction.")],
         });
       } else {
-        const { gems, rubies } = rows[0];
+        const { gems, rubies } = dbUser;
+
         // Récupérer les 5 dernières transactions du membre
-        const [transactions] = await bot.db.query(
-          "SELECT * FROM transactions WHERE user_id = ? ORDER BY date DESC LIMIT 5",
-          [member.id]
+        const transactions = await transactionsQuery.getLastTransactionsByUser(
+          member.id
         );
 
         const formatCurrency = (currency) => {
@@ -77,12 +77,10 @@ module.exports = {
           transactions.length > 0
             ? transactions
                 .map((tx) => {
-                  // Format de la transaction : Discord timestamp + type de transaction
                   const timestamp = `<t:${Math.floor(
                     new Date(tx.date).getTime() / 1000
                   )}:R>`;
 
-                  // Fonction pour générer la description de la transaction en fonction du type
                   const transactionDescriptions = {
                     add: (tx) =>
                       `Ajout de +${tx.amount} ${formatCurrency(tx.currency)}`,
@@ -112,12 +110,10 @@ module.exports = {
                       }`,
                   };
 
-                  // Utilisation de l'objet pour générer la description
                   let description = transactionDescriptions[tx.type]
                     ? transactionDescriptions[tx.type](tx)
                     : "Type de transaction inconnu";
 
-                  // Ajouter une description si elle existe
                   if (tx.description) {
                     description += ` (${tx.description})`;
                   }
