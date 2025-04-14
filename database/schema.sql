@@ -1,7 +1,7 @@
--- Active: 1741689977945@@127.0.0.1@3306@chasseauxsorcieresdiscord
-DROP DATABASE IF EXISTS chasseAuxSorcieresDiscord;
-CREATE DATABASE chasseAuxSorcieresDiscord;
-USE chasseAuxSorcieresDiscord;
+DROP DATABASE IF EXISTS `chasse-aux-sorcieres-bot`;
+CREATE DATABASE `chasse-aux-sorcieres-bot`;
+USE `chasse-aux-sorcieres-bot`;
+
 
 -- Users table
 CREATE TABLE users (
