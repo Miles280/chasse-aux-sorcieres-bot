@@ -1,7 +1,7 @@
 # 🔮 Bot Discord – Chasse aux Sorcières
 
 Bienvenue sur le dépôt du **Bot Discord** officiel du jeu de rôle **Chasse aux Sorcières de Nistrium**, un jeu inspiré du Loup-Garou de Thiercelieux, dans un univers médiéval fantastique sombre.
-Ce bot servira à gère les monnaies, les joueurs et les parties à venir, ainsi que de multiples choses à l'avenir (je l'espère)...
+Ce bot gère les monnaies, les joueurs, les transactions, et sera, dans le futur, au cœur de la gestion des parties.
 
 ## ✨ Fonctionnalités
 
@@ -18,3 +18,58 @@ Ce bot servira à gère les monnaies, les joueurs et les parties à venir, ainsi
 - [Discord.js v14](https://discord.js.org/)
 - [MySQL](https://www.mysql.com/)
 - `dotenv` pour la gestion sécurisée des variables d'environnement
+
+## 🚀 Installation et lancement
+
+### 1. Cloner le dépôt
+
+```bash
+git clone https://github.com/Miles280/chasse-aux-sorcieres-bot.git
+cd chasse-aux-sorcieres-bot
+```
+
+### 2. Installer les dépendances
+
+```bash
+npm install
+```
+
+> ⚠️ Il est nécessaire d'avoir installé [Node.js](https://nodejs.org/).
+
+### 3. Créer le fichier `.env.local`
+
+Crée un fichier `.env.local` à la racine du projet avec le contenu suivant (à adapter à ton environnement) :
+
+```ini
+DISCORD_TOKEN=ton_token_discord
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=mot_de_passe
+DB_NAME=chasseAuxSorcieresDiscord
+```
+
+> ⚠️ Ce fichier est ignoré par Git (grâce au .gitignore) pour des raisons de sécurité.
+
+### 4. Créer la base de données
+
+Utilise le fichier `schema.sql` fourni à la racine pour générer la structure de la base :
+
+```bash
+mysql -u root -p chasseAuxSorcieresDiscord < schema.sql
+```
+
+### 5. Lancer le bot
+
+```bash
+node main.js
+```
+
+## ✅ À venir...
+
+- Système économique plus poussé (boutique, casino, et bien plus encore...)
+
+- Création et gestion automatique des parties
+
+- Rôles cachés, votes, interactions de jeu
+
+- Connexion avec le site web et affichage de statistiques
