@@ -52,10 +52,10 @@ DB_NAME=chasseAuxSorcieresDiscord
 
 ### 4. Créer la base de données
 
-Utilise le fichier `schema.sql` fourni à la racine pour générer la structure de la base :
+Utilise le fichier `schema.sql` fourni dans le dossier `../database` pour générer la structure de la base :
 
 ```bash
-mysql -u root -p chasseAuxSorcieresDiscord < schema.sql
+mysql -u root -p chasseAuxSorcieresDiscord < ../database/schema.sql
 ```
 
 ### 5. Lancer le bot
