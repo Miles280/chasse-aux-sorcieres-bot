@@ -50,74 +50,58 @@ module.exports = {
       });
     }
 
+    const usersQuery = require("../database/queries/users")(bot.db);
+    const transactionsQuery = require("../database/queries/transactions")(bot.db);
     const monnaie = interaction.options.getString("monnaie");
     const valeur = interaction.options.getNumber("valeur");
     const user = interaction.options.getUser("membre") || interaction.user;
-    const membre = await interaction.guild.members.fetch(user.id);
+    const member = await interaction.guild.members.fetch(user.id);
 
     try {
       // Vérifie si le membre existe en DB
-      const [rows] = await bot.db.query(
-        "SELECT * FROM users WHERE discord_id = ?",
-        [membre.id]
-      );
+      const dbUser = await usersQuery.getUserByDiscordId(member.id);
 
-      if (rows.length === 0) {
+      if (!dbUser) {
         // Ajoute un nouveau membre s'il n'existe pas
-        await bot.db.query(
-          "INSERT INTO users (discord_id, gems, rubies) VALUES (?, ?, ?)",
-          [
-            membre.id,
-            monnaie === "gems" ? valeur : 0,
-            monnaie === "rubies" ? valeur : 0,
-          ]
-        );
+        await usersQuery.createUser(member.id);
+        await usersQuery.updateCurrency(member.id, monnaie, valeur);
 
         // Enregistrer la transaction dans l'historique
-        await bot.db.query(
-          "INSERT INTO transactions (user_id, type, currency, amount) VALUES (?, ?, ?, ?)",
-          [
-            membre.id,
-            "add", // Type de transaction
-            monnaie,
-            valeur,
-          ]
-        );
+        await transactionsQuery.addTransaction({
+          user_id: member.id,
+          type: "add",
+          currency: monnaie,
+          amount: valeur,
+        });
 
         await interaction.reply({
           embeds: [
             successEmbed(
-              `${membre} n'avait pas encore de compte. Un compte lui a été créé !`
+              `${member} n'avait pas encore de compte. Un compte lui a été créé !`
             ),
           ],
           flags: 64,
         });
 
         await interaction.followUp({
-          embeds: [transactionEmbed("add", valeur, monnaie, membre)],
+          embeds: [transactionEmbed("add", valeur, monnaie, member)],
         });
 
         return;
       } else {
         // Mise à jour du champ correspondant
-        await bot.db.query(
-          `UPDATE users SET ${monnaie} = ${monnaie} + ? WHERE discord_id = ?`,
-          [valeur, membre.id]
-        );
+        await usersQuery.updateCurrency(member.id, monnaie, valeur);
 
         // Enregistrer la transaction dans l'historique
-        await bot.db.query(
-          "INSERT INTO transactions (user_id, type, currency, amount) VALUES (?, ?, ?, ?)",
-          [
-            membre.id,
-            "add", // Type de transaction
-            monnaie,
-            valeur,
-          ]
-        );
+        await transactionsQuery.addTransaction({
+          user_id: member.id,
+          type: "add",
+          currency: monnaie,
+          amount: valeur,
+        });
 
         return interaction.reply({
-          embeds: [transactionEmbed("add", valeur, monnaie, membre)],
+          embeds: [transactionEmbed("add", valeur, monnaie, member)],
         });
       }
     } catch (err) {

@@ -31,9 +31,7 @@ module.exports = {
     }
 
     const usersQuery = require("../database/queries/users")(bot.db);
-    const transactionsQuery = require("../database/queries/transactions")(
-      bot.db
-    );
+    const transactionsQuery = require("../database/queries/transactions")(bot.db);
     const targetUser =
       interaction.options.getUser("membre") || interaction.user;
     const member = await interaction.guild.members.fetch(targetUser.id);

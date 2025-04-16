@@ -44,6 +44,9 @@ module.exports = {
         flags: 64,
       });
     }
+
+    const usersQuery = require("../database/queries/users")(bot.db);
+    const transactionsQuery = require("../database/queries/transactions")(bot.db);
     const monnaie = interaction.options.getString("monnaie");
     const cible = interaction.options.getUser("membre");
     const valeur = interaction.options.getNumber("valeur");
@@ -58,19 +61,16 @@ module.exports = {
     }
 
     try {
-      // Vérifie si le donneur a un compte
-      const [donneurRows] = await bot.db.query(
-        "SELECT * FROM users WHERE discord_id = ?",
-        [donneur.id]
-      );
-      if (donneurRows.length === 0) {
+      // Vérifie si le membre existe en DB
+      const donneurData = await usersQuery.getUserByDiscordId(donneur.id);
+
+      if (!donneurData) {
         return interaction.reply({
           embeds: [errorEmbed("Et si tu essayais de faire `/bourse` déjà ?")],
           flags: 64,
         });
       }
 
-      const donneurData = donneurRows[0];
       const soldeActuel = donneurData[monnaie];
 
       if (soldeActuel < valeur) {
@@ -87,31 +87,25 @@ module.exports = {
       // Si l'utilisateur essaie de donner des rubis, vérifier s'il peut
       if (monnaie === "rubies") {
         // Vérifie la dernière transaction de type 'give' avec rubis
-        const [transactions] = await bot.db.query(
-          'SELECT * FROM transactions WHERE user_id = ? AND currency = ? AND type = "give" ORDER BY date DESC LIMIT 1',
-          [donneur.id, "rubies"]
-        );
+        const [transaction] = await transactionsQuery.getLastTransactionsByUser(member.id, 1);
 
-        if (transactions.length > 0) {
-          const lastTransaction = transactions[0];
-          const lastTransactionDate = new Date(lastTransaction.date);
-          const currentDate = new Date();
-          const timeDifference = currentDate - lastTransactionDate;
+        if (transaction) {
+          const timeDifference = Date.now() - new Date(transaction.date);
 
           // Si la différence est inférieure à 48 heures (48h * 60min * 60sec * 1000ms)
-          if (timeDifference < 48 * 60 * 60 * 1000) {
-            const remainingTime = 48 * 60 * 60 * 1000 - timeDifference;
-            const futureTimestamp = Math.floor(
-              (Date.now() + remainingTime) / 1000
-            ); // En secondes
+          const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000;
 
-            const embedContent = errorEmbed(
-              `⏳ Vous avez déjà donné des rubis récemment.\n
-              Vous pourrez redonner <t:${futureTimestamp}:R> (à <t:${futureTimestamp}:t>).`
-            );
+          if (timeDifference < FORTY_EIGHT_HOURS_MS) {
+            const remainingTime = FORTY_EIGHT_HOURS_MS - timeDifference;
+            const futureTimestamp = Math.floor((Date.now() + remainingTime) / 1000); // Unix timestamp
 
             return interaction.reply({
-              embeds: [embedContent],
+              embeds: [
+                errorEmbed(
+                  `⏳ Vous avez déjà donné des rubis récemment.\n` +
+                  `Vous pourrez donner de nouveau des Rubis dans <t:${futureTimestamp}:R> (à <t:${futureTimestamp}:t>).`
+                )
+              ],
               flags: 64,
             });
           }
@@ -119,81 +113,36 @@ module.exports = {
       }
 
       // Vérifie si le receveur a un compte
-      const [cibleRows] = await bot.db.query(
-        "SELECT * FROM users WHERE discord_id = ?",
-        [cible.id]
-      );
-      if (cibleRows.length === 0) {
+      const cibleData = await usersQuery.getUserByDiscordId(cible.id);
+
+      if (!cibleData) {
         // Création d’un compte pour le receveur
-        await bot.db.query(
-          "INSERT INTO users (discord_id, gems, rubies) VALUES (?, ?, ?)",
-          [
-            cible.id,
-            monnaie === "gems" ? valeur : 0,
-            monnaie === "rubies" ? valeur : 0,
-          ]
-        );
-
-        // Enregistrer la transaction dans l'historique (donneur -> receveur)
-        await bot.db.query(
-          "INSERT INTO transactions (user_id, type, currency, amount, other_user_id) VALUES (?, ?, ?, ?, ?)",
-          [
-            donneur.id,
-            "give", // Type de transaction
-            monnaie,
-            valeur,
-            cible.id,
-          ]
-        );
-
-        // Enregistrer la transaction dans l'historique (receveur -> donneur)
-        await bot.db.query(
-          "INSERT INTO transactions (user_id, type, currency, amount, other_user_id) VALUES (?, ?, ?, ?, ?)",
-          [
-            cible.id,
-            "receive", // Type de transaction
-            monnaie,
-            valeur,
-            donneur.id,
-          ]
-        );
-      } else {
-        // Mise à jour du solde du receveur
-        await bot.db.query(
-          `UPDATE users SET ${monnaie} = ${monnaie} + ? WHERE discord_id = ?`,
-          [valeur, cible.id]
-        );
-
-        // Enregistrer la transaction dans l'historique (donneur -> receveur)
-        await bot.db.query(
-          "INSERT INTO transactions (user_id, type, currency, amount, other_user_id) VALUES (?, ?, ?, ?, ?)",
-          [
-            donneur.id,
-            "give", // Type de transaction
-            monnaie,
-            valeur,
-            cible.id,
-          ]
-        );
-
-        // Enregistrer la transaction dans l'historique (receveur -> donneur)
-        await bot.db.query(
-          "INSERT INTO transactions (user_id, type, currency, amount, other_user_id) VALUES (?, ?, ?, ?, ?)",
-          [
-            cible.id,
-            "receive", // Type de transaction
-            monnaie,
-            valeur,
-            donneur.id,
-          ]
-        );
+        await usersQuery.createUser(cible.id);
       }
 
-      // Retire l’argent du donneur
-      await bot.db.query(
-        `UPDATE users SET ${monnaie} = ${monnaie} - ? WHERE discord_id = ?`,
-        [valeur, donneur.id]
-      );
+      // Mise à jour du solde du receveur
+      await usersQuery.updateCurrency(donneur.id, monnaie, -valeur);
+
+      // Mise à jour du solde du receveur
+      await usersQuery.updateCurrency(cible.id, monnaie, valeur);
+
+      // Enregistrer la transaction dans l'historique (donneur -> receveur)
+      await transactionsQuery.addTransaction({
+        user_id: cible.id,
+        type: "receive",
+        currency: monnaie,
+        amount: valeur,
+        other_user_id: donneur.id,
+      });
+
+      // Enregistrer la transaction dans l'historique (donneur -> receveur)
+      await transactionsQuery.addTransaction({
+        user_id: donneur.id,
+        type: "give",
+        currency: monnaie,
+        amount: valeur,
+        other_user_id: donneur.id,
+      });      
 
       return interaction.reply({
         embeds: [donEmbed(donneur, cible, monnaie, valeur)],
