@@ -9,17 +9,17 @@ const {
 module.exports = {
   name: 'clear',
   description: 'Supprime un certain nombre de messages.',
-  permission: PermissionFlagsBits.ManageMessages, 
-  dm: false, 
+  permission: PermissionFlagsBits.ManageMessages,
+  dm: false,
 
   data: new SlashCommandBuilder()
     .setName('clear')
     .setDescription('Supprime un certain nombre de messages.')
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages) 
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
     .addNumberOption(option =>
       option.setName('nombre')
-        .setDescription('Nombre de messages à supprimer')
-        .setRequired(true)
+      .setDescription('Nombre de messages à supprimer')
+      .setRequired(true)
     ),
 
   // 🎯 Commande SLASH
@@ -52,9 +52,9 @@ async function handleLogic(ctx, number) {
   // Exemple de validation des données
   if (number < 1 || number > 100) {
     const replyContent = "❌ Tu peux supprimer entre 1 et 100 messages.";
-    return isInteraction(ctx)
-      ? ctx.reply({ content: replyContent, flags: 64 })
-      : ctx.reply(replyContent);
+    return isInteraction(ctx) ?
+      ctx.reply({ content: replyContent, flags: 64 }) :
+      ctx.reply(replyContent);
   }
 
   // Détection du type de commande (interaction ou message)
@@ -63,7 +63,7 @@ async function handleLogic(ctx, number) {
   try {
     const deleted = await channel.bulkDelete(number, true);
     let content = `🧹 J'ai supprimé \`${deleted.size}\` message(s).`;
-    
+
     if (!isInteraction(ctx)) {
       await ctx.channel.send({ content });
     } else {
