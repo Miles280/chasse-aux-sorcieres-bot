@@ -8,7 +8,7 @@ module.exports = (db) => ({
    * @param {string} discordId - L'identifiant Discord de l'utilisateur.
    * @returns {Promise<Object|null>} L'utilisateur ou null s'il n'existe pas.
    */
-  getUserByDiscordId: async (discordId) => {
+  getUserByDiscordId: async(discordId) => {
     const [rows] = await db.query("SELECT * FROM users WHERE discord_id = ?", [
       discordId,
     ]);
@@ -20,7 +20,7 @@ module.exports = (db) => ({
    * @param {string} discordId - L'identifiant Discord de l'utilisateur.
    * @returns {Promise<void>}
    */
-  createUser: async (discordId) => {
+  createUser: async(discordId) => {
     await db.query("INSERT IGNORE INTO users (discord_id) VALUES (?)", [
       discordId,
     ]);
@@ -33,10 +33,9 @@ module.exports = (db) => ({
    * @param {number} amount - Le montant à ajouter (ou soustraire si négatif).
    * @returns {Promise<void>}
    */
-  updateCurrency: async (discordId, currency, amount) => {
+  updateCurrency: async(discordId, currency, amount) => {
     await db.query(
-      `UPDATE users SET ${currency} = ${currency} + ? WHERE discord_id = ?`,
-      [amount, discordId]
+      `UPDATE users SET ${currency} = ${currency} + ? WHERE discord_id = ?`, [amount, discordId]
     );
   },
 
@@ -44,7 +43,7 @@ module.exports = (db) => ({
    * Récupère tous les utilisateurs de la base de données.
    * @returns {Promise<Array<Object>>} Liste des utilisateurs.
    */
-  getAllUsers: async () => {
+  getAllUsers: async() => {
     const [rows] = await db.query("SELECT * FROM users");
     return rows;
   },

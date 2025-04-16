@@ -1,9 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
-const {
-  errorEmbed,
-  successEmbed,
-  transactionEmbed,
-} = require("../utils/embeds");
+const { errorEmbed, successEmbed, transactionEmbed, } = require("../utils/embeds");
 
 module.exports = {
   name: "addmoney",
@@ -17,45 +13,36 @@ module.exports = {
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
     .addStringOption((option) =>
       option
-        .setName("monnaie")
-        .setDescription("Type de monnaie")
-        .setRequired(true)
-        .addChoices(
-          { name: "Gemme", value: "gems" },
-          { name: "Rubis", value: "rubies" }
-        )
+      .setName("monnaie")
+      .setDescription("Type de monnaie")
+      .setRequired(true)
+      .addChoices({ name: "Gemme", value: "gems" }, { name: "Rubis", value: "rubies" })
     )
     .addUserOption((option) =>
       option
-        .setName("membre")
-        .setDescription("Membre impliqué")
-        .setRequired(true)
+      .setName("membre")
+      .setDescription("Membre impliqué")
+      .setRequired(true)
     )
     .addNumberOption((option) =>
       option
-        .setName("valeur")
-        .setDescription("Valeur à ajouter")
-        .setRequired(true)
+      .setName("valeur")
+      .setDescription("Valeur à ajouter")
+      .setRequired(true)
     ),
 
   async execute(interaction, bot) {
     if (!interaction.member.permissions.has(this.permission)) {
-      return interaction.reply({
-        embeds: [
-          errorEmbed(
-            "Vous n'avez pas la permission d'utiliser cette commande."
-          ),
-        ],
-        flags: 64,
-      });
+      return interaction.reply({ embeds: [errorEmbed("Vous n'avez pas la permission d'utiliser cette commande.")], flags: 64 });
     }
 
     const usersQuery = require("../database/queries/users")(bot.db);
     const transactionsQuery = require("../database/queries/transactions")(bot.db);
+
     const monnaie = interaction.options.getString("monnaie");
     const valeur = interaction.options.getNumber("valeur");
-    const user = interaction.options.getUser("membre") || interaction.user;
-    const member = await interaction.guild.members.fetch(user.id);
+    const targetUser = interaction.options.getUser("membre") || interaction.user;
+    const member = await interaction.guild.members.fetch(targetUser.id);
 
     try {
       // Vérifie si le membre existe en DB
@@ -74,18 +61,9 @@ module.exports = {
           amount: valeur,
         });
 
-        await interaction.reply({
-          embeds: [
-            successEmbed(
-              `${member} n'avait pas encore de compte. Un compte lui a été créé !`
-            ),
-          ],
-          flags: 64,
-        });
+        await interaction.reply({ embeds: [successEmbed(`${member} n'avait pas encore de compte. Un compte lui a été créé !`)], flags: 64 });
 
-        await interaction.followUp({
-          embeds: [transactionEmbed("add", valeur, monnaie, member)],
-        });
+        await interaction.channel.send({ embeds: [transactionEmbed("add", valeur, monnaie, member)] });
 
         return;
       } else {
@@ -100,16 +78,11 @@ module.exports = {
           amount: valeur,
         });
 
-        return interaction.reply({
-          embeds: [transactionEmbed("add", valeur, monnaie, member)],
-        });
+        return interaction.reply({ embeds: [transactionEmbed("add", valeur, monnaie, member)] });
       }
     } catch (err) {
-      console.error("❌ Erreur MySQL dans /addmoney :", err);
-      return interaction.reply({
-        embed: [errorEmbed("Une erreur est survenue lors de la transaction.")],
-        flags: 64,
-      });
+      console.error("❌ Erreur MySQL dans /addmoney (vérifie que ton wamp soit allumé sale con) :", err);
+      return interaction.reply({ embed: [errorEmbed("Une erreur est survenue lors de la transaction.")], flags: 64 });
     }
-  },
+  }
 };
