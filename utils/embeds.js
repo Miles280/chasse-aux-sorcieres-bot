@@ -102,4 +102,23 @@ module.exports = {
       .setColor(type === "add" ? "#28a745" : "#dc3545")
       .setFooter({ text: "Transaction réalisée avec succès" });
   },
+
+  /**
+   * Génère un embed pour afficher l'historique des transactions d’un membre.
+   * 
+   * @param {GuildMember} member - Le membre concerné.
+   * @param {string} description - Le contenu formaté de l’historique.
+   * @returns {EmbedBuilder}
+   */
+  historiqueEmbed: (member, description) => {
+    return new EmbedBuilder()
+      .setAuthor({
+        name: member.user.globalName || member.displayName,
+        iconURL: member.user.displayAvatarURL({ dynamic: true }),
+      })
+      .setTitle(`__Historique de transaction de ${member.displayName}__`)
+      .setColor("#f39c12")
+      .setDescription(description)
+      .setTimestamp();
+  },
 };
