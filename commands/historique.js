@@ -60,8 +60,8 @@ module.exports = {
             const transactionDescriptions = {
                 add: (tx) => `Ajout de +${tx.amount} ${formatCurrency(tx.currency)}`,
                 remove: (tx) => `Retrait de -${tx.amount} ${formatCurrency(tx.currency)}`,
-                give: (tx) => `Retrait de -${tx.amount} ${formatCurrency(tx.currency)} donné à <@${tx.other_user_id}>`,
-                receive: (tx) => `Réception de +${tx.amount} ${formatCurrency(tx.currency)} de <@${tx.other_user_id}>`,
+                give: (tx) => `Don de -${tx.amount} ${formatCurrency(tx.currency)} à <@${tx.other_user_id}>`,
+                receive: (tx) => `Reçu de +${tx.amount} ${formatCurrency(tx.currency)} de <@${tx.other_user_id}>`,
                 buy: (tx) => `Achat effectué de -${tx.amount} ${formatCurrency(tx.currency)}`,
                 casino: (tx) =>
                   `Jeu de casino : ${tx.amount > 0 ? `Gains de +${tx.amount} ${formatCurrency(tx.currency)}` : `Perte de -${Math.abs(tx.amount)} ${formatCurrency(tx.currency)}`}`,
@@ -80,7 +80,8 @@ module.exports = {
           })
           .join("\n");
 
-        return historiqueEmbed(member, content || "Aucune transaction.");
+        return historiqueEmbed(member, content || "Aucune transaction.")
+        .setFooter({ text: `Page ${pageIndex + 1} / ${Math.ceil(allTransactions.length / pageSize)}` });;
       };
 
       const row = new ActionRowBuilder().addComponents(
@@ -96,11 +97,12 @@ module.exports = {
           .setDisabled(allTransactions.length <= pageSize)
       );
 
-      const reply = await interaction.reply({
+      await interaction.reply({
         embeds: [getPageEmbed(page)],
         components: [row],
-        fetchReply: true,
       });
+      
+      const reply = await interaction.fetchReply();
 
       const collector = reply.createMessageComponentCollector({
         componentType: ComponentType.Button,
