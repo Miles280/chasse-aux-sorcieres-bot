@@ -31,7 +31,7 @@ module.exports = {
         value: transactionsText || "Aucune transaction.",
       })
       .setColor("#360a5c")
-      .setFooter({ text: `Essayez /boutique et /transaction !` });
+      .setFooter({ text: "Essayez /boutique et /historique !" });
   },
 
   /**
@@ -121,4 +121,26 @@ module.exports = {
       .setDescription(description)
       .setTimestamp();
   },
+
+  /**
+   * Embed pour le jeu de l'étage piégé
+   * @param {number} mise - Mise initiale
+   * @param {number} currentEtage - Étage en cours
+   * @param {number} totalEtages - Nombre total d'étages
+   * @param {string[]} lignes - Représentation visuelle de la tour
+   * @param {number} gains - Gains actuels
+   * @returns {EmbedBuilder}
+   */
+  gameEmbed: (mise, currentEtage, totalEtages, lignes, gains) => {
+    return new EmbedBuilder()
+      .setTitle("💥 Jeu de l'étage piégé")
+      .setDescription(
+        `**Mise :** ${mise} 🔴\n` +
+        `**Étage :** ${currentEtage}/${totalEtages}\n` +
+        `**Gain actuel :** ${gains} 🔴\n\n` +
+        lignes.reverse().join("\n") // Affiche du bas vers le haut
+      )
+      .setColor("#9b59b6");
+  },
+
 };
