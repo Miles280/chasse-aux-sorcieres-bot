@@ -8,7 +8,7 @@ module.exports = {
 
   data: new SlashCommandBuilder()
     .setName("tour")
-    .setDescription("Jouez à un jeu de hasard en évitant la bombe.")
+    .setDescription("Grimpez la tour en évitant la bombe pour gagner le plus de rubis possible.")
     .addIntegerOption(option =>
       option.setName("mise")
       .setDescription("Le montant que vous misez en rubis")
@@ -16,37 +16,38 @@ module.exports = {
     ),
 
   async execute(interaction, bot) {
-    const mise = interaction.options.getInteger("mise");
+    const betAmount = interaction.options.getInteger("mise");
     const playerId = interaction.user.id;
-    const player = interaction.member;
     const usersQuery = require("../database/queries/users")(bot.db);
 
-    const totalEtages = 10;
-    let currentEtage = 0;
+
+    const user = await usersQuery.getUserByDiscordId(playerId)
+    
+    if (!user) {
+      return interaction.reply({ embeds: [errorEmbed("Vous n'avez pas encore de compte !")], flags: 64 });
+    } else if (user.rubies < betAmount) {
+      return interaction.reply({ embeds: [errorEmbed("Vous n’avez pas assez de rubis pour miser cette somme.")], flags: 64 });
+    } else if (betAmount <= 0) {
+      return interaction.reply({ embeds: [errorEmbed("La mise doit être supérieure à 0.")], flags: 64 });
+    }
+
+
+
+    // 🔁 Initialisation
+    const totalFloors = 10;
+    let currentFloor = 0;
     let gameOver = false;
     let totalGains = 0;
 
-    // 🔁 Initialisation
-    const bombes = Array.from({ length: totalEtages }, () => Math.floor(Math.random() * 3));
-    const resultats = Array.from({ length: totalEtages }, () => ["⬛", "⬛", "⬛"]);
+    const floorDisplay = Array.from({ length: totalFloors }, () => ["⬛", "⬛", "⬛"]); // État visuel de chaque étage
+    const bombs = Array.from({ length: totalFloors }, () => Math.floor(Math.random() * 3));
+    const calculeGain = (floor) => betAmount * (1 + 0.1 * floor ** 2)
+    const renderLignes = () => floorDisplay.map((ligne, i) => `Étage ${i + 1} : ${ligne.join(" ")}`);
 
-    const calculeGain = (niveau) => mise * (1 + 0.1 * étage ** 2)
-    const renderLignes = () => resultats.map((ligne, i) => `Étage ${i + 1} : ${ligne.join(" ")}`);
 
-    const user = await usersQuery.getUserByDiscordId(playerId)
+    // Début de la logique du jeu
+    await usersQuery.updateCurrency(playerId, "rubies", -betAmount)
 
-    if (!user) {
-      return interaction.reply({ embeds: [errorEmbed("Vous n'êtes pas encore inscrit !")], flags: 64 });
-    }
-
-    if (user.rubies < mise) {
-      return interaction.reply({ embeds: [errorEmbed("Vous n’avez pas assez de rubis pour miser cette somme.")], flags: 64 });
-    }
-
-    // 💸 Déduction de la mise
-    await usersQuery.updateCurrency(playerId, "rubies", -mise)
-
-    // 🟦 Créer les boutons
     const createButtons = () => {
       const row = new ActionRowBuilder();
       for (let i = 0; i < 3; i++) {
@@ -60,18 +61,18 @@ module.exports = {
       row.addComponents(
         new ButtonBuilder()
         .setCustomId("stop")
-        .setLabel("💰 Stop")
+        .setLabel("💰 S'arrêter ici")
         .setStyle(ButtonStyle.Success)
       );
       return [row];
     };
 
-    const reply = await interaction.reply({
-      embeds: [gameEmbed(mise, currentEtage, totalEtages, renderLignes(), totalGains)],
-      components: createButtons(),
+    const gameMessage = await interaction.reply({
+      embeds: [gameEmbed(betAmount, currentFloor, totalFloors, renderLignes(), totalGains)],
+      components: createButtons()
     });
 
-    const collector = reply.createMessageComponentCollector({
+    const collector = gameMessage.createMessageComponentCollector({
       componentType: ComponentType.Button,
       time: 120000,
     });
@@ -85,42 +86,42 @@ module.exports = {
 
       if (btn.customId === "stop") {
         gameOver = true;
-        await usersQuery.updateCurrency(playerId, "rubies", mise)
+        await usersQuery.updateCurrency(playerId, "rubies", totalGains)
 
         return btn.update({
-          embeds: [successEmbed(`Vous vous êtes arrêté à l'étage ${currentEtage}.\nVous remportez **${totalGains} rubis 🔴** !`)],
-          components: [],
+          embeds: [successEmbed(`Vous vous êtes arrêté à l'étage ${currentFloor}.\nVous remportez **${totalGains} 🔴** !`)],
+          components: []
         });
       }
 
       const choix = parseInt(btn.customId.split("_")[1]);
-      const bombe = bombes[currentEtage];
+      const bomb = bombs[currentFloor];
 
       // Révéler toute la ligne
-      resultats[currentEtage] = resultats[currentEtage].map((_, i) => i === bombe ? "💣" : "🟩");
+      floorDisplay[currentFloor] = floorDisplay[currentFloor].map((_, i) => i === bomb ? "💣" : "🟩");
 
-      if (choix === bombe) {
+      if (choix === bomb) {
         gameOver = true;
         return btn.update({
-          embeds: [errorEmbed(`💥 Vous avez explosé à l'étage ${currentEtage + 1} ! Vous perdez votre mise.`).setDescription(renderLignes().reverse().join("\n"))],
-          components: [],
+          embeds: [errorEmbed(`💥 Vous avez explosé à l'étage ${currentFloor + 1} ! Vous perdez votre mise.`).setDescription(renderLignes().join("\n"))],
+          components: []
         });
       } else {
-        currentEtage++;
-        totalGains = calculeGain(currentEtage);
+        currentFloor++;
+        totalGains = calculeGain(currentFloor);
 
-        if (currentEtage === totalEtages) {
+        if (currentFloor === totalFloors) {
           gameOver = true;
-          await updateUserBalance(playerId, totalGains, "rubies");
+          await usersQuery.updateCurrency(playerId, "rubies", totalGains);
 
           return btn.update({
-            embeds: [successEmbed(`🎉 Bravo ! Vous avez terminé les ${totalEtages} étages et gagné ${totalGains} rubis 🔴 !`).setDescription(renderLignes().reverse().join("\n"))],
-            components: [],
+            embeds: [successEmbed(`🎉 Bravo ! Vous avez terminé les ${totalFloors} étages et gagné ${totalGains} 🔴 !`).setDescription(renderLignes().join("\n"))],
+            components: []
           });
         }
 
         await btn.update({
-          embeds: [gameEmbed(mise, currentEtage, totalEtages, renderLignes(), totalGains)],
+          embeds: [gameEmbed(betAmount, currentFloor, totalFloors, renderLignes(), totalGains)],
           components: createButtons(),
         });
       }
