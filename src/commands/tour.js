@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } = require("discord.js");
-const { gameEmbed, errorEmbed, successEmbed } = require("../../utils/embeds");
+const embeds = require("../embeds")
 
 module.exports = {
   name: "tour",
@@ -22,13 +22,13 @@ module.exports = {
 
 
     const user = await usersQuery.getUserByDiscordId(playerId)
-    
+
     if (!user) {
-      return interaction.reply({ embeds: [errorEmbed("Vous n'avez pas encore de compte !")], flags: 64 });
+      return interaction.reply({ embeds: [embeds.errorEmbed("Vous n'avez pas encore de compte !")], flags: 64 });
     } else if (user.rubies < betAmount) {
-      return interaction.reply({ embeds: [errorEmbed("Vous n’avez pas assez de rubis pour miser cette somme.")], flags: 64 });
+      return interaction.reply({ embeds: [embeds.errorEmbed("Vous n’avez pas assez de rubis pour miser cette somme.")], flags: 64 });
     } else if (betAmount <= 0) {
-      return interaction.reply({ embeds: [errorEmbed("La mise doit être supérieure à 0.")], flags: 64 });
+      return interaction.reply({ embeds: [embeds.errorEmbed("La mise doit être supérieure à 0.")], flags: 64 });
     }
 
 
@@ -68,7 +68,7 @@ module.exports = {
     };
 
     const gameMessage = await interaction.reply({
-      embeds: [gameEmbed(betAmount, currentFloor, totalFloors, renderLignes(), totalGains)],
+      embeds: [embeds.tourEmbed(betAmount, currentFloor, totalFloors, renderLignes(), totalGains)],
       components: createButtons()
     });
 
@@ -79,7 +79,7 @@ module.exports = {
 
     collector.on("collect", async btn => {
       if (btn.user.id !== playerId) {
-        return btn.reply({ embeds: [errorEmbed("Ce jeu n'est pas le vôtre !")], flags: 64 });
+        return btn.reply({ embeds: [embeds.errorEmbed("Ce jeu n'est pas le vôtre !")], flags: 64 });
       }
 
       if (gameOver) return;
@@ -89,7 +89,7 @@ module.exports = {
         await usersQuery.updateCurrency(playerId, "rubies", totalGains)
 
         return btn.update({
-          embeds: [successEmbed(`Vous vous êtes arrêté à l'étage ${currentFloor}.\nVous remportez **${totalGains} 🔴** !`)],
+          embeds: [embeds.successEmbed(`Vous vous êtes arrêté à l'étage ${currentFloor}.\nVous remportez **${totalGains} 🔴** !`)],
           components: []
         });
       }
@@ -103,7 +103,7 @@ module.exports = {
       if (choix === bomb) {
         gameOver = true;
         return btn.update({
-          embeds: [errorEmbed(`💥 Vous avez explosé à l'étage ${currentFloor + 1} ! Vous perdez votre mise.`).setDescription(renderLignes().join("\n"))],
+          embeds: [embeds.errorEmbed(`💥 Vous avez explosé à l'étage ${currentFloor + 1} ! Vous perdez votre mise.`).setDescription(renderLignes().join("\n"))],
           components: []
         });
       } else {
@@ -115,13 +115,13 @@ module.exports = {
           await usersQuery.updateCurrency(playerId, "rubies", totalGains);
 
           return btn.update({
-            embeds: [successEmbed(`🎉 Bravo ! Vous avez terminé les ${totalFloors} étages et gagné ${totalGains} 🔴 !`).setDescription(renderLignes().join("\n"))],
+            embeds: [embeds.successEmbed(`🎉 Bravo ! Vous avez terminé les ${totalFloors} étages et gagné ${totalGains} 🔴 !`).setDescription(renderLignes().join("\n"))],
             components: []
           });
         }
 
         await btn.update({
-          embeds: [gameEmbed(betAmount, currentFloor, totalFloors, renderLignes(), totalGains)],
+          embeds: [embeds.tourEmbed(betAmount, currentFloor, totalFloors, renderLignes(), totalGains)],
           components: createButtons(),
         });
       }
@@ -130,7 +130,7 @@ module.exports = {
     collector.on("end", async() => {
       if (!gameOver) {
         interaction.editReply({
-          embeds: [errorEmbed("⏱️ Temps écoulé ! La partie est terminée.")],
+          embeds: [embeds.errorEmbed("⏱️ Temps écoulé ! La partie est terminée.")],
           components: [],
         });
       }

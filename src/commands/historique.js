@@ -1,115 +1,94 @@
 const { SlashCommandBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } = require("discord.js");
-const { errorEmbed, historiqueEmbed } = require("../../utils/embeds");
+const embeds = require("../embeds")
 
 module.exports = {
-    name: "historique",
-    description: "Voir l'historique des transactions d'un membre.",
-    permission: PermissionFlagsBits.ManageMessages,
-    dm: false,
+  name: "historique",
+  description: "Voir l'historique des transactions d'un membre.",
+  permission: PermissionFlagsBits.ManageMessages,
+  dm: false,
 
-    data: new SlashCommandBuilder()
-      .setName("historique")
-      .setDescription("Voir l'historique des transactions d'un membre.")
-      .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
-      .addUserOption((option) =>
-        option
-        .setName("membre")
-        .setDescription("Voir l'historique de ce membre.")
-        .setRequired(false)
-      ),
+  data: new SlashCommandBuilder()
+    .setName("historique")
+    .setDescription("Voir l'historique des transactions d'un membre.")
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
+    .addUserOption((option) =>
+      option
+      .setName("membre")
+      .setDescription("Voir l'historique de ce membre.")
+      .setRequired(false)
+    ),
 
-    async execute(interaction, bot) {
-      if (!interaction.member.permissions.has(this.permission)) {
-        return interaction.reply({ embeds: [errorEmbed("Vous n'avez pas la permission d'utiliser cette commande.")], flags: 64 });
+  async execute(interaction, bot) {
+    if (!interaction.member.permissions.has(this.permission)) {
+      return interaction.reply({ embeds: [embeds.errorEmbed("Vous n'avez pas la permission d'utiliser cette commande.")], flags: 64 });
+    }
+
+    const usersQuery = require("../database/queries/users")(bot.db);
+    const transactionsQuery = require("../database/queries/transactions")(bot.db);
+
+    const targetUser = interaction.options.getUser("membre") || interaction.user;
+    const member = await interaction.guild.members.fetch(targetUser.id);
+
+    try {
+      const dbUser = await usersQuery.getUserByDiscordId(member.id);
+
+      if (!dbUser) {
+        return interaction.reply({
+          embeds: [embeds.errorEmbed(`${member} n'a pas encore de compte enregistré.`)],
+          flags: 64,
+        });
       }
 
-      const usersQuery = require("../database/queries/users")(bot.db);
-      const transactionsQuery = require("../database/queries/transactions")(bot.db);
+      const pageSize = 15;
+      let page = 0;
 
-      const targetUser = interaction.options.getUser("membre") || interaction.user;
-      const member = await interaction.guild.members.fetch(targetUser.id);
+      const allTransactions = await transactionsQuery.getTransactionsByUser(member.id);
+      if (!allTransactions || allTransactions.length === 0) {
+        return interaction.reply({
+          embeds: [embeds.historiqueEmbed(member, "Aucune transaction.")],
+        });
+      }
 
-      try {
-        const dbUser = await usersQuery.getUserByDiscordId(member.id);
+      const getPageEmbed = (pageIndex) => {
+        const start = pageIndex * pageSize;
+        const end = start + pageSize;
+        const transactions = allTransactions.slice(start, end);
 
-        if (!dbUser) {
-          return interaction.reply({
-            embeds: [errorEmbed(`${member} n'a pas encore de compte enregistré.`)],
-            flags: 64,
-          });
-        }
-
-        const pageSize = 15;
-        let page = 0;
-
-        const allTransactions = await transactionsQuery.getTransactionsByUser(member.id);
-        if (!allTransactions || allTransactions.length === 0) {
-          return interaction.reply({
-            embeds: [historiqueEmbed(member, "Aucune transaction.")],
-          });
-        }
-
-        const getPageEmbed = (pageIndex) => {
-            const start = pageIndex * pageSize;
-            const end = start + pageSize;
-            const transactions = allTransactions.slice(start, end);
-
-            const formatCurrency = (currency) =>
-              currency === "gems" ? "💎" : currency === "rubies" ? "🔴" : currency;
-
-            const transactionDescriptions = {
-                add: (tx) => `Ajout de +${tx.amount} ${formatCurrency(tx.currency)}`,
-                remove: (tx) => `Retrait de -${tx.amount} ${formatCurrency(tx.currency)}`,
-                give: (tx) => `Don de -${tx.amount} ${formatCurrency(tx.currency)} à <@${tx.other_user_id}>`,
-                receive: (tx) => `Reçu de +${tx.amount} ${formatCurrency(tx.currency)} de <@${tx.other_user_id}>`,
-                buy: (tx) => `Achat effectué de -${tx.amount} ${formatCurrency(tx.currency)}`,
-                casino: (tx) =>
-                  `Jeu de casino : ${tx.amount > 0 ? `Gains de +${tx.amount} ${formatCurrency(tx.currency)}` : `Perte de -${Math.abs(tx.amount)} ${formatCurrency(tx.currency)}`}`,
-        };
-
-        const content = transactions
-          .map((tx) => {
-            const timestamp = `<t:${Math.floor(new Date(tx.date).getTime() / 1000)}:R>`;
-            let description = transactionDescriptions[tx.type]
-              ? transactionDescriptions[tx.type](tx)
-              : "Type de transaction inconnu";
-            if (tx.description) {
-              description += ` (${tx.description})`;
-            }
-            return `> ${timestamp} : ${description}`;
-          })
-          .join("\n");
-
-        return historiqueEmbed(member, content || "Aucune transaction.")
-        .setFooter({ text: `Page ${pageIndex + 1} / ${Math.ceil(allTransactions.length / pageSize)}` });;
+        return embeds.historiqueEmbed(
+          member,
+          transactions,
+          pageIndex,
+          Math.ceil(allTransactions.length / pageSize)
+        );
       };
+
 
       const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
-          .setCustomId("prev")
-          .setLabel("◀️ Précédent")
-          .setStyle(ButtonStyle.Primary)
-          .setDisabled(true),
+        .setCustomId("prev")
+        .setLabel("◀️ Précédent")
+        .setStyle(ButtonStyle.Primary)
+        .setDisabled(true),
         new ButtonBuilder()
-          .setCustomId("next")
-          .setLabel("Suivant ▶️")
-          .setStyle(ButtonStyle.Primary)
-          .setDisabled(allTransactions.length <= pageSize)
+        .setCustomId("next")
+        .setLabel("Suivant ▶️")
+        .setStyle(ButtonStyle.Primary)
+        .setDisabled(allTransactions.length <= pageSize)
       );
 
       await interaction.reply({
         embeds: [getPageEmbed(page)],
         components: [row],
       });
-      
+
       const reply = await interaction.fetchReply();
 
       const collector = reply.createMessageComponentCollector({
         componentType: ComponentType.Button,
-        time: 60_000,
+        time: 60000,
       });
 
-      collector.on("collect", async (i) => {
+      collector.on("collect", async(i) => {
         if (i.user.id !== interaction.user.id) {
           return i.reply({ content: "Ce menu ne vous est pas destiné.", ephemeral: true });
         }
@@ -138,7 +117,7 @@ module.exports = {
     } catch (err) {
       console.error("❌ Erreur MySQL dans /historique :", err);
       return interaction.reply({
-        embeds: [errorEmbed("❌ Une erreur est survenue lors de la récupération de l'historique.")],
+        embeds: [embeds.errorEmbed("❌ Une erreur est survenue lors de la récupération de l'historique.")],
         flags: 64,
       });
     }
