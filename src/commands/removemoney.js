@@ -9,7 +9,7 @@ const {
   errorEmbed,
   successEmbed,
   transactionEmbed,
-} = require("../utils/embeds");
+} = require("../../utils/embeds");
 
 module.exports = {
   name: "removemoney",

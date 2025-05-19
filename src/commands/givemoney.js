@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
-const { donEmbed, errorEmbed } = require("../utils/embeds");
+const { donEmbed, errorEmbed } = require("../../utils/embeds");
 
 module.exports = {
   name: "givemoney",

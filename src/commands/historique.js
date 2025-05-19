@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } = require("discord.js");
-const { errorEmbed, historiqueEmbed } = require("../utils/embeds");
+const { errorEmbed, historiqueEmbed } = require("../../utils/embeds");
 
 module.exports = {
     name: "historique",

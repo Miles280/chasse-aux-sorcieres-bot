@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } = require("discord.js");
-const { gameEmbed, errorEmbed, successEmbed } = require("../utils/embeds");
+const { gameEmbed, errorEmbed, successEmbed } = require("../../utils/embeds");
 
 module.exports = {
   name: "tour",

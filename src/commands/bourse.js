@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
-const { bourseEmbed, errorEmbed, successEmbed } = require("../utils/embeds");
+const { bourseEmbed, errorEmbed, successEmbed } = require("../../utils/embeds");
+const embeds = require('../embeds');
 
 module.exports = {
     name: "bourse",
@@ -74,7 +75,7 @@ module.exports = {
                  return `> ${timestamp} : ${description}`;
             }).join("\n") : "Aucune transaction.";
 
-            return interaction.reply({embeds: [bourseEmbed(member, gems, rubies, transactionDetails)],});
+            return interaction.reply({embeds: [embeds.bourseEmbed(member, gems, rubies, transactionDetails)]});
         }
     } catch (err) {
       console.error("❌ Erreur MySQL dans /bourse (vérifie que ton wamp soit allumé sale con) :",err);
