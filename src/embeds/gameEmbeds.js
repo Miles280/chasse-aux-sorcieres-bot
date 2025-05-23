@@ -17,7 +17,7 @@ module.exports = {
         `**Mise :** ${mise} 🔴\n` +
         `**Étage :** ${currentEtage}/${totalEtages}\n` +
         `**Gain actuel :** ${gains} 🔴\n\n` +
-        lignes.reverse().join("\n")
+        lignes.join("\n")
       )
       .setColor("#9b59b6");
   },

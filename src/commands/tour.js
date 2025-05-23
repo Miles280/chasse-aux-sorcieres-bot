@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } = require("discord.js");
-const embeds = require("../embeds")
+const embeds = require("../embeds");
 
 module.exports = {
   name: "tour",
@@ -20,18 +20,15 @@ module.exports = {
     const playerId = interaction.user.id;
     const usersQuery = require("../database/queries/users")(bot.db);
 
-
     const user = await usersQuery.getUserByDiscordId(playerId)
 
     if (!user) {
       return interaction.reply({ embeds: [embeds.errorEmbed("Vous n'avez pas encore de compte !")], flags: 64 });
-    } else if (user.rubies < betAmount) {
-      return interaction.reply({ embeds: [embeds.errorEmbed("Vous n’avez pas assez de rubis pour miser cette somme.")], flags: 64 });
     } else if (betAmount <= 0) {
       return interaction.reply({ embeds: [embeds.errorEmbed("La mise doit être supérieure à 0.")], flags: 64 });
+    } else if (user.rubies < betAmount) {
+      return interaction.reply({ embeds: [embeds.errorEmbed("Vous n’avez pas assez de rubis pour miser cette somme.")], flags: 64 });
     }
-
-
 
     // 🔁 Initialisation
     const totalFloors = 10;
@@ -39,37 +36,46 @@ module.exports = {
     let gameOver = false;
     let totalGains = 0;
 
-    const floorDisplay = Array.from({ length: totalFloors }, () => ["⬛", "⬛", "⬛"]); // État visuel de chaque étage
+    const floorDisplay = Array.from({ length: totalFloors }, () => ["⬛", "⬛", "⬛"]);
     const bombs = Array.from({ length: totalFloors }, () => Math.floor(Math.random() * 3));
-    const calculeGain = (floor) => betAmount * (1 + 0.1 * floor ** 2)
-    const renderLignes = () => floorDisplay.map((ligne, i) => `Étage ${i + 1} : ${ligne.join(" ")}`);
 
+    // ✅ Gain arrondi à l'entier supérieur
+    const calculeGain = (floor) => Math.ceil(betAmount * (1 + 0.1 * floor ** 2));
 
-    // Début de la logique du jeu
+    const renderLignes = () => floorDisplay
+      .map((ligne, i) => `Étage ${i + 1} : ${ligne.join(" ")}`)
+      .reverse();
+
     await usersQuery.updateCurrency(playerId, "rubies", -betAmount)
 
-    const createButtons = () => {
+    // ✅ Générateur de boutons selon étage
+    const createButtons = (withStop = false) => {
       const row = new ActionRowBuilder();
       for (let i = 0; i < 3; i++) {
         row.addComponents(
           new ButtonBuilder()
           .setCustomId(`choix_${i}`)
-          .setLabel(`⬛`)
+          .setLabel("⬛")
           .setStyle(ButtonStyle.Secondary)
         );
       }
-      row.addComponents(
-        new ButtonBuilder()
-        .setCustomId("stop")
-        .setLabel("💰 S'arrêter ici")
-        .setStyle(ButtonStyle.Success)
-      );
+
+      if (withStop) {
+        row.addComponents(
+          new ButtonBuilder()
+          .setCustomId("stop")
+          .setLabel("💰 S'arrêter ici")
+          .setStyle(ButtonStyle.Success)
+        );
+      }
+
       return [row];
     };
 
+    // 🎮 Premier affichage sans bouton stop
     const gameMessage = await interaction.reply({
       embeds: [embeds.tourEmbed(betAmount, currentFloor, totalFloors, renderLignes(), totalGains)],
-      components: createButtons()
+      components: createButtons(false)
     });
 
     const collector = gameMessage.createMessageComponentCollector({
@@ -85,22 +91,36 @@ module.exports = {
       if (gameOver) return;
 
       if (btn.customId === "stop") {
+        // Révéler tous les étages non encore joués
+        for (let i = currentFloor; i < totalFloors; i++) {
+          const bomb = bombs[i];
+          floorDisplay[i] = floorDisplay[i].map((_, j) => j === bomb ? "💣" : "🟩");
+        }
+
         gameOver = true;
         await usersQuery.updateCurrency(playerId, "rubies", totalGains)
 
         return btn.update({
-          embeds: [embeds.successEmbed(`Vous vous êtes arrêté à l'étage ${currentFloor}.\nVous remportez **${totalGains} 🔴** !`)],
+          embeds: [embeds.successEmbed(`Vous vous êtes arrêté à l'étage ${currentFloor}.\nVous remportez **${totalGains} 🔴** !`).setDescription(renderLignes().join("\n"))],
           components: []
         });
       }
 
+
       const choix = parseInt(btn.customId.split("_")[1]);
       const bomb = bombs[currentFloor];
 
-      // Révéler toute la ligne
       floorDisplay[currentFloor] = floorDisplay[currentFloor].map((_, i) => i === bomb ? "💣" : "🟩");
 
       if (choix === bomb) {
+        floorDisplay[currentFloor] = floorDisplay[currentFloor].map((_, i) => i === bomb ? "💥" : "🟩");
+
+        // Révéler tous les autres étages non joués
+        for (let i = currentFloor + 1; i < totalFloors; i++) {
+          const bombI = bombs[i];
+          floorDisplay[i] = floorDisplay[i].map((_, j) => j === bombI ? "💣" : "🟩");
+        }
+
         gameOver = true;
         return btn.update({
           embeds: [embeds.errorEmbed(`💥 Vous avez explosé à l'étage ${currentFloor + 1} ! Vous perdez votre mise.`).setDescription(renderLignes().join("\n"))],
@@ -120,9 +140,12 @@ module.exports = {
           });
         }
 
+        // ✅ On affiche le bouton stop seulement après le 1er étage
+        const showStop = currentFloor >= 1;
+
         await btn.update({
           embeds: [embeds.tourEmbed(betAmount, currentFloor, totalFloors, renderLignes(), totalGains)],
-          components: createButtons(),
+          components: createButtons(showStop),
         });
       }
     });
