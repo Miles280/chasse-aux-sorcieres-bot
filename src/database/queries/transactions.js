@@ -45,8 +45,8 @@ module.exports = (db) => ({
           const newAmount = lastTransaction.amount + amount;
           await db.query(
             `UPDATE transactions 
-           SET amount = ?, description = ?, date = NOW()
-           WHERE id = ?`, [newAmount, description, lastTransaction.id]
+           SET amount = ?, date = NOW()
+           WHERE id = ?`, [newAmount, lastTransaction.id]
           );
           return;
         }
