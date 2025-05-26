@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
-const { errorEmbed, successEmbed, transactionEmbed, } = require("../utils/embeds");
+const embeds = require("../embeds")
 
 module.exports = {
   name: "addmoney",
@@ -33,7 +33,7 @@ module.exports = {
 
   async execute(interaction, bot) {
     if (!interaction.member.permissions.has(this.permission)) {
-      return interaction.reply({ embeds: [errorEmbed("Vous n'avez pas la permission d'utiliser cette commande.")], flags: 64 });
+      return interaction.reply({ embeds: [embeds.errorEmbed("Vous n'avez pas la permission d'utiliser cette commande.")], flags: 64 });
     }
 
     const usersQuery = require("../database/queries/users")(bot.db);
@@ -61,9 +61,9 @@ module.exports = {
           amount: valeur,
         });
 
-        await interaction.reply({ embeds: [successEmbed(`${member} n'avait pas encore de compte. Un compte lui a été créé !`)], flags: 64 });
+        await interaction.reply({ embeds: [embeds.successEmbed(`${member} n'avait pas encore de compte. Un compte lui a été créé !`)], flags: 64 });
 
-        await interaction.channel.send({ embeds: [transactionEmbed("add", valeur, monnaie, member)] });
+        await interaction.channel.send({ embeds: [embeds.balanceEmbed("add", valeur, monnaie, member)] });
 
         return;
       } else {
@@ -78,11 +78,11 @@ module.exports = {
           amount: valeur,
         });
 
-        return interaction.reply({ embeds: [transactionEmbed("add", valeur, monnaie, member)] });
+        return interaction.reply({ embeds: [embeds.balanceEmbed("add", valeur, monnaie, member)] });
       }
     } catch (err) {
       console.error("❌ Erreur MySQL dans /addmoney (vérifie que ton wamp soit allumé sale con) :", err);
-      return interaction.reply({ embed: [errorEmbed("Une erreur est survenue lors de la transaction.")], flags: 64 });
+      return interaction.reply({ embed: [embeds.errorEmbed("Une erreur est survenue lors de la transaction.")], flags: 64 });
     }
   }
 };

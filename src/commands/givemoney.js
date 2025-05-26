@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
-const { donEmbed, errorEmbed } = require("../utils/embeds");
+const embeds = require("../embeds")
 
 module.exports = {
   name: "givemoney",
@@ -32,7 +32,7 @@ module.exports = {
 
   async execute(interaction, bot) {
     if (!interaction.member.permissions.has(this.permission)) {
-      return interaction.reply({ embeds: [errorEmbed("Vous n'avez pas la permission d'utiliser cette commande.")], flags: 64 });
+      return interaction.reply({ embeds: [embeds.errorEmbed("Vous n'avez pas la permission d'utiliser cette commande.")], flags: 64 });
     }
 
     const usersQuery = require("../database/queries/users")(bot.db);
@@ -44,7 +44,7 @@ module.exports = {
     const donneur = await interaction.guild.members.fetch(interaction.user.id);
 
     if (cible.id === donneur.id) {
-      return interaction.reply({ embeds: [errorEmbed("Tu es con ouuuu ?")], flags: 64 });
+      return interaction.reply({ embeds: [embeds.errorEmbed("Tu es con ouuuu ?")], flags: 64 });
     }
 
     try {
@@ -52,7 +52,7 @@ module.exports = {
       const donneurData = await usersQuery.getUserByDiscordId(donneur.id);
 
       if (!donneurData) {
-        return interaction.reply({ embeds: [errorEmbed("Et si tu essayais de faire `/bourse` déjà ?")], flags: 64 });
+        return interaction.reply({ embeds: [embeds.errorEmbed("Et si tu essayais de faire `/bourse` déjà ?")], flags: 64 });
       }
 
       const soldeActuel = donneurData[monnaie];
@@ -62,7 +62,7 @@ module.exports = {
         const nomMonnaie = monnaie === "gems" ? "gemmes" : "rubis";
         const phraseErreur = `Vous ne pouvez pas effectez cette action, il vous manque ${difference} ${nomMonnaie}.`;
 
-        return interaction.reply({ embeds: [errorEmbed(phraseErreur)], flags: 64 });
+        return interaction.reply({ embeds: [embeds.errorEmbed(phraseErreur)], flags: 64 });
       }
 
       // Si l'utilisateur essaie de donner des rubis, vérifier s'il peut
@@ -81,7 +81,7 @@ module.exports = {
             const futureTimestamp = Math.floor((Date.now() + remainingTime) / 1000); // Unix timestamp
 
             return interaction.reply({
-              embeds: [errorEmbed(
+              embeds: [embeds.errorEmbed(
                 `⏳ Vous avez déjà donné des rubis récemment.\n` +
                 `Vous pourrez donner de nouveau des Rubis dans <t:${futureTimestamp}:R> (à <t:${futureTimestamp}:t>).`)],
               flags: 64
@@ -122,10 +122,10 @@ module.exports = {
         other_user_id: donneur.id
       });
 
-      return interaction.reply({ embeds: [donEmbed(donneur, cible, monnaie, valeur)] });
+      return interaction.reply({ embeds: [embeds.donEmbed(donneur, cible, monnaie, valeur)] });
     } catch (err) {
       console.error("❌ Erreur MySQL dans /givemoney (vérifie que ton wamp soit allumé sale con) :", err);
-      return interaction.reply({ embed: [errorEmbed("Une erreur est survenue lors de la transaction.")], flags: 64 });
+      return interaction.reply({ embed: [embeds.errorEmbed("Une erreur est survenue lors de la transaction.")], flags: 64 });
     }
   }
 };

@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
-const { bourseEmbed, errorEmbed, successEmbed } = require("../utils/embeds");
+const embeds = require('../embeds');
 
 module.exports = {
     name: "bourse",
@@ -20,7 +20,7 @@ module.exports = {
 
     async execute(interaction, bot) {
       if (!interaction.member.permissions.has(this.permission)) {
-        return interaction.reply({ embeds: [errorEmbed("Vous n'avez pas la permission d'utiliser cette commande.")], flags: 64 });
+        return interaction.reply({ embeds: [embeds.errorEmbed("Vous n'avez pas la permission d'utiliser cette commande.")], flags: 64 });
       }
 
       const usersQuery = require("../database/queries/users")(bot.db);
@@ -35,9 +35,9 @@ module.exports = {
         if (!dbUser) {
           await usersQuery.createUser(member.id);
 
-          await interaction.reply({ embeds: [successEmbed(`${member} n'avait pas encore de compte. Un compte lui a été créé !`)], flags: 64 });
+          await interaction.reply({ embeds: [embeds.successEmbed(`${member} n'avait pas encore de compte. Un compte lui a été créé !`)], flags: 64 });
 
-          await interaction.followUp({ embeds: [bourseEmbed(member, 0, 0, "Aucune transaction.")] });
+          await interaction.followUp({ embeds: [embeds.bourseEmbed(member, 0, 0, "Aucune transaction.")] });
         } else {
           const { gems, rubies } = dbUser;
 
@@ -74,11 +74,11 @@ module.exports = {
                  return `> ${timestamp} : ${description}`;
             }).join("\n") : "Aucune transaction.";
 
-            return interaction.reply({embeds: [bourseEmbed(member, gems, rubies, transactionDetails)],});
+            return interaction.reply({embeds: [embeds.bourseEmbed(member, gems, rubies, transactionDetails)]});
         }
     } catch (err) {
       console.error("❌ Erreur MySQL dans /bourse (vérifie que ton wamp soit allumé sale con) :",err);
-      return interaction.reply({embeds: [errorEmbed("❌ Une erreur est survenue lors de la récupération des informations."),],flags: 64});
+      return interaction.reply({embeds: [embeds.errorEmbed("❌ Une erreur est survenue lors de la récupération des informations."),],flags: 64});
     }
   }
 };
