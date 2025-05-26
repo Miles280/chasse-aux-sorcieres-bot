@@ -63,7 +63,7 @@ module.exports = {
 
         await interaction.reply({ embeds: [embeds.successEmbed(`${member} n'avait pas encore de compte. Un compte lui a été créé !`)], flags: 64 });
 
-        await interaction.channel.send({ embeds: [embeds.transactionEmbed("add", valeur, monnaie, member)] });
+        await interaction.channel.send({ embeds: [embeds.balanceEmbed("add", valeur, monnaie, member)] });
 
         return;
       } else {
@@ -78,7 +78,7 @@ module.exports = {
           amount: valeur,
         });
 
-        return interaction.reply({ embeds: [embeds.transactionEmbed("add", valeur, monnaie, member)] });
+        return interaction.reply({ embeds: [embeds.balanceEmbed("add", valeur, monnaie, member)] });
       }
     } catch (err) {
       console.error("❌ Erreur MySQL dans /addmoney (vérifie que ton wamp soit allumé sale con) :", err);

@@ -16,6 +16,7 @@ module.exports = (db) => ({
    * 
    * @returns {Promise<void>}
    */
+
   addTransaction: async(data) => {
     const {
       user_id,
@@ -25,12 +26,41 @@ module.exports = (db) => ({
       other_user_id = null,
       description = null,
     } = data;
+
+    if (type === "casino") {
+      const [rows] = await db.query(
+        `SELECT * FROM transactions
+       WHERE user_id = ? AND type = ? AND currency = ?
+       ORDER BY date DESC
+       LIMIT 1`, [user_id, type, currency]
+      );
+
+      const lastTransaction = rows[0];
+
+      if (lastTransaction) {
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+        const lastDate = new Date(lastTransaction.date);
+
+        if (lastDate > oneHourAgo) {
+          const newAmount = lastTransaction.amount + amount;
+          await db.query(
+            `UPDATE transactions 
+           SET amount = ?, description = ?, date = NOW()
+           WHERE id = ?`, [newAmount, description, lastTransaction.id]
+          );
+          return;
+        }
+      }
+    }
+
+    // Si pas de transaction récente ou pas "casino", on ajoute normalement
     await db.query(
-      `
-          INSERT INTO transactions (user_id, type, currency, amount, other_user_id, description)
-          VALUES (?, ?, ?, ?, ?, ?)`, [user_id, type, currency, amount, other_user_id, description]
+      `INSERT INTO transactions 
+     (user_id, type, currency, amount, other_user_id, description)
+     VALUES (?, ?, ?, ?, ?, ?)`, [user_id, type, currency, amount, other_user_id, description]
     );
   },
+
 
   /**
    * Récupère toutes les transactions d’un utilisateur.

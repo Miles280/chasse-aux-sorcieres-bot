@@ -18,7 +18,9 @@ module.exports = {
   async execute(interaction, bot) {
     const betAmount = interaction.options.getInteger("mise");
     const playerId = interaction.user.id;
+
     const usersQuery = require("../database/queries/users")(bot.db);
+    const transactionsQuery = require("../database/queries/transactions")(bot.db);
 
     const user = await usersQuery.getUserByDiscordId(playerId)
 
@@ -45,8 +47,6 @@ module.exports = {
     const renderLignes = () => floorDisplay
       .map((ligne, i) => `Étage ${i + 1} : ${ligne.join(" ")}`)
       .reverse();
-
-    await usersQuery.updateCurrency(playerId, "rubies", -betAmount)
 
     // ✅ Générateur de boutons selon étage
     const createButtons = (withStop = false) => {
@@ -98,7 +98,15 @@ module.exports = {
         }
 
         gameOver = true;
-        await usersQuery.updateCurrency(playerId, "rubies", totalGains);
+
+        const gainFinal = totalGains - betAmount;
+        await transactionsQuery.addTransaction({
+          user_id: playerId,
+          type: "casino",
+          currency: "rubies",
+          amount: gainFinal
+        });
+        await usersQuery.updateCurrency(playerId, "rubies", gainFinal);
 
         return btn.update({
           embeds: [embeds.towerWinEmbed(betAmount, currentFloor, totalGains, renderLignes())],
@@ -121,6 +129,15 @@ module.exports = {
         }
 
         gameOver = true;
+
+        await transactionsQuery.addTransaction({
+          user_id: playerId,
+          type: "casino",
+          currency: "rubies",
+          amount: -betAmount
+        });
+        await usersQuery.updateCurrency(playerId, "rubies", -betAmount);
+
         return btn.update({
           embeds: [embeds.towerLooseEmbed(betAmount, currentFloor + 1, renderLignes())],
           components: []
@@ -131,7 +148,15 @@ module.exports = {
 
         if (currentFloor === totalFloors) {
           gameOver = true;
-          await usersQuery.updateCurrency(playerId, "rubies", totalGains);
+
+          const gainFinal = totalGains - betAmount;
+          await transactionsQuery.addTransaction({
+            user_id: playerId,
+            type: "casino",
+            currency: "rubies",
+            amount: gainFinal
+          });
+          await usersQuery.updateCurrency(playerId, "rubies", gainFinal);
 
           return btn.update({
             embeds: [embeds.towerWinEmbed(betAmount, currentFloor, totalGains, renderLignes())],
@@ -151,6 +176,13 @@ module.exports = {
 
     collector.on("end", async() => {
       if (!gameOver) {
+        await transactionsQuery.addTransaction({
+          user_id: playerId,
+          type: "casino",
+          currency: "rubies",
+          amount: -betAmount
+        });
+        await usersQuery.updateCurrency(playerId, "rubies", -betAmount);
         interaction.editReply({
           embeds: [embeds.errorEmbed("⏱️ Temps écoulé ! La partie est terminée.")],
           components: [],

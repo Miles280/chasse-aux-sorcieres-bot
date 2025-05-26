@@ -116,7 +116,7 @@ module.exports = {
             });
 
             await interaction.channel.send({
-              embeds: [embeds.transactionEmbed("remove", current, currency, member)],
+              embeds: [embeds.balanceEmbed("remove", current, currency, member)],
             });
           } else {
             await i.update({
@@ -141,7 +141,7 @@ module.exports = {
       });
 
       return interaction.reply({
-        embeds: [embeds.transactionEmbed("remove", amount, currency, member)],
+        embeds: [embeds.balanceEmbed("remove", amount, currency, member)],
       });
     } catch (err) {
       console.error("❌ Erreur MySQL dans /removemoney :", err);
