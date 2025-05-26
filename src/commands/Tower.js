@@ -2,7 +2,7 @@ const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Compo
 const embeds = require("../embeds");
 
 module.exports = {
-  name: "Tower",
+  name: "tower",
   description: "Jouer au jeu de la tour piégé !",
   dm: false,
 
