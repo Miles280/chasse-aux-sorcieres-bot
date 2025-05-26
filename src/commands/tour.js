@@ -74,7 +74,7 @@ module.exports = {
 
     // 🎮 Premier affichage sans bouton stop
     const gameMessage = await interaction.reply({
-      embeds: [embeds.tourEmbed(betAmount, currentFloor, totalFloors, renderLignes(), totalGains)],
+      embeds: [embeds.towerEmbed(betAmount, currentFloor, totalFloors, renderLignes(), totalGains)],
       components: createButtons(false)
     });
 
@@ -91,21 +91,20 @@ module.exports = {
       if (gameOver) return;
 
       if (btn.customId === "stop") {
-        // Révéler tous les étages non encore joués
+        // Révéler tous les étages restants
         for (let i = currentFloor; i < totalFloors; i++) {
           const bomb = bombs[i];
           floorDisplay[i] = floorDisplay[i].map((_, j) => j === bomb ? "💣" : "🟩");
         }
 
         gameOver = true;
-        await usersQuery.updateCurrency(playerId, "rubies", totalGains)
+        await usersQuery.updateCurrency(playerId, "rubies", totalGains);
 
         return btn.update({
-          embeds: [embeds.successEmbed(`Vous vous êtes arrêté à l'étage ${currentFloor}.\nVous remportez **${totalGains} 🔴** !`).setDescription(renderLignes().join("\n"))],
+          embeds: [embeds.towerWinEmbed(betAmount, currentFloor, totalGains, renderLignes())],
           components: []
         });
       }
-
 
       const choix = parseInt(btn.customId.split("_")[1]);
       const bomb = bombs[currentFloor];
@@ -115,7 +114,7 @@ module.exports = {
       if (choix === bomb) {
         floorDisplay[currentFloor] = floorDisplay[currentFloor].map((_, i) => i === bomb ? "💥" : "🟩");
 
-        // Révéler tous les autres étages non joués
+        // Révéler les étages restants
         for (let i = currentFloor + 1; i < totalFloors; i++) {
           const bombI = bombs[i];
           floorDisplay[i] = floorDisplay[i].map((_, j) => j === bombI ? "💣" : "🟩");
@@ -123,7 +122,7 @@ module.exports = {
 
         gameOver = true;
         return btn.update({
-          embeds: [embeds.errorEmbed(`💥 Vous avez explosé à l'étage ${currentFloor + 1} ! Vous perdez votre mise.`).setDescription(renderLignes().join("\n"))],
+          embeds: [embeds.towerLooseEmbed(betAmount, currentFloor + 1, renderLignes())],
           components: []
         });
       } else {
@@ -135,19 +134,19 @@ module.exports = {
           await usersQuery.updateCurrency(playerId, "rubies", totalGains);
 
           return btn.update({
-            embeds: [embeds.successEmbed(`🎉 Bravo ! Vous avez terminé les ${totalFloors} étages et gagné ${totalGains} 🔴 !`).setDescription(renderLignes().join("\n"))],
+            embeds: [embeds.towerWinEmbed(betAmount, currentFloor, totalGains, renderLignes())],
             components: []
           });
         }
 
-        // ✅ On affiche le bouton stop seulement après le 1er étage
         const showStop = currentFloor >= 1;
 
         await btn.update({
-          embeds: [embeds.tourEmbed(betAmount, currentFloor, totalFloors, renderLignes(), totalGains)],
+          embeds: [embeds.towerEmbed(betAmount, currentFloor, totalFloors, renderLignes(), totalGains)],
           components: createButtons(showStop),
         });
       }
+
     });
 
     collector.on("end", async() => {
