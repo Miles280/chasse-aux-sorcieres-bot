@@ -7,7 +7,7 @@ module.exports = async(bot, interaction) => {
       await command.execute(interaction, bot);
     } catch (err) {
       console.error(`Erreur dans la commande ${interaction.commandName} :`, err);
-      interaction.reply({ content: "Une erreur est survenue en exécutant la commande.", ephemeral: true }).catch(() => {});
+      interaction.reply({ content: "Une erreur est survenue en exécutant la commande.", flags: 64 }).catch(() => {});
     }
   }
 }

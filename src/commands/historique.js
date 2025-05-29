@@ -90,7 +90,7 @@ module.exports = {
 
       collector.on("collect", async(i) => {
         if (i.user.id !== interaction.user.id) {
-          return i.reply({ content: "Ce menu ne vous est pas destiné.", ephemeral: true });
+          return i.reply({ content: "Ce menu ne vous est pas destiné.", flags: 64 });
         }
 
         i.deferUpdate();

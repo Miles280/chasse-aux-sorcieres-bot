@@ -7,7 +7,7 @@ module.exports = {
   dm: false,
 
   data: new SlashCommandBuilder()
-    .setName("tour")
+    .setName("tower")
     .setDescription("Grimpez la tour en évitant la bombe pour gagner le plus de rubis possible.")
     .addIntegerOption(option =>
       option.setName("mise")
