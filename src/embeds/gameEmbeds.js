@@ -1,5 +1,6 @@
 const { EmbedBuilder } = require("discord.js");
 const { win, loose } = require("../utils/customColors");
+const emojis = require("../utils/emojis");
 
 module.exports = {
   /**
@@ -15,9 +16,9 @@ module.exports = {
     return new EmbedBuilder()
       .setTitle("La tour piégée")
       .setDescription(
-        `**Mise :** ${mise} 🔴\n` +
+        `**Mise :** ${mise} ${emojis.rubies}\n` +
         `**Étage :** ${currentEtage}/${totalEtages}\n` +
-        `**Gain actuel :** ${gains} 🔴\n\n` +
+        `**Gain actuel :** ${gains} ${emojis.rubies}\n\n` +
         lignes.join("\n")
       )
       .setColor("#9b59b6");
@@ -36,8 +37,8 @@ module.exports = {
       .setTitle("🎉 Victoire !")
       .setDescription(
         `Tu as choisi de **t'arrêter** à l'étage ${currentEtage}.\n\n` +
-        `**Mise de départ :** ${mise} 🔴\n` +
-        `**Gains encaissés :** ${gains} 🔴\n\n` +
+        `**Mise de départ :** ${mise} ${emojis.rubies}\n` +
+        `**Gains encaissés :** ${gains} ${emojis.rubies}\n\n` +
         `__Voici ta tour :__\n` +
         lignes.join("\n")
       )
@@ -56,7 +57,7 @@ module.exports = {
       .setTitle("💥 BOUM !")
       .setDescription(
         `Tu es tombé sur une **bombe** à l'étage ${currentEtage} !\n\n` +
-        `**Mise perdue :** ${mise} 🔴\n` +
+        `**Mise perdue :** ${mise} ${emojis.rubies}\n` +
         `**Étages franchis :** ${currentEtage - 1}\n\n` +
         `__Voici ta tour :__\n` +
         lignes.join("\n")

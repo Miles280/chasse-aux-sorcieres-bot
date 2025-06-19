@@ -4,13 +4,12 @@ const embeds = require("../embeds")
 module.exports = {
   name: "historique",
   description: "Voir l'historique des transactions d'un membre.",
-  permission: PermissionFlagsBits.ManageMessages,
+  permission: null,
   dm: false,
 
   data: new SlashCommandBuilder()
     .setName("historique")
     .setDescription("Voir l'historique des transactions d'un membre.")
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
     .addUserOption((option) =>
       option
       .setName("membre")
@@ -19,10 +18,6 @@ module.exports = {
     ),
 
   async execute(interaction, bot) {
-    if (!interaction.member.permissions.has(this.permission)) {
-      return interaction.reply({ embeds: [embeds.errorEmbed("Vous n'avez pas la permission d'utiliser cette commande.")], flags: 64 });
-    }
-
     const usersQuery = require("../database/queries/users")(bot.db);
     const transactionsQuery = require("../database/queries/transactions")(bot.db);
 
