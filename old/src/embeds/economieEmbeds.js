@@ -18,7 +18,7 @@ module.exports = {
         iconURL: member.user.displayAvatarURL({ dynamic: true }),
       })
       .setTitle(`__Bourse de ${member.displayName}__`)
-      .addFields({ name: "Contenu :", value: `> \`${gems}\` 💎`, inline: true }, { name: "\u200B", value: `> \`${rubies}\` 🔴`, inline: true })
+      .addFields({ name: "Contenu :", value: `> \`${gems}\` ${emojis.gems}`, inline: true }, { name: "\u200B", value: `> \`${rubies}\` ${emojis.rubies}`, inline: true })
       .addFields({
         name: "\nDernières transactions :",
         value: transactionsText || "Aucune transaction.",
