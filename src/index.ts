@@ -6,7 +6,7 @@ import { ApiClient } from './services/ApiClient';
 import { EconomyService } from './services/EconomyService';
 
 const client = new SapphireClient({
-	defaultPrefix: '!',
+	defaultPrefix: ',',
 	caseInsensitiveCommands: true,
 	logger: {
 		level: LogLevel.Debug
@@ -15,7 +15,7 @@ const client = new SapphireClient({
 	loadMessageCommandListeners: true
 });
 
-container.apiClient = new ApiClient('http://127.0.0.1:8000/api', process.env.API_KEY);
+container.apiClient = new ApiClient(process.env.API_URL!, process.env.BOT_SECRET_KEY!);
 container.economyService = new EconomyService(container.apiClient);
 
 const main = async () => {

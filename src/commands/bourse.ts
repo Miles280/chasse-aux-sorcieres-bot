@@ -18,7 +18,6 @@ export class BourseCommand extends Command {
 	public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
 		try {
 			const user = await container.economyService.getBalance();
-			console.log(user);
 
 			if (!user) {
 				await interaction.reply({ content: 'Impossible de récupérer votre bourse.', flags: MessageFlags.Ephemeral });
