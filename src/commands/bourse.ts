@@ -25,7 +25,7 @@ export class BourseCommand extends Command {
 
 	public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
 		try {
-			const requestedUser = interaction.options.getUser('member');
+			const requestedUser = interaction.options.getUser('membre');
 			const discordIdToFetch = requestedUser?.id ?? interaction.user.id;
 
 			const user = await container.economyService.getBalance(discordIdToFetch);
