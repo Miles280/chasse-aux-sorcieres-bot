@@ -34,9 +34,9 @@ export class ApiClient {
 	private async refreshToken() {
 		if (!this.botKey) throw new Error('BOT_KEY manquant');
 
-		const res = await axios.post(`${this.baseURL}/bot/login`, null, {
+		const res = await axios.post(`${this.baseURL}/auth/login`, null, {
 			headers: {
-				'X-BOT-KEY': this.botKey,
+				'BOT-SECRET-KEY': this.botKey,
 				'Content-Type': 'application/json'
 			}
 		});

@@ -16,7 +16,7 @@ module.exports = {
         .setDescription("Observer la bourse de ce membre.")
         .setRequired(false)
       ),
-
+ 
     async execute(interaction, bot) {
       const usersQuery = require("../database/queries/users")(bot.db);
       const transactionsQuery = require("../database/queries/transactions")(bot.db);
