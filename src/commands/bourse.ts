@@ -2,7 +2,7 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { Command, container } from '@sapphire/framework';
 import { bourseEmbed } from '../embeds/economyEmbeds';
 import { MessageFlags } from 'discord.js';
-import { Transaction } from '../models/Transaction';
+import { formatTransactions } from '../utils/formatTransactions';
 
 @ApplyOptions<Command.Options>({
 	description: 'Affiche votre bourse (gemmes et rubis)'
@@ -25,16 +25,6 @@ export class BourseCommand extends Command {
 
 	public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
 		try {
-			function formatTransactions(transactions: Transaction[]): string {
-				return transactions
-					.slice(0, 5) // 5 dernières
-					.map((tx) => {
-						const other = tx.relatedUserId ? `<@${tx.relatedUserId}>` : '';
-						return `• [${tx.type}] ${tx.amount} ${tx.currency} ${other}`;
-					})
-					.join('\n');
-			}
-
 			const requestedUser = interaction.options.getUser('member');
 			const discordIdToFetch = requestedUser?.id ?? interaction.user.id;
 
