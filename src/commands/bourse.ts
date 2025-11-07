@@ -1,29 +1,41 @@
 import { ApplyOptions } from '@sapphire/decorators';
-import { Command, container } from '@sapphire/framework';
+import { container } from '@sapphire/framework';
 import { bourseEmbed } from '../embeds/economyEmbeds';
-import { MessageFlags } from 'discord.js';
+import { InteractionContextType, MessageFlags } from 'discord.js';
 import { formatTransactions } from '../utils/formatTransactions';
+import { Subcommand } from '@sapphire/plugin-subcommands';
 
-@ApplyOptions<Command.Options>({
-	description: 'Affiche votre bourse (gemmes et rubis)'
+@ApplyOptions<Subcommand.Options>({
+	name: 'bourse',
+	description: 'Gestion de la bourse',
+	subcommands: [
+		{ name: 'view', chatInputRun: 'chatInputView' },
+		{ name: 'add', chatInputRun: 'chatInputAdd' },
+		{ name: 'remove', chatInputRun: 'chatInputRemove' }
+	]
 })
-export class BourseCommand extends Command {
-	public override registerApplicationCommands(registry: Command.Registry) {
+export class BourseCommand extends Subcommand {
+	public override registerApplicationCommands(registry: Subcommand.Registry) {
 		registry.registerChatInputCommand((builder) =>
 			builder //
 				.setName(this.name)
 				.setDescription(this.description)
-				.setDMPermission(false)
-				.addUserOption((option) =>
-					option //
-						.setName('membre')
-						.setDescription('Le pseudo du joueur dont vous voulez voir la bourse')
-						.setRequired(false)
+				.setContexts([InteractionContextType.Guild])
+				.addSubcommand((sub) =>
+					sub //
+						.setName('view')
+						.setDescription("Consulte ta bourse ou celle d'un autre membre.")
+						.addUserOption((option) =>
+							option //
+								.setName('membre')
+								.setDescription('Le membre à consulter')
+								.setRequired(false)
+						)
 				)
 		);
 	}
 
-	public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
+	public async chatInputView(interaction: Subcommand.ChatInputCommandInteraction) {
 		try {
 			const requestedUser = interaction.options.getUser('membre');
 			const discordIdToFetch = requestedUser?.id ?? interaction.user.id;
