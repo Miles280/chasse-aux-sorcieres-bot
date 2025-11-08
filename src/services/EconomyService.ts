@@ -6,7 +6,7 @@ export class EconomyService {
 
 	async getBalance(discordId: string): Promise<UserBalance | null> {
 		try {
-			return await this.api.get<UserBalance>(`/economy/balance/${discordId}`);
+			return await this.api.get<UserBalance>(`/economy/${discordId}`);
 		} catch (err) {
 			console.error(`[EconomyService] Error:`, err);
 			return null;

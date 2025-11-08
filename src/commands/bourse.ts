@@ -7,7 +7,7 @@ import { Subcommand } from '@sapphire/plugin-subcommands';
 
 @ApplyOptions<Subcommand.Options>({
 	name: 'bourse',
-	description: 'Gestion de la bourse',
+	description: 'Gestion de la bourse.',
 	subcommands: [
 		{ name: 'view', chatInputRun: 'chatInputView' },
 		{ name: 'give', chatInputRun: 'chatInputGive' },

@@ -3,7 +3,8 @@ export enum TransactionType {
 	LOSE = 'lose',
 	PURCHASE = 'purchase',
 	DONATION = 'donation',
-	RECEIPT = 'receipt',
+	RECEIVE = 'receive',
 	CONVERSION = 'conversion',
-	ADMIN = 'admin'
+	ADMIN = 'admin',
+	SET = 'set'
 }

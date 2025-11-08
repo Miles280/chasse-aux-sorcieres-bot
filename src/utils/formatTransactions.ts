@@ -21,12 +21,12 @@ export function formatTransactions(transactions: Transaction[]): string {
 					description = `Vous avez perdu **-${tx.amount} ${currencyEmoji}**...`;
 					break;
 				case TransactionType.PURCHASE:
-					description = `Achat de « ${tx.description} » pour **-${tx.amount} ${currencyEmoji}**.`;
+					description = `Achat de « __${tx.description}__ » pour **-${tx.amount} ${currencyEmoji}**.`;
 					break;
 				case TransactionType.DONATION:
 					description = `Vous avez offert **-${tx.amount} ${currencyEmoji}** à ${other}.`;
 					break;
-				case TransactionType.RECEIPT:
+				case TransactionType.RECEIVE:
 					description = `Vous avez reçu **+${tx.amount} ${currencyEmoji}** de la part de ${other}.`;
 					break;
 				case TransactionType.CONVERSION:
@@ -40,6 +40,9 @@ export function formatTransactions(transactions: Transaction[]): string {
 						tx.amount > 0
 							? `Ajustement administratif de **+${tx.amount} ${currencyEmoji}**.`
 							: `Ajustement administratif de **-${Math.abs(tx.amount)} ${currencyEmoji}**.`;
+					break;
+				case TransactionType.SET:
+					description = `Solde défini à **${tx.amount} ${currencyEmoji}**.`;
 					break;
 				default:
 					description = `❔ Transaction inconnue : **${tx.amount} ${currencyEmoji}**.`;
