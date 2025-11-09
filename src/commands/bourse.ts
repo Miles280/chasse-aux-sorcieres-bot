@@ -4,6 +4,7 @@ import { bourseEmbed } from '../embeds/economyEmbeds';
 import { InteractionContextType, MessageFlags } from 'discord.js';
 import { formatTransactions } from '../utils/formatTransactions';
 import { Subcommand } from '@sapphire/plugin-subcommands';
+import { Currency } from '../enums/Currency';
 
 @ApplyOptions<Subcommand.Options>({
 	name: 'bourse',
@@ -139,40 +140,56 @@ export class BourseCommand extends Subcommand {
 			const discordIdToFetch = requestedUser?.id ?? interaction.user.id;
 
 			// Demande à l'API les informations de la bourse du membre en question via son ID discord
-			const user = await container.economyService.getBalance(discordIdToFetch);
-
-			// Vérification que l'API m'ait bien renvoyé une réponse
-			if (!user) {
-				await interaction.reply({ content: 'Impossible de trouver ce membre dans la base de données.', flags: MessageFlags.Ephemeral });
+			const response = await container.economyService.view(discordIdToFetch);
+			if (!response.success) {
+				await interaction.reply({ content: response.error, flags: MessageFlags.Ephemeral });
 				return;
 			}
 
-			// Vérification que le membre est sur le serveur (pour pouvoir afficher l'utilisateur dans l'embed sinon ça crée des erreurs)
-			const member = interaction.guild?.members.cache.get(user.discordId) || (await interaction.guild?.members.fetch(user.discordId));
-			if (!member) {
-				await interaction.reply({ content: 'Impossible de trouver ce membre sur le serveur.', flags: MessageFlags.Ephemeral });
-				return;
-			}
+			const userBalance = response.balance!;
+
+			// Vérification que le membre est sur le serveur (pour pouvoir afficher l'utilisateur dans l'embed)
+			const member = await container.discordService.fetchMemberOrReply(interaction.guild, userBalance.discordId, interaction);
+			if (!member) return;
 
 			// Création et envoie de l'embed final
 			const embed = bourseEmbed({
 				member,
-				gems: user.gems,
-				rubies: user.rubies,
-				transactionsText: formatTransactions(user.transactions)
+				gems: userBalance.gems,
+				rubies: userBalance.rubies,
+				transactionsText: formatTransactions(userBalance.transactions ?? [])
 			});
 			await interaction.reply({ embeds: [embed] });
 		} catch (error) {
 			console.error(error);
-			await interaction.reply({ content: 'Erreur dans la classe [chatInputView].', flags: MessageFlags.Ephemeral });
+			await interaction.reply({ content: 'Erreur dans [chatInputView].', flags: MessageFlags.Ephemeral });
 		}
 	}
 
 	public async chatInputGive(interaction: Subcommand.ChatInputCommandInteraction) {
 		try {
+			const senderId = interaction.user.id;
+			const receiverId = interaction.options.getUser('membre')!.id;
+			const currency = interaction.options.getString('monnaie')! as Currency;
+			const amount = interaction.options.getNumber('valeur')!;
+
+			// Envoie à l'API toutes les informations pour qu'elle fasse le nécessaire
+			const response = await container.economyService.give(senderId, receiverId, currency, amount);
+			if (!response.success) {
+				await interaction.reply({ content: response.error, flags: MessageFlags.Ephemeral });
+				return;
+			}
+
+			// const userBalance = response.balance!;
+
+			// Vérification que le membre est sur le serveur (pour pouvoir afficher l'utilisateur dans l'embed)
+			const member = await container.discordService.fetchMemberOrReply(interaction.guild, receiverId, interaction);
+			if (!member) return;
+
+			await interaction.reply({ content: `Vous avez donnez ${amount} à <@${member.id}>.` });
 		} catch (error) {
 			console.error(error);
-			await interaction.reply({ content: 'Erreur dans la classe [chatInputGive].', flags: MessageFlags.Ephemeral });
+			await interaction.reply({ content: 'Erreur dans [chatInputGive].', flags: MessageFlags.Ephemeral });
 		}
 	}
 
@@ -180,7 +197,7 @@ export class BourseCommand extends Subcommand {
 		try {
 		} catch (error) {
 			console.error(error);
-			await interaction.reply({ content: 'Erreur dans la classe [chatInputAdd].', flags: MessageFlags.Ephemeral });
+			await interaction.reply({ content: 'Erreur dans [chatInputAdd].', flags: MessageFlags.Ephemeral });
 		}
 	}
 
@@ -188,7 +205,7 @@ export class BourseCommand extends Subcommand {
 		try {
 		} catch (error) {
 			console.error(error);
-			await interaction.reply({ content: 'Erreur dans la classe [chatInputRemove].', flags: MessageFlags.Ephemeral });
+			await interaction.reply({ content: 'Erreur dans [chatInputRemove].', flags: MessageFlags.Ephemeral });
 		}
 	}
 
@@ -196,7 +213,7 @@ export class BourseCommand extends Subcommand {
 		try {
 		} catch (error) {
 			console.error(error);
-			await interaction.reply({ content: 'Erreur dans la classe [chatInputSet].', flags: MessageFlags.Ephemeral });
+			await interaction.reply({ content: 'Erreur dans [chatInputSet].', flags: MessageFlags.Ephemeral });
 		}
 	}
 }

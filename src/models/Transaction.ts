@@ -1,9 +1,10 @@
+import { Currency } from '../enums/Currency';
 import { TransactionType } from '../enums/TransactionType';
 
 export interface Transaction {
 	id: number;
 	type: TransactionType;
-	currency: 'gems' | 'rubies';
+	currency: Currency;
 	amount: number;
 	description?: string | null;
 	relatedUserId?: string | null;
