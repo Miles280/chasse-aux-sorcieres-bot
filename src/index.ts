@@ -4,6 +4,7 @@ import { LogLevel, SapphireClient, container } from '@sapphire/framework';
 import { GatewayIntentBits } from 'discord.js';
 import { ApiClient } from './services/ApiClient';
 import { EconomyService } from './services/EconomyService';
+import { DiscordService } from './services/DiscordService';
 
 const client = new SapphireClient({
 	defaultPrefix: ',',
@@ -17,6 +18,7 @@ const client = new SapphireClient({
 
 container.apiClient = new ApiClient(process.env.API_URL!, process.env.BOT_SECRET_KEY!);
 container.economyService = new EconomyService(container.apiClient);
+container.discordService = new DiscordService();
 
 const main = async () => {
 	try {

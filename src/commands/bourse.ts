@@ -1,13 +1,15 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { container } from '@sapphire/framework';
-import { bourseEmbed } from '../embeds/economyEmbeds';
-import { InteractionContextType, MessageFlags } from 'discord.js';
+import { bourseEmbed, economyActionEmbed } from '../embeds/economyEmbeds';
+import { GuildMember, InteractionContextType, MessageFlags } from 'discord.js';
 import { formatTransactions } from '../utils/formatTransactions';
 import { Subcommand } from '@sapphire/plugin-subcommands';
+import { Currency } from '../enums/Currency';
+import { errorEmbed } from '../embeds/generalEmbeds';
 
 @ApplyOptions<Subcommand.Options>({
 	name: 'bourse',
-	description: 'Gestion de la bourse',
+	description: 'Gestion de la bourse.',
 	subcommands: [
 		{ name: 'view', chatInputRun: 'chatInputView' },
 		{ name: 'give', chatInputRun: 'chatInputGive' },
@@ -139,64 +141,222 @@ export class BourseCommand extends Subcommand {
 			const discordIdToFetch = requestedUser?.id ?? interaction.user.id;
 
 			// Demande à l'API les informations de la bourse du membre en question via son ID discord
-			const user = await container.economyService.getBalance(discordIdToFetch);
-
-			// Vérification que l'API m'ait bien renvoyé une réponse
-			if (!user) {
-				await interaction.reply({ content: 'Impossible de trouver ce membre dans la base de données.', flags: MessageFlags.Ephemeral });
+			const response = await container.economyService.view(discordIdToFetch);
+			if (response.error) {
+				await interaction.reply({
+					embeds: [errorEmbed({ member: interaction.member as GuildMember, message: response.error })],
+					flags: MessageFlags.Ephemeral
+				});
 				return;
 			}
+			const userBalance = response.balance!;
 
-			// Vérification que le membre est sur le serveur (pour pouvoir afficher l'utilisateur dans l'embed sinon ça crée des erreurs)
-			const member = interaction.guild?.members.cache.get(user.discordId) || (await interaction.guild?.members.fetch(user.discordId));
-			if (!member) {
-				await interaction.reply({ content: 'Impossible de trouver ce membre sur le serveur.', flags: MessageFlags.Ephemeral });
-				return;
-			}
+			// Vérification que le membre est sur le serveur (pour pouvoir afficher l'utilisateur dans l'embed)
+			const member = await container.discordService.fetchMemberOrReply(interaction.guild, discordIdToFetch, interaction);
+			if (!member) return;
 
 			// Création et envoie de l'embed final
 			const embed = bourseEmbed({
 				member,
-				gems: user.gems,
-				rubies: user.rubies,
-				transactionsText: formatTransactions(user.transactions)
+				gems: userBalance.gems,
+				rubies: userBalance.rubies,
+				transactionsText: formatTransactions(userBalance.transactions ?? [])
 			});
 			await interaction.reply({ embeds: [embed] });
 		} catch (error) {
 			console.error(error);
-			await interaction.reply({ content: 'Erreur dans la classe [chatInputView].', flags: MessageFlags.Ephemeral });
+			await interaction.reply({
+				embeds: [errorEmbed({ message: 'Erreur dans [chatInputView].' })],
+				flags: MessageFlags.Ephemeral
+			});
 		}
 	}
 
 	public async chatInputGive(interaction: Subcommand.ChatInputCommandInteraction) {
 		try {
+			const senderId = interaction.user.id;
+			const receiverId = interaction.options.getUser('membre')!.id;
+			const currency = interaction.options.getString('monnaie')! as Currency;
+			const amount = interaction.options.getNumber('valeur')!;
+
+			// Envoie à l'API toutes les informations pour qu'elle fasse le nécessaire
+			const response = await container.economyService.give(senderId, receiverId, currency, amount);
+			if (response.error) {
+				await interaction.reply({
+					embeds: [errorEmbed({ member: interaction.member as GuildMember, title: 'Transaction échouée', message: response.error })],
+					flags: MessageFlags.Ephemeral
+				});
+				return;
+			}
+
+			// Vérification que le membre est sur le serveur (pour pouvoir afficher l'utilisateur dans l'embed)
+			const member = await container.discordService.fetchMemberOrReply(interaction.guild, receiverId, interaction);
+			if (!member) return;
+
+			// Réponse affiché sur discord
+			await interaction.reply({
+				embeds: [
+					economyActionEmbed({
+						member: interaction.member as GuildMember,
+						action: 'give',
+						targetId: receiverId,
+						currency,
+						amount,
+						old: response.old!,
+						balance: response.balance!
+					})
+				]
+			});
 		} catch (error) {
 			console.error(error);
-			await interaction.reply({ content: 'Erreur dans la classe [chatInputGive].', flags: MessageFlags.Ephemeral });
+			await interaction.reply({
+				embeds: [errorEmbed({ message: 'Erreur dans [chatInputGive].' })],
+				flags: MessageFlags.Ephemeral
+			});
 		}
 	}
 
 	public async chatInputAdd(interaction: Subcommand.ChatInputCommandInteraction) {
 		try {
+			const staffMember = interaction.member;
+			const targetId = interaction.options.getUser('membre')!.id;
+			const currency = interaction.options.getString('monnaie')! as Currency;
+			const amount = interaction.options.getNumber('valeur')!;
+
+			if (!container.discordService.hasStaffRole(staffMember as GuildMember)) {
+				await interaction.reply({
+					embeds: [errorEmbed({ member: staffMember as GuildMember, message: "Tu n'as pas la permission d'utiliser cette commande." })],
+					flags: MessageFlags.Ephemeral
+				});
+				return;
+			}
+
+			// Envoie à l'API toutes les informations pour qu'elle fasse le nécessaire
+			const response = await container.economyService.add(targetId, currency, amount);
+			if (response.error) {
+				await interaction.reply({
+					embeds: [errorEmbed({ member: staffMember as GuildMember, title: 'Transaction échouée', message: response.error })],
+					flags: MessageFlags.Ephemeral
+				});
+				return;
+			}
+
+			// Réponse affiché sur discord
+			await interaction.reply({
+				embeds: [
+					economyActionEmbed({
+						member: interaction.member as GuildMember,
+						action: 'add',
+						targetId,
+						currency,
+						amount,
+						old: response.old!,
+						balance: response.balance!
+					})
+				]
+			});
 		} catch (error) {
 			console.error(error);
-			await interaction.reply({ content: 'Erreur dans la classe [chatInputAdd].', flags: MessageFlags.Ephemeral });
+			await interaction.reply({
+				embeds: [errorEmbed({ message: 'Erreur dans [chatInputAdd].' })],
+				flags: MessageFlags.Ephemeral
+			});
 		}
 	}
 
 	public async chatInputRemove(interaction: Subcommand.ChatInputCommandInteraction) {
 		try {
+			const staffMember = interaction.member;
+			const targetId = interaction.options.getUser('membre')!.id;
+			const currency = interaction.options.getString('monnaie')! as Currency;
+			const amount = interaction.options.getNumber('valeur')!;
+
+			if (!container.discordService.hasStaffRole(staffMember as GuildMember)) {
+				await interaction.reply({
+					embeds: [errorEmbed({ member: staffMember as GuildMember, message: "Tu n'as pas la permission d'utiliser cette commande." })],
+					flags: MessageFlags.Ephemeral
+				});
+				return;
+			}
+
+			// Envoie à l'API toutes les informations pour qu'elle fasse le nécessaire
+			const response = await container.economyService.remove(targetId, currency, amount);
+			if (response.error) {
+				await interaction.reply({
+					embeds: [errorEmbed({ member: staffMember as GuildMember, title: 'Transaction échouée', message: response.error })],
+					flags: MessageFlags.Ephemeral
+				});
+				return;
+			}
+
+			// Réponse affiché sur discord
+			await interaction.reply({
+				embeds: [
+					economyActionEmbed({
+						member: interaction.member as GuildMember,
+						action: 'remove',
+						targetId,
+						currency,
+						amount,
+						old: response.old!,
+						balance: response.balance!
+					})
+				]
+			});
 		} catch (error) {
 			console.error(error);
-			await interaction.reply({ content: 'Erreur dans la classe [chatInputRemove].', flags: MessageFlags.Ephemeral });
+			await interaction.reply({
+				embeds: [errorEmbed({ message: 'Erreur dans [chatInputRemove].' })],
+				flags: MessageFlags.Ephemeral
+			});
 		}
 	}
 
 	public async chatInputSet(interaction: Subcommand.ChatInputCommandInteraction) {
 		try {
+			const staffMember = interaction.member;
+			const targetId = interaction.options.getUser('membre')!.id;
+			const currency = interaction.options.getString('monnaie')! as Currency;
+			const amount = interaction.options.getNumber('valeur')!;
+
+			if (!container.discordService.hasStaffRole(staffMember as GuildMember)) {
+				await interaction.reply({
+					embeds: [errorEmbed({ member: staffMember as GuildMember, message: "Tu n'as pas la permission d'utiliser cette commande." })],
+					flags: MessageFlags.Ephemeral
+				});
+				return;
+			}
+
+			// Envoie à l'API toutes les informations pour qu'elle fasse le nécessaire
+			const response = await container.economyService.set(targetId, currency, amount);
+			if (response.error) {
+				await interaction.reply({
+					embeds: [errorEmbed({ member: staffMember as GuildMember, title: 'Transaction échouée', message: response.error })],
+					flags: MessageFlags.Ephemeral
+				});
+				return;
+			}
+
+			// Réponse affiché sur discord
+			await interaction.reply({
+				embeds: [
+					economyActionEmbed({
+						member: interaction.member as GuildMember,
+						action: 'set',
+						targetId,
+						currency,
+						amount,
+						old: response.old!,
+						balance: response.balance!
+					})
+				]
+			});
 		} catch (error) {
 			console.error(error);
-			await interaction.reply({ content: 'Erreur dans la classe [chatInputSet].', flags: MessageFlags.Ephemeral });
+			await interaction.reply({
+				embeds: [errorEmbed({ message: 'Erreur dans [chatInputSet].' })],
+				flags: MessageFlags.Ephemeral
+			});
 		}
 	}
 }
