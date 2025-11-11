@@ -11,7 +11,7 @@ export function errorEmbed({ member, title, message }: { member?: GuildMember; t
 		});
 	}
 	if (title) {
-		embed.setTitle(`${emojis.uncheck} ${title}`);
+		embed.setTitle(`${emojis.deny} ${title}`);
 	}
 	return embed;
 }

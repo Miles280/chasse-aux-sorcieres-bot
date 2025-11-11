@@ -38,28 +38,29 @@ type EconomyEmbedOptions = {
 	targetId: string;
 	currency: 'gems' | 'rubies';
 	amount: number;
+	old: number;
 	balance: Balance;
 };
 
 const ACTIONS = {
 	add: {
 		color: 0x3bd16f,
-		title: '💰 Ajout effectué',
+		title: `${emojis.greencheck} Ajout effectué`,
 		format: (targetId: string, amount: number, emoji: string) => `Vous avez ajouté **+${amount} ${emoji}** à <@${targetId}>.`
 	},
 	remove: {
 		color: 0xff4d4d,
-		title: '⚠️ Retrait effectué',
+		title: `${emojis.redcheck} Retrait effectué`,
 		format: (targetId: string, amount: number, emoji: string) => `Vous avez retiré **-${amount} ${emoji}** à <@${targetId}>.`
 	},
 	set: {
 		color: 0x3b82f6,
-		title: '📝 Mise à jour effectuée',
+		title: `${emojis.bluecheck} Mise à jour effectuée`,
 		format: (targetId: string, amount: number, emoji: string) => `Le solde de <@${targetId}> a été défini à **${amount} ${emoji}**.`
 	},
 	give: {
-		color: 0xfacc15,
-		title: '🎁 Don effectué',
+		color: 0xff6d2d,
+		title: `${emojis.orangecheck} Don effectué`,
 		format: (targetId: string, amount: number, emoji: string) => `Vous avez donné **${amount} ${emoji}** à <@${targetId}>.`
 	}
 };
@@ -70,13 +71,25 @@ export function economyActionEmbed(opts: EconomyEmbedOptions) {
 
 	const { gems, rubies } = opts.balance;
 
-	return new EmbedBuilder()
+	// Valeurs avant/après pour la monnaie ciblée
+	const oldBalance = opts.old || 0;
+	const newBalance = opts.currency === 'gems' ? gems : rubies;
 
+	// Détermine le label (Gems / Rubies)
+	const currencyLabel = opts.currency === 'gems' ? 'Gemmes' : 'Rubis';
+
+	// Field unique uniquement pour la monnaie modifiée
+	const fields = [
+		{
+			name: `${currencyLabel} modifié${opts.currency === 'gems' ? 'es' : 's'} :`,
+			value: `> \`${oldBalance}\` ${emoji} → \`${newBalance}\` ${emoji}`,
+			inline: true
+		}
+	];
+
+	return new EmbedBuilder()
 		.setColor(action.color)
 		.setTitle(action.title)
 		.setDescription(action.format(opts.targetId, opts.amount, emoji))
-		.addFields(
-			{ name: 'Nouveau solde :', value: `> \`${gems}\` ${emojis.gems}`, inline: true },
-			{ name: '\u200B', value: `> \`${rubies}\` ${emojis.rubies}`, inline: true }
-		);
+		.addFields(fields);
 }

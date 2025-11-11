@@ -5,8 +5,7 @@ import { GuildMember, InteractionContextType, MessageFlags } from 'discord.js';
 import { formatTransactions } from '../utils/formatTransactions';
 import { Subcommand } from '@sapphire/plugin-subcommands';
 import { Currency } from '../enums/Currency';
-import { errorEmbed, successEmbed } from '../embeds/generalEmbeds';
-import { emojis } from '../utils/emojis';
+import { errorEmbed } from '../embeds/generalEmbeds';
 
 @ApplyOptions<Subcommand.Options>({
 	name: 'bourse',
@@ -194,12 +193,17 @@ export class BourseCommand extends Subcommand {
 			const member = await container.discordService.fetchMemberOrReply(interaction.guild, receiverId, interaction);
 			if (!member) return;
 
+			// Réponse affiché sur discord
 			await interaction.reply({
 				embeds: [
-					successEmbed({
+					economyActionEmbed({
 						member: interaction.member as GuildMember,
-						title: 'Transaction réussie',
-						message: `Vous avez donné **${amount} ${currency === 'gems' ? emojis.gems : emojis.rubies}** à <@${receiverId}>.`
+						action: 'give',
+						targetId: receiverId,
+						currency,
+						amount,
+						old: response.old!,
+						balance: response.balance!
 					})
 				]
 			});
@@ -246,6 +250,7 @@ export class BourseCommand extends Subcommand {
 						targetId,
 						currency,
 						amount,
+						old: response.old!,
 						balance: response.balance!
 					})
 				]
@@ -293,6 +298,7 @@ export class BourseCommand extends Subcommand {
 						targetId,
 						currency,
 						amount,
+						old: response.old!,
 						balance: response.balance!
 					})
 				]
@@ -334,10 +340,14 @@ export class BourseCommand extends Subcommand {
 			// Réponse affiché sur discord
 			await interaction.reply({
 				embeds: [
-					successEmbed({
-						member: staffMember as GuildMember,
-						title: 'Transaction réussie',
-						message: `Vous avez défini le solde de <@${targetId}> à **${amount} ${currency === 'gems' ? emojis.gems : emojis.rubies}**.`
+					economyActionEmbed({
+						member: interaction.member as GuildMember,
+						action: 'set',
+						targetId,
+						currency,
+						amount,
+						old: response.old!,
+						balance: response.balance!
 					})
 				]
 			});
