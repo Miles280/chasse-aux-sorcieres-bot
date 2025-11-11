@@ -1,5 +1,7 @@
 import { Guild, GuildMember } from 'discord.js';
 
+const STAFF_ROLES = [process.env.MJ_ROLE!, process.env.DEV_ROLE!, process.env.ADMIN_ROLE!];
+
 export class DiscordService {
 	constructor() {}
 
@@ -38,5 +40,9 @@ export class DiscordService {
 			return null;
 		}
 		return member;
+	}
+
+	hasStaffRole(member: GuildMember): boolean {
+		return member.roles.cache.some((role) => STAFF_ROLES.includes(role.id));
 	}
 }
