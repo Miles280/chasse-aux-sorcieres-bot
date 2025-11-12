@@ -4,7 +4,7 @@ export const emojis = {
 	check: '<:check:1437497515741024318>',
 	uncheck: '<:uncheck:1437497529632559264>',
 	yellowcheck: '<a:yellowcheck:1437840745854795947>',
-	bluecheck: '<a:bluecheck:1437840691307876473>',
+	bluecheck: '<a:bluecheck:1437869154748338357>',
 	greencheck: '<a:greencheck:1437840708483682466>',
 	orangecheck: '<a:orangecheck:1437840718960918590>',
 	redcheck: '<a:redcheck:1437840727513235627>',
