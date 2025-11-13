@@ -1,18 +1,17 @@
 import { ApplyOptions } from '@sapphire/decorators';
-import { Command } from '@sapphire/framework';
-import { InteractionContextType } from 'discord.js';
+import { Command, container } from '@sapphire/framework';
+import { ChatInputCommandInteraction } from 'discord.js';
 
 @ApplyOptions<Command.Options>({
 	name: 'historique',
 	description: 'Consulte ton historique de transaction ou celle d’un membre.'
 })
-export class UserCommand extends Command {
+export class HistoriqueCommand extends Command {
 	public override registerApplicationCommands(registry: Command.Registry) {
 		registry.registerChatInputCommand((builder) =>
-			builder //
+			builder
 				.setName(this.name)
 				.setDescription(this.description)
-				.setContexts([InteractionContextType.Guild])
 				.addUserOption((option) =>
 					option //
 						.setName('membre')
@@ -21,7 +20,21 @@ export class UserCommand extends Command {
 		);
 	}
 
-	public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
-		return interaction.reply({ content: 'Tiens tes transactions bro' });
+	public override async chatInputRun(interaction: ChatInputCommandInteraction) {
+		const requestedUser = interaction.options.getUser('membre');
+		const discordId = requestedUser?.id ?? interaction.user.id;
+
+		const messageData = await container.economyService.buildHistoryMessage(discordId, 1, []);
+		const sentMessage = await interaction.reply({ ...messageData });
+
+		// Timer pour 1 minute
+		setTimeout(async () => {
+			const disabledComponents = messageData.components.map((row) => {
+				row.components.forEach((comp) => comp.setDisabled(true));
+				return row;
+			});
+
+			await sentMessage.edit({ components: disabledComponents });
+		}, 60_000); // 60 000 ms = 1 min
 	}
 }
