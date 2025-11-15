@@ -20,7 +20,11 @@ export class HistoryPaginationHandler extends InteractionHandler {
 
 		page = direction === 'next' ? page + 1 : page - 1;
 
-		const messageData = await container.economyService.buildHistoryMessage(discordId, page, types);
+		// Vérification que le membre est sur le serveur (pour pouvoir afficher l'utilisateur dans l'embed)
+		const member = await container.discordService.fetchMemberOrReply(interaction.guild, discordId, interaction);
+		if (!member) return;
+
+		const messageData = await container.economyService.buildHistoryMessage(member, discordId, page, types);
 		await interaction.update({ ...messageData });
 	}
 }

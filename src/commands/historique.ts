@@ -24,7 +24,11 @@ export class HistoriqueCommand extends Command {
 		const requestedUser = interaction.options.getUser('membre');
 		const discordId = requestedUser?.id ?? interaction.user.id;
 
-		const messageData = await container.economyService.buildHistoryMessage(discordId, 1, []);
+		// Vérification que le membre est sur le serveur (pour pouvoir afficher l'utilisateur dans l'embed)
+		const member = await container.discordService.fetchMemberOrReply(interaction.guild, discordId, interaction);
+		if (!member) return;
+
+		const messageData = await container.economyService.buildHistoryMessage(member, discordId, 1, []);
 		const sentMessage = await interaction.reply({ ...messageData });
 
 		// Timer pour 1 minute

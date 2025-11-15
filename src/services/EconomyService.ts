@@ -1,9 +1,9 @@
 import { ApiClient } from './ApiClient';
 import { Currency } from '../enums/Currency';
 import { Transaction } from '../models/Transaction';
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder } from 'discord.js';
-import { formatTransactions } from '../utils/formatTransactions';
-import { TransactionType } from '../enums/TransactionType';
+import { GuildMember } from 'discord.js';
+import * as Embeds from '../utils/embeds';
+import * as Components from '../utils/components';
 
 export interface UserBalance {
 	gems: number;
@@ -97,64 +97,12 @@ export class EconomyService {
 		}
 	}
 
-	public async buildHistoryMessage(
-		discordId: string,
-		page = 1,
-		types: string[] = []
-	): Promise<{ embeds: EmbedBuilder[]; components: (ActionRowBuilder<ButtonBuilder> | ActionRowBuilder<StringSelectMenuBuilder>)[] }> {
+	public async buildHistoryMessage(member: GuildMember, discordId: string, page = 1, types: string[] = []) {
 		const data = await this.getTransactions(discordId, page, types);
 
-		// Utilisation de ton utilitaire pour générer la description
-		const description = formatTransactions(data.transactions);
-
-		const embed = new EmbedBuilder()
-			.setTitle(`📜 Historique des transactions`)
-			.setDescription(description)
-			.setFooter({ text: `Page ${data.page}/${data.pages}` })
-			.setColor(0x360a5c)
-			.setTimestamp();
-
-		// Boutons de pagination
-		const buttons = new ActionRowBuilder<ButtonBuilder>().addComponents(
-			new ButtonBuilder()
-				.setCustomId(`history_prev_${discordId}_${page}_${types.join(',')}`)
-				.setLabel('◀️ Précédent')
-				.setStyle(ButtonStyle.Secondary)
-				.setDisabled(page <= 1),
-			new ButtonBuilder()
-				.setCustomId(`history_next_${discordId}_${page}_${types.join(',')}`)
-				.setLabel('Suivant ▶️')
-				.setStyle(ButtonStyle.Secondary)
-				.setDisabled(page >= data.pages)
-		);
-
-		const transactionTypeLabels: Record<TransactionType, string> = {
-			[TransactionType.GAIN]: 'Gain',
-			[TransactionType.LOSE]: 'Perte',
-			[TransactionType.PURCHASE]: 'Achat',
-			[TransactionType.DONATION]: 'Donation',
-			[TransactionType.RECEIVE]: 'Reçu',
-			[TransactionType.CONVERSION]: 'Conversion',
-			[TransactionType.ADMIN]: 'Ajustement',
-			[TransactionType.SET]: 'Solde défini'
+		return {
+			embeds: [Embeds.buildHistoryEmbed(member, data)],
+			components: [Components.buildHistoryButtons(discordId, page, data.pages, types), Components.buildHistorySelect(discordId, page)]
 		};
-		// Menu de sélection des types
-		const selectMenu = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
-			new StringSelectMenuBuilder()
-				.setCustomId(`history_filter_${discordId}_${page}`)
-				.setPlaceholder('Filtrer par type...')
-				.setMinValues(0)
-				.setMaxValues(5)
-				.addOptions(
-					[{ label: 'Tous les types', value: 'ALL' }].concat(
-						Object.values(TransactionType).map((type) => ({
-							label: transactionTypeLabels[type as TransactionType] || type,
-							value: type.toUpperCase()
-						}))
-					)
-				)
-		);
-
-		return { embeds: [embed], components: [buttons, selectMenu] };
 	}
 }

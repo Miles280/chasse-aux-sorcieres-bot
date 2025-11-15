@@ -8,6 +8,5 @@ declare module '@sapphire/pieces' {
 		apiClient: ApiClient;
 		economyService: EconomyService;
 		discordService: DiscordService;
-		historiqueCommand: HistoriqueCommand;
 	}
 }

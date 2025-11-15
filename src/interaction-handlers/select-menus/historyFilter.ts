@@ -15,8 +15,12 @@ export class HistoryFilterHandler extends InteractionHandler {
 		const [, , discordId] = interaction.customId.split('_');
 		const types = interaction.values.includes('ALL') ? [] : interaction.values; // si "ALL" est sélectionné, pas de filtre
 
+		// Vérification que le membre est sur le serveur (pour pouvoir afficher l'utilisateur dans l'embed)
+		const member = await container.discordService.fetchMemberOrReply(interaction.guild, discordId, interaction);
+		if (!member) return;
+
 		// Générer le nouveau message avec le filtre
-		const messageData = await container.economyService.buildHistoryMessage(discordId, 1, types);
+		const messageData = await container.economyService.buildHistoryMessage(member, discordId, 1, types);
 		await interaction.update({ ...messageData });
 	}
 }
