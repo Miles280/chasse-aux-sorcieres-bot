@@ -5,6 +5,7 @@ import { GatewayIntentBits } from 'discord.js';
 import { ApiClient } from './services/ApiClient';
 import { EconomyService } from './services/EconomyService';
 import { DiscordService } from './services/DiscordService';
+import { ShopService } from './services/ShopService';
 
 const client = new SapphireClient({
 	defaultPrefix: ',',
@@ -16,9 +17,10 @@ const client = new SapphireClient({
 	loadMessageCommandListeners: true
 });
 
+container.discordService = new DiscordService();
 container.apiClient = new ApiClient(process.env.API_URL!, process.env.BOT_SECRET_KEY!);
 container.economyService = new EconomyService(container.apiClient);
-container.discordService = new DiscordService();
+container.shopService = new ShopService(container.apiClient);
 
 const main = async () => {
 	try {
