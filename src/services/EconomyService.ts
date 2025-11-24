@@ -100,6 +100,13 @@ export class EconomyService {
 	public async buildHistoryMessage(member: GuildMember, discordId: string, page = 1, types: string[] = []) {
 		const data = await this.getTransactions(discordId, page, types);
 
+		if (data.error) {
+			return {
+				embeds: [Embeds.errorEmbed({ message: data.error })],
+				components: []
+			};
+		}
+
 		return {
 			embeds: [Embeds.buildHistoryEmbed(member, data)],
 			components: [Components.buildHistoryButtons(discordId, page, data.pages, types), Components.buildHistorySelect(discordId, page)]

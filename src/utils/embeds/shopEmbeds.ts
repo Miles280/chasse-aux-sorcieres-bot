@@ -1,7 +1,7 @@
 import { EmbedBuilder } from 'discord.js';
 import { ShopView } from '../../models/Shop';
 
-export function createShopEmbed(shopData: ShopView) {
+export function shopEmbed(shopData: ShopView) {
 	const embed = new EmbedBuilder()
 		.setTitle(`Boutique de Nistrium`)
 		.setColor('#360a5c')

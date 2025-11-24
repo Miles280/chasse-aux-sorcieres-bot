@@ -2,7 +2,6 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { Command } from '@sapphire/framework';
 import { container } from '@sapphire/framework';
 import { Currency } from '../enums/Currency';
-import * as Embeds from '../utils/embeds';
 
 @ApplyOptions<Command.Options>({
 	name: 'boutique',
@@ -33,10 +32,16 @@ export class UserCommand extends Command {
 		const currency = (interaction.options.getString('monnaie') as Currency) ?? 'gems';
 		const page = interaction.options.getInteger('page') ?? 1;
 
-		const shopData = await container.shopService.view(currency, page);
+		const messageData = await container.shopService.buildShopView(currency, page);
+		const sentMessage = await interaction.reply({ ...messageData });
 
-		return interaction.reply({
-			embeds: [Embeds.createShopEmbed(shopData)]
-		});
+		setTimeout(async () => {
+			const disabledComponents = messageData.components.map((row) => {
+				row.components.forEach((comp) => comp.setDisabled(true));
+				return row;
+			});
+
+			await sentMessage.edit({ components: disabledComponents });
+		}, 60_000 * 5);
 	}
 }

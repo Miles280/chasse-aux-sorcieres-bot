@@ -1,7 +1,7 @@
 import { EmbedBuilder, GuildMember } from 'discord.js';
 import { emojis } from '../emojis';
 
-export function errorEmbed({ member, title, message }: { member?: GuildMember; title?: string; message: string }): EmbedBuilder {
+export function errorEmbed({ message, member, title }: { message: string; member?: GuildMember; title?: string }): EmbedBuilder {
 	const embed = new EmbedBuilder().setDescription(message).setColor(0xe74c3c);
 
 	if (member) {
