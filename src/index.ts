@@ -2,10 +2,10 @@ import './lib/setup';
 
 import { LogLevel, SapphireClient, container } from '@sapphire/framework';
 import { GatewayIntentBits } from 'discord.js';
-import { ApiClient } from './services/ApiClient';
-import { EconomyService } from './services/EconomyService';
-import { DiscordService } from './services/DiscordService';
-import { ShopService } from './services/ShopService';
+import { ApiClient } from './services/apiClient.service';
+import { EconomyService } from './services/economy.service';
+import { DiscordService } from './services/discord.service';
+import { ShopService } from './services/shop.service';
 
 const client = new SapphireClient({
 	defaultPrefix: ',',

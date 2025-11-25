@@ -1,6 +1,6 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes, container } from '@sapphire/framework';
-import type { ButtonInteraction } from 'discord.js';
+import { MessageFlags, type ButtonInteraction } from 'discord.js';
 import { Currency } from '../../enums/Currency';
 
 @ApplyOptions<InteractionHandler.Options>({
@@ -24,7 +24,11 @@ export class ShopPaginationHandler extends InteractionHandler {
 			page--;
 		}
 
-		const messageData = await container.shopService.buildShopView(currency, page);
-		await interaction.update({ ...messageData });
+		const { components } = await container.shopService.buildShopView(currency, page);
+
+		return interaction.update({
+			components: components,
+			flags: MessageFlags.IsComponentsV2
+		});
 	}
 }

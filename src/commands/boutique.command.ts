@@ -2,6 +2,7 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { Command } from '@sapphire/framework';
 import { container } from '@sapphire/framework';
 import { Currency } from '../enums/Currency';
+import { MessageFlags } from 'discord.js';
 
 @ApplyOptions<Command.Options>({
 	name: 'boutique',
@@ -32,16 +33,22 @@ export class UserCommand extends Command {
 		const currency = (interaction.options.getString('monnaie') as Currency) ?? 'gems';
 		const page = interaction.options.getInteger('page') ?? 1;
 
-		const messageData = await container.shopService.buildShopView(currency, page);
-		const sentMessage = await interaction.reply({ ...messageData });
+		await interaction.deferReply();
 
-		setTimeout(async () => {
-			const disabledComponents = messageData.components.map((row) => {
-				row.components.forEach((comp) => comp.setDisabled(true));
-				return row;
-			});
+		const { components } = await container.shopService.buildShopView(currency, page);
 
-			await sentMessage.edit({ components: disabledComponents });
-		}, 60_000 * 5);
+		return interaction.editReply({
+			components: components,
+			flags: MessageFlags.IsComponentsV2
+		});
+
+		// setTimeout(async () => {
+		// 	const disabledComponents = messageData.components.map((row) => {
+		// 		row.components.forEach((comp) => comp.setDisabled(true));
+		// 		return row;
+		// 	});
+
+		// 	await sentMessage.edit({ components: disabledComponents });
+		// }, 60_000 * 5);
 	}
 }

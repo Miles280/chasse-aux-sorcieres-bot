@@ -1,6 +1,6 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
-import { Currency } from '../../enums/Currency';
-import { emojis } from '../emojis';
+import { Currency } from '../../../enums/Currency';
+import { emojis } from '../../emojis';
 
 function getOppositeCurrency(currency: Currency): Currency {
 	return currency === 'gems' ? Currency.RUBIES : Currency.GEMS;

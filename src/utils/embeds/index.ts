@@ -1,3 +1,3 @@
-export * from './economyEmbeds';
-export * from './generalEmbeds';
-export * from './shopEmbeds';
+export * from './economy.embed';
+export * from './general.embed';
+export * from './shop.embed';

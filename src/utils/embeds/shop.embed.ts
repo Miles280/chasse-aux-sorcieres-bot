@@ -1,5 +1,5 @@
 import { EmbedBuilder } from 'discord.js';
-import { ShopView } from '../../models/Shop';
+import { ShopView } from '../../models/Shop.interface';
 
 export function shopEmbed(shopData: ShopView) {
 	const embed = new EmbedBuilder()

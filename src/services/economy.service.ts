@@ -1,6 +1,6 @@
-import { ApiClient } from './ApiClient';
+import { ApiClient } from './apiClient.service';
 import { Currency } from '../enums/Currency';
-import { Transaction } from '../models/Transaction';
+import { Transaction } from '../models/Transaction.interface';
 import { GuildMember } from 'discord.js';
 import * as Embeds from '../utils/embeds';
 import * as Components from '../utils/components';

@@ -1,4 +1,4 @@
-import { Transaction } from '../models/Transaction';
+import { Transaction } from '../models/Transaction.interface';
 import { emojis } from './emojis';
 import { TransactionType } from '../enums/TransactionType';
 
