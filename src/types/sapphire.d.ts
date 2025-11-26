@@ -1,4 +1,3 @@
-import { HistoriqueCommand } from '../commands/historique.command';
 import type { ApiClient } from '../services/apiClient.service';
 import { DiscordService } from '../services/discord.service';
 import { EconomyService } from '../services/economy.service';

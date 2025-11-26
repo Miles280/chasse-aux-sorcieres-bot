@@ -1,11 +1,7 @@
 import { Currency } from '../enums/Currency';
 import { ShopView } from '../models/Shop.interface';
 import { ApiClient } from './apiClient.service';
-// import * as Embeds from '../utils/embeds';
 import * as Components from '../utils/components';
-import { ButtonStyle, SectionBuilder, SeparatorBuilder, SeparatorSpacingSize, TextDisplayBuilder } from 'discord.js';
-import { ContainerBuilder } from 'discord.js';
-// import { GuildMember } from 'discord.js';
 
 export class ShopService {
 	constructor(private api: ApiClient) {}
@@ -21,26 +17,23 @@ export class ShopService {
 	}
 
 	async buildShopView(currency: Currency, page: number) {
-		const title = new TextDisplayBuilder().setContent('# Boutique de Nistrium');
+		const data = await this.getArticles(currency, page);
 
-		const articles = await this.getArticles(currency, page);
-
-		// 1) Créer ton container
-		const mainContainer = new ContainerBuilder().setAccentColor(0x360a5c).addTextDisplayComponents(title);
-
-		// 2) Ajouter tous les articles dans mainContainer
-		for (const item of articles.items) {
-			const separator = new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true);
-
-			const section = new SectionBuilder()
-				.addTextDisplayComponents((td) => td.setContent(`**${item.name}**\n-# ${item.description}\nPrix : ${item.price} ${item.currency}`))
-				.setButtonAccessory((btn) => btn.setCustomId(`buy_${item.id}_${currency}`).setLabel('Acheter').setStyle(ButtonStyle.Success));
-
-			mainContainer.components.push(separator);
-			mainContainer.components.push(section);
+		if (data.error) {
+			return { error: data.error };
 		}
 
-		// 3) Envoyer le message
-		return { components: [mainContainer, Components.buildShopButtons(currency, articles.page!, articles.pages!)] };
+		const container = Components.buildShopContainer();
+
+		for (const item of data.items) {
+			const { separator, section } = Components.buildShopItem(item, currency);
+
+			container.components.push(separator);
+			container.components.push(section);
+		}
+
+		const buttons = Components.buildShopButtons(currency, data.page, data.pages);
+
+		return { components: [container, buttons] };
 	}
 }

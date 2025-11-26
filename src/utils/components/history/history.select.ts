@@ -1,5 +1,5 @@
 import { ActionRowBuilder, StringSelectMenuBuilder } from 'discord.js';
-import { TransactionType } from '../../enums/TransactionType';
+import { TransactionType } from '../../../enums/TransactionType';
 
 export function buildHistorySelect(discordId: string, page: number) {
 	const labels: Record<TransactionType, string> = {

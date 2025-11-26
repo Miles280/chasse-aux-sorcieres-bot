@@ -12,3 +12,8 @@ export const emojis = {
 	purplecheck: '<a:purplecheck:1437840755065487421>',
 	deny: '<:deny:1437847105040416819>'
 };
+
+export const emojisV2 = {
+	gems: { name: 'gems', id: '1436023393022644345' },
+	rubies: { name: 'rubies', id: '1436025317193154672' }
+};

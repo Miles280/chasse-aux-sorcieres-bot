@@ -3,6 +3,7 @@ import { Command } from '@sapphire/framework';
 import { container } from '@sapphire/framework';
 import { Currency } from '../enums/Currency';
 import { MessageFlags } from 'discord.js';
+import * as Embeds from '../utils/embeds';
 
 @ApplyOptions<Command.Options>({
 	name: 'boutique',
@@ -35,10 +36,17 @@ export class UserCommand extends Command {
 
 		await interaction.deferReply();
 
-		const { components } = await container.shopService.buildShopView(currency, page);
+		const response = await container.shopService.buildShopView(currency, page);
+
+		if (response.error) {
+			await interaction.editReply({
+				embeds: [Embeds.errorEmbed({ title: 'Boutique fermée !', message: response.error })]
+			});
+			return;
+		}
 
 		return interaction.editReply({
-			components: components,
+			components: response.components,
 			flags: MessageFlags.IsComponentsV2
 		});
 

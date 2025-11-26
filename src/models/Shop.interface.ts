@@ -14,8 +14,8 @@ export interface Item {
 
 export interface ShopView {
 	items: Item[];
-	page?: number;
-	total?: number;
-	pages?: number;
+	page: number;
+	total: number;
+	pages: number;
 	error?: string;
 }
