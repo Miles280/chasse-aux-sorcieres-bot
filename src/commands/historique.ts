@@ -1,6 +1,7 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { Command, container } from '@sapphire/framework';
 import { ChatInputCommandInteraction } from 'discord.js';
+import { disableComponentsAfter } from '../utils/disableComponents';
 
 @ApplyOptions<Command.Options>({
 	name: 'historique',
@@ -28,17 +29,8 @@ export class HistoriqueCommand extends Command {
 		const member = await container.discordService.fetchMemberOrReply(interaction.guild, discordId, interaction);
 		if (!member) return;
 
-		const messageData = await container.economyService.buildHistoryMessage(member, discordId, 1, []);
-		const sentMessage = await interaction.reply({ ...messageData });
-
-		// Timer pour 1 minute
-		setTimeout(async () => {
-			const disabledComponents = messageData.components.map((row) => {
-				row.components.forEach((comp) => comp.setDisabled(true));
-				return row;
-			});
-
-			await sentMessage.edit({ components: disabledComponents });
-		}, 60_000); // 60 000 ms = 1 min
+		const response = await container.economyService.buildHistoryMessage(member, discordId, 1, []);
+		const sentMessage = await interaction.reply({ ...response });
+		disableComponentsAfter(sentMessage, response.components, 1);
 	}
 }

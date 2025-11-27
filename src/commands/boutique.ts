@@ -4,6 +4,7 @@ import { container } from '@sapphire/framework';
 import { Currency } from '../enums/Currency';
 import { MessageFlags } from 'discord.js';
 import * as Embeds from '../utils/embeds';
+import { disableComponentsAfter } from '../utils/disableComponents';
 
 @ApplyOptions<Command.Options>({
 	name: 'boutique',
@@ -45,18 +46,10 @@ export class UserCommand extends Command {
 			return;
 		}
 
-		return interaction.editReply({
+		const sentMessage = await interaction.editReply({
 			components: response.components,
 			flags: MessageFlags.IsComponentsV2
 		});
-
-		// setTimeout(async () => {
-		// 	const disabledComponents = messageData.components.map((row) => {
-		// 		row.components.forEach((comp) => comp.setDisabled(true));
-		// 		return row;
-		// 	});
-
-		// 	await sentMessage.edit({ components: disabledComponents });
-		// }, 60_000 * 5);
+		disableComponentsAfter(sentMessage, response.components, 5);
 	}
 }
