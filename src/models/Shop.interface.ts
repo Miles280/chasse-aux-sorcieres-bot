@@ -9,7 +9,7 @@ export interface Item {
 	price: number;
 	type: ShopType;
 	discordRoleId?: string;
-	quantity: number;
+	quantity?: number;
 }
 
 export interface ShopView {

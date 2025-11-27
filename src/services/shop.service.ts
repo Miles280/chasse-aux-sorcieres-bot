@@ -32,6 +32,10 @@ export class ShopService {
 			container.components.push(section);
 		}
 
+		const { separator, footer } = Components.buildShopFooter(data);
+		container.components.push(separator);
+		container.components.push(footer);
+
 		const buttons = Components.buildShopButtons(currency, data.page, data.pages);
 
 		return { components: [container, buttons] };

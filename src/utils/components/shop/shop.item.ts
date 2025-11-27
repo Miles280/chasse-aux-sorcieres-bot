@@ -2,10 +2,11 @@ import { SectionBuilder, SeparatorBuilder, SeparatorSpacingSize, TextDisplayBuil
 import { emojisV2 } from '../../emojis';
 
 export function buildShopItem(item: any, currency: string) {
-	const separator = new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true);
+	const separator = new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small);
 
 	const section = new SectionBuilder()
-		.addTextDisplayComponents(new TextDisplayBuilder().setContent(`**${item.name}**\n-# ${item.description}`))
+		.addTextDisplayComponents(new TextDisplayBuilder().setContent(`**${item.name}**`))
+		.addTextDisplayComponents(new TextDisplayBuilder().setContent(`-# Quantité disponible : ${item.quantity === null ? '∞' : item.quantity}`))
 		.setButtonAccessory((btn) =>
 			btn
 				.setCustomId(`buy_${item.id}_${currency}`)

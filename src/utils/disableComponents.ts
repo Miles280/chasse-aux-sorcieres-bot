@@ -24,5 +24,5 @@ export function disableComponentsAfter(message: any, components: any, delay: num
 		} catch (e) {
 			console.error('Erreur lors de la désactivation des components :', e);
 		}
-	}, 10_000 * delay);
+	}, 60_000 * delay);
 }
