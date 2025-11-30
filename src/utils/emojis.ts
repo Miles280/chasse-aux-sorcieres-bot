@@ -1,6 +1,6 @@
 export const emojis = {
-	gems: '<:gems:1436023393022644345>',
-	rubies: '<:rubies:1436025317193154672>',
+	gems: '<:gems:1444369345303150766>',
+	rubies: '<:rubies:1444369364294963341>',
 	check: '<:check:1437497515741024318>',
 	uncheck: '<:uncheck:1437497529632559264>',
 	yellowcheck: '<a:yellowcheck:1437840745854795947>',
@@ -14,6 +14,6 @@ export const emojis = {
 };
 
 export const emojisV2 = {
-	gems: { name: 'gems', id: '1436023393022644345' },
-	rubies: { name: 'rubies', id: '1436025317193154672' }
+	gems: { name: 'gems', id: '1444369345303150766' },
+	rubies: { name: 'rubies', id: '1444369364294963341' }
 };

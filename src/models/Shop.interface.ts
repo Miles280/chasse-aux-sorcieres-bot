@@ -10,6 +10,8 @@ export interface Item {
 	type: ShopType;
 	discordRoleId?: string;
 	quantity?: number;
+	requiredItem?: Item;
+	requiredRoleId?: string;
 }
 
 export interface ShopView {
