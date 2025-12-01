@@ -2,17 +2,26 @@ import { Currency } from '../enums/Currency';
 import { ShopView } from '../models/Shop.interface';
 import { ApiClient } from './apiClient.service';
 import * as Components from '../utils/components';
+import { ApiResponse } from '../models/ApiResponse.interface';
 
 export class ShopService {
 	constructor(private api: ApiClient) {}
 
 	async getArticles(currency: Currency, page: number): Promise<ShopView> {
 		try {
-			const shopData = await this.api.get<ShopView>(`/shop/view?currency=${currency}&page=${page}`);
-			return shopData;
+			return await this.api.get<ShopView>(`/shop/view?currency=${currency}&page=${page}`);
 		} catch (err) {
 			console.error(`[ShopService] error in getArticles method :`, err);
 			return { items: [], page: 1, total: 0, pages: 1, error: 'Une erreur est survenue lors de la récupération des items de la boutique.' };
+		}
+	}
+
+	async buyArticle(discordId: string, itemId: number): Promise<ApiResponse> {
+		try {
+			return await this.api.post<ApiResponse>(`/shop/buy`, { discordId, itemId });
+		} catch (err) {
+			console.error(`[ShopService] error in buyArticle method :`, err);
+			return { error: "Une erreur est survenue lors de l'achat de votre article." };
 		}
 	}
 
@@ -26,7 +35,7 @@ export class ShopService {
 		const container = Components.buildShopContainer();
 
 		for (const item of data.items) {
-			const { separator, section } = Components.buildShopItem(item, currency);
+			const { separator, section } = Components.buildShopItem(item, currency, page);
 
 			container.components.push(separator);
 			container.components.push(section);

@@ -16,14 +16,15 @@ export function errorEmbed({ message, member, title }: { message: string; member
 	return embed;
 }
 
-export function successEmbed({ member, title, message }: { member: GuildMember; title?: string; message: string }): EmbedBuilder {
-	const embed = new EmbedBuilder()
-		.setAuthor({
+export function successEmbed({ message, member, title }: { message: string; member?: GuildMember; title?: string }): EmbedBuilder {
+	const embed = new EmbedBuilder().setDescription(message).setColor(0x2ecc71);
+
+	if (member) {
+		embed.setAuthor({
 			name: member.displayName,
 			iconURL: member.user.displayAvatarURL()
-		})
-		.setDescription(message)
-		.setColor(0x2ecc71);
+		});
+	}
 
 	if (title) {
 		embed.setTitle(`${emojis.check} ${title}`);

@@ -2,13 +2,12 @@ import { SectionBuilder, SeparatorBuilder, SeparatorSpacingSize, TextDisplayBuil
 import { emojisV2 } from '../../emojis';
 import { Item } from '../../../models/Shop.interface';
 
-export function buildShopItem(item: Item, currency: string) {
-	console.log(item);
+export function buildShopItem(item: Item, currency: string, page: number) {
 	const separator = new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small);
 
 	// 📌 Construction dynamique du bloc "Prérequis / Obtient"
 	let requirementLines: string[] = [];
-	console.log(item);
+
 	const prereq = [];
 
 	if (item.requiredRoleId) {
@@ -40,7 +39,7 @@ export function buildShopItem(item: Item, currency: string) {
 
 	section.setButtonAccessory((btn) =>
 		btn
-			.setCustomId(`buy_${item.id}_${currency}`)
+			.setCustomId(`buy_${item.id}_${item.requiredRoleId}_${item.discordRoleId}_${item.currency}_${page}`)
 			.setLabel(`${item.price}`)
 			.setEmoji(currency === 'gems' ? emojisV2.gems : emojisV2.rubies)
 			.setStyle(ButtonStyle.Success)

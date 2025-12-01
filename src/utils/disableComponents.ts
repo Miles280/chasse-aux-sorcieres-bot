@@ -9,6 +9,7 @@ import { ActionRowBuilder } from 'discord.js';
 export function disableComponentsAfter(message: any, components: any, delay: number) {
 	setTimeout(async () => {
 		try {
+			console.log(message);
 			// On clone et désactive
 			const disabled = components.map((row: any) => {
 				if (row instanceof ActionRowBuilder) {
