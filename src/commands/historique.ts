@@ -31,6 +31,6 @@ export class HistoriqueCommand extends Command {
 
 		const response = await container.economyService.buildHistoryMessage(member, discordId, 1, []);
 		const sentMessage = await interaction.reply({ ...response });
-		disableComponentsAfter(sentMessage, response.components, 1);
+		disableComponentsAfter(sentMessage, response.components, 2);
 	}
 }
