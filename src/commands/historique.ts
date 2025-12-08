@@ -1,6 +1,6 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { Command, container } from '@sapphire/framework';
-import { ChatInputCommandInteraction } from 'discord.js';
+import { ChatInputCommandInteraction, InteractionContextType } from 'discord.js';
 import { disableComponentsAfter } from '../utils/disableComponents';
 
 @ApplyOptions<Command.Options>({
@@ -13,6 +13,7 @@ export class HistoriqueCommand extends Command {
 			builder
 				.setName(this.name)
 				.setDescription(this.description)
+				.setContexts([InteractionContextType.Guild])
 				.addUserOption((option) =>
 					option //
 						.setName('membre')

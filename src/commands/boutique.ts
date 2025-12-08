@@ -2,19 +2,20 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { Command } from '@sapphire/framework';
 import { container } from '@sapphire/framework';
 import { Currency } from '../enums/Currency';
-import { MessageFlags } from 'discord.js';
+import { InteractionContextType, MessageFlags } from 'discord.js';
 import * as Embeds from '../utils/embeds';
 
 @ApplyOptions<Command.Options>({
 	name: 'boutique',
 	description: 'Consulte la boutique.'
 })
-export class UserCommand extends Command {
+export class BoutiqueCommand extends Command {
 	public override registerApplicationCommands(registry: Command.Registry) {
 		registry.registerChatInputCommand((builder) =>
 			builder
 				.setName(this.name)
 				.setDescription(this.description)
+				.setContexts([InteractionContextType.Guild])
 				.addStringOption((opt) =>
 					opt //
 						.setName('monnaie')

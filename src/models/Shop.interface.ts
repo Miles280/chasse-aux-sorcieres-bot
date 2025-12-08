@@ -14,10 +14,26 @@ export interface Item {
 	requiredRoleId?: string;
 }
 
-export interface ShopView {
+export interface ShopResponse {
 	items: Item[];
 	page: number;
 	total: number;
 	pages: number;
+	error?: string;
+}
+
+export interface InventoryEntry {
+	id: number;
+	quantity: number;
+	item: Item;
+}
+
+export interface InventoryResponse {
+	items: InventoryEntry[];
+	error?: string;
+}
+
+export interface ItemDetailResponse {
+	item: Item | null;
 	error?: string;
 }
