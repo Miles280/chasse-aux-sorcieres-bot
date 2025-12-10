@@ -3,7 +3,6 @@ import { Command } from '@sapphire/framework';
 import { container } from '@sapphire/framework';
 import { GuildMember, InteractionContextType, MessageFlags } from 'discord.js';
 import * as Embeds from '../utils/embeds';
-import * as Components from '../utils/components';
 
 @ApplyOptions<Command.Options>({
 	name: 'inventaire',
@@ -43,8 +42,7 @@ export class InventaireCommand extends Command {
 		});
 
 		await interaction.reply({
-			embeds: [embed],
-			components: [Components.buildSellButtons()]
+			embeds: [embed]
 		});
 	}
 }

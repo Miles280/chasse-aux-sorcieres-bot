@@ -14,6 +14,11 @@ export interface Item {
 	requiredRoleId?: string;
 }
 
+export interface AllItem {
+	items: Item[];
+	error?: string;
+}
+
 export interface ShopResponse {
 	items: Item[];
 	page: number;

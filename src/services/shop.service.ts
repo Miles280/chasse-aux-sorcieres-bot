@@ -1,5 +1,5 @@
 import { Currency } from '../enums/Currency';
-import { InventoryResponse, Item, ItemDetailResponse, ShopResponse } from '../models/Shop.interface';
+import { AllItem, InventoryResponse, Item, ItemDetailResponse, ShopResponse } from '../models/Shop.interface';
 import { ApiClient } from './apiClient.service';
 import * as Components from '../utils/components';
 import { ApiResponse } from '../models/ApiResponse.interface';
@@ -13,6 +13,16 @@ export class ShopService {
 		} catch (err) {
 			console.error(`[ShopService] error in getArticles method :`, err);
 			return { items: [], page: 1, total: 0, pages: 1, error: 'Une erreur est survenue lors de la récupération des items de la boutique.' };
+		}
+	}
+
+	async getAllArticles(): Promise<AllItem> {
+		try {
+			const response = await this.api.get<AllItem>(`/shop/viewall`);
+			return response;
+		} catch (err) {
+			console.error(`[ShopService] error in getArticles method :`, err);
+			return { items: [], error: 'Une erreur est survenue lors de la récupération des items de la boutique.' };
 		}
 	}
 

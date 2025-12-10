@@ -1,5 +1,6 @@
 import { EmbedBuilder, GuildMember } from 'discord.js';
 import { Item, ShopResponse } from '../../models/Shop.interface';
+import { emojis } from '../emojis';
 
 export function shopEmbed(shopData: ShopResponse) {
 	const embed = new EmbedBuilder()
@@ -22,72 +23,73 @@ export function itemInfoEmbed(item: Item) {
 	const fields = [];
 
 	fields.push({
-		name: '💎 Nom',
+		name: 'Nom :',
 		value: item.name,
-		inline: false
+		inline: true
 	});
 
 	fields.push({
-		name: '📜 Description',
+		name: 'Prix :',
+		value: `${item.price} ${item.currency === 'gems' ? emojis.gems : emojis.rubies}`,
+		inline: true
+	});
+
+	fields.push({
+		name: 'Quantité restante:',
+		value: `${item.quantity || '∞'}`,
+		inline: true
+	});
+
+	fields.push({
+		name: 'Description :',
 		value: item.description || 'Aucune description.',
 		inline: false
 	});
 
-	fields.push({
-		name: '💰 Prix',
-		value: `${item.price} ${item.currency === 'gems' ? '💠 gemmes' : '🔴 rubis'}`,
-		inline: true
-	});
+	if (item.discordRoleId) {
+		fields.push({
+			name: "Permet d'obtenir ce rôle :",
+			value: `<@&${item.discordRoleId}>`,
+			inline: false
+		});
+	}
 
-	fields.push({
-		name: '📦 Type',
-		value: item.type,
-		inline: true
-	});
+	let prereq = [];
 
-	// 🔒 Affiche le rôle requis SI présent
 	if (item.requiredRoleId) {
-		fields.push({
-			name: '🔑 Rôle requis',
-			value: `<@&${item.requiredRoleId}>`,
-			inline: false
-		});
+		prereq.push(`<@&${item.requiredRoleId}>`);
 	}
 
-	// 🧩 Affiche l'item requis SI présent
 	if (item.requiredItem) {
-		fields.push({
-			name: '🧩 Item requis',
-			value: `${item.requiredItem.name} (ID: ${item.requiredItem.id})`,
-			inline: false
-		});
+		prereq.push(`${item.requiredItem.name}`);
 	}
 
-	// 🎁 Quantité si c'est un consommable ou pack
-	if (item.quantity !== undefined) {
+	if (prereq.length > 0) {
 		fields.push({
-			name: '📦 Quantité',
-			value: `${item.quantity}`,
+			name: "Prérequis d'achat :",
+			value: prereq.join(' + '), // fusion avec un +
 			inline: true
 		});
 	}
 
-	const embed = new EmbedBuilder().setTitle(`📌 Informations sur l'item #${item.id}`).setColor('#27e9b5').addFields(fields);
-
-	return embed;
+	return new EmbedBuilder()
+		.setColor('#360a5c')
+		.setTitle(`${emojis.purplecheck} __Détail d'un article__`)
+		.addFields(fields)
+		.setFooter({ text: 'Faites /boutique pour explorer les autres articles en vente.' });
 }
 
 export function inventoryEmbed({ member, items }: { member: GuildMember; items: Item[] }): EmbedBuilder {
 	const formattedItems =
-		items.length > 0 ? items.map((item) => `> **${item.name}**  x\`${item.quantity}\` `).join('\n') : '> Aucun item dans votre inventaire.';
+		items.length > 0 ? items.map((item) => `> - ${item.name}  x\`${item.quantity}\` `).join('\n') : '> Aucun item dans votre inventaire.';
 
 	return new EmbedBuilder()
 		.setAuthor({
 			name: member.displayName,
 			iconURL: member.user.displayAvatarURL()
 		})
-		.setTitle(`__Inventaire de ${member.displayName}__`)
+		.setTitle(`${emojis.purplecheck} __Inventaire de ${member.displayName}__`)
 		.setDescription(formattedItems)
 		.setColor('#360a5c')
-		.setFooter({ text: 'Utilisez /boutique pour acheter des items !' });
+		.setFooter({ text: 'Vendez un de vos items à un joueur avec /item sell !' });
 }

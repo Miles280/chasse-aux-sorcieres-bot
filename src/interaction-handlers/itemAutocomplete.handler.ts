@@ -8,25 +8,49 @@ import { container } from '@sapphire/framework';
 })
 export class ItemAutocompleteHandler extends InteractionHandler {
 	public override async parse(interaction: AutocompleteInteraction) {
-		// Vérifie que c’est la bonne commande + bonne option
-		if (interaction.commandName !== 'item' /* ou le nom de ta commande */) {
+		if (interaction.commandName !== 'item') {
 			return this.none();
 		}
+
+		let sub: string;
+		try {
+			sub = interaction.options.getSubcommand();
+		} catch {
+			return this.none();
+		}
+
 		const focused = interaction.options.getFocused(true);
 		if (focused.name !== 'item') {
 			return this.none();
 		}
 
-		// On récupère l'inventaire via ton service
-		const response = await container.shopService.getInventory(interaction.user.id);
-		if (response.error) return this.none();
+		let choices: { name: string; value: string }[] = [];
 
-		const filtered = response.items
-			.filter((entry) => entry.item.name.toLowerCase().includes((focused.value as string).toLowerCase()))
-			.map((entry) => ({ name: entry.item.name, value: String(entry.item.id) }))
-			.slice(0, 25);
+		// ----- AUTOCOMPLETE POUR /item info -----
+		if (sub === 'info') {
+			const response = await container.shopService.getAllArticles();
+			if (response.error) return this.none();
 
-		return this.some(filtered);
+			choices = response.items
+				.filter((i) => i.name.toLowerCase().includes(focused.value.toLowerCase()))
+				.slice(0, 25)
+				.map((i) => ({ name: i.name, value: i.id.toString() }));
+		}
+
+		// ----- AUTOCOMPLETE POUR /item sell -----
+		if (sub === 'sell') {
+			const userId = interaction.user.id;
+
+			const inventory = await container.shopService.getInventory(userId);
+			if (inventory.error) return this.none();
+
+			choices = inventory.items
+				.filter((i) => i.item.name.toLowerCase().includes(focused.value.toLowerCase()))
+				.slice(0, 25)
+				.map((i) => ({ name: i.item.name, value: i.id.toString() }));
+		}
+
+		return this.some(choices);
 	}
 
 	public override async run(interaction: AutocompleteInteraction, result: { name: string; value: string }[]) {

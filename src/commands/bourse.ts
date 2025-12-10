@@ -55,6 +55,7 @@ export class BourseCommand extends Subcommand {
 							opt //
 								.setName('valeur')
 								.setDescription('Le montant à donner.')
+								.setMinValue(1)
 								.setRequired(true)
 						)
 				)
@@ -79,6 +80,7 @@ export class BourseCommand extends Subcommand {
 							opt //
 								.setName('valeur')
 								.setDescription('Le montant à ajouter.')
+								.setMinValue(1)
 								.setRequired(true)
 						)
 				)
@@ -103,6 +105,7 @@ export class BourseCommand extends Subcommand {
 							opt //
 								.setName('valeur')
 								.setDescription('Le montant à retirer.')
+								.setMinValue(1)
 								.setRequired(true)
 						)
 				)

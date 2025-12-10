@@ -3,6 +3,7 @@ import { Subcommand } from '@sapphire/plugin-subcommands';
 import { GuildMember, InteractionContextType, MessageFlags } from 'discord.js';
 import { container } from '@sapphire/framework';
 import * as Embeds from '../utils/embeds';
+import { Currency } from '../enums/Currency';
 
 @ApplyOptions<Subcommand.Options>({
 	name: 'item',
@@ -34,18 +35,18 @@ export class itemCommand extends Subcommand {
 				.addSubcommand((sub) =>
 					sub // SELL
 						.setName('sell')
-						.setDescription('Vend un de ses items à un membre.')
-						.addUserOption((opt) =>
-							opt //
-								.setName('membre')
-								.setDescription('Le membre concerné par cette action')
-								.setRequired(true)
-						)
+						.setDescription('Vend un de tes items à un membre.')
 						.addStringOption((opt) =>
 							opt //
 								.setName('item')
 								.setDescription("L'item concerné par cette action.")
 								.setAutocomplete(true)
+								.setRequired(true)
+						)
+						.addUserOption((opt) =>
+							opt //
+								.setName('membre')
+								.setDescription('Le membre concerné par cette action')
 								.setRequired(true)
 						)
 						.addStringOption((opt) =>
@@ -59,6 +60,7 @@ export class itemCommand extends Subcommand {
 							opt //
 								.setName('valeur')
 								.setDescription('Le montant de la vente.')
+								.setMinValue(1)
 								.setRequired(true)
 						)
 				)
@@ -87,10 +89,12 @@ export class itemCommand extends Subcommand {
 	}
 
 	public async chatInputSell(interaction: Subcommand.ChatInputCommandInteraction) {
-		// const senderId = interaction.user.id;
-		// const receiverId = interaction.options.getUser('membre')!.id;
-		// const currency = interaction.options.getString('monnaie')! as Currency;
-		// const amount = interaction.options.getNumber('valeur')!;
-		return interaction.reply({ content: 'Hello world!' });
+		const senderId = interaction.user.id;
+		const receiverId = interaction.options.getUser('membre')!.id;
+		const itemId = interaction.options.getString('item')!;
+		const currency = interaction.options.getString('monnaie')! as Currency;
+		const amount = interaction.options.getNumber('valeur')!;
+
+		return interaction.reply({ content: `${senderId}, ${receiverId}, ${itemId}, ${currency}, ${amount}` });
 	}
 }
