@@ -6,6 +6,7 @@ import { ApiClient } from './services/apiClient.service';
 import { EconomyService } from './services/economy.service';
 import { DiscordService } from './services/discord.service';
 import { ShopService } from './services/shop.service';
+import { InventoryService } from './services/inventory.service';
 
 const client = new SapphireClient({
 	defaultPrefix: ',',
@@ -21,6 +22,7 @@ container.discordService = new DiscordService();
 container.apiClient = new ApiClient(process.env.API_URL!, process.env.BOT_SECRET_KEY!);
 container.economyService = new EconomyService(container.apiClient);
 container.shopService = new ShopService(container.apiClient);
+container.inventoryService = new InventoryService(container.apiClient);
 
 const main = async () => {
 	try {

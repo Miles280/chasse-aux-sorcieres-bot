@@ -67,7 +67,7 @@ export function itemInfoEmbed(item: Item) {
 	if (prereq.length > 0) {
 		fields.push({
 			name: "Prérequis d'achat :",
-			value: prereq.join(' + '), // fusion avec un +
+			value: prereq.join(' + '),
 			inline: true
 		});
 	}

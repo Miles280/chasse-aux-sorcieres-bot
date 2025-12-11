@@ -17,7 +17,7 @@ export class InventaireCommand extends Command {
 
 	public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
 		// Demande à l'API les informations de l'inventaire du membre
-		const response = await container.shopService.getInventory(interaction.user.id);
+		const response = await container.inventoryService.getInventory(interaction.user.id);
 		if (response.error) {
 			await interaction.reply({
 				embeds: [Embeds.errorEmbed({ member: interaction.member as GuildMember, message: response.error })],

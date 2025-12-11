@@ -41,13 +41,13 @@ export class ItemAutocompleteHandler extends InteractionHandler {
 		if (sub === 'sell') {
 			const userId = interaction.user.id;
 
-			const inventory = await container.shopService.getInventory(userId);
+			const inventory = await container.inventoryService.getInventory(userId);
 			if (inventory.error) return this.none();
 
 			choices = inventory.items
 				.filter((i) => i.item.name.toLowerCase().includes(focused.value.toLowerCase()))
 				.slice(0, 25)
-				.map((i) => ({ name: i.item.name, value: i.id.toString() }));
+				.map((i) => ({ name: i.item.name, value: i.item.id.toString() }));
 		}
 
 		return this.some(choices);

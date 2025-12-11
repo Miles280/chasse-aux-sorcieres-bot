@@ -2,8 +2,9 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { Subcommand } from '@sapphire/plugin-subcommands';
 import { GuildMember, InteractionContextType, MessageFlags } from 'discord.js';
 import { container } from '@sapphire/framework';
-import * as Embeds from '../utils/embeds';
 import { Currency } from '../enums/Currency';
+import * as Embeds from '../utils/embeds';
+import * as Components from '../utils/components';
 
 @ApplyOptions<Subcommand.Options>({
 	name: 'item',
@@ -89,12 +90,15 @@ export class itemCommand extends Subcommand {
 	}
 
 	public async chatInputSell(interaction: Subcommand.ChatInputCommandInteraction) {
-		const senderId = interaction.user.id;
-		const receiverId = interaction.options.getUser('membre')!.id;
+		// const sellerId = interaction.user.id;
+		const buyerId = interaction.options.getUser('membre')!.id;
 		const itemId = interaction.options.getString('item')!;
 		const currency = interaction.options.getString('monnaie')! as Currency;
 		const amount = interaction.options.getNumber('valeur')!;
 
-		return interaction.reply({ content: `${senderId}, ${receiverId}, ${itemId}, ${currency}, ${amount}` });
+		return interaction.reply({
+			content: `<@${buyerId}> viens tu achetes ${itemId} pour ${amount} ${currency}`,
+			components: [Components.buildSellButtons()]
+		});
 	}
 }

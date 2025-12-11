@@ -1,8 +1,8 @@
 import { Currency } from '../enums/Currency';
-import { AllItem, InventoryResponse, Item, ItemDetailResponse, ShopResponse } from '../models/Shop.interface';
+import { AllItem, Item, ItemDetailResponse, ShopResponse } from '../models/Shop.interface';
 import { ApiClient } from './apiClient.service';
-import * as Components from '../utils/components';
 import { ApiResponse } from '../models/ApiResponse.interface';
+import * as Components from '../utils/components';
 
 export class ShopService {
 	constructor(private api: ApiClient) {}
@@ -58,16 +58,6 @@ export class ShopService {
 		const buttons = Components.buildShopButtons(currency, data.page, data.pages);
 
 		return { components: [container, buttons] };
-	}
-
-	async getInventory(discordId: string): Promise<InventoryResponse> {
-		try {
-			const response = await this.api.post<InventoryResponse>(`/inventory/view`, { discordId });
-			return response;
-		} catch (err) {
-			console.error(`[InventoryService] error in getInventory method :`, err);
-			return { items: [], error: 'Une erreur est survenue lors de la récupération des items de ton inventaire.' };
-		}
 	}
 
 	async getDetail(itemId: number): Promise<ItemDetailResponse> {
