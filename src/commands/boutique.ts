@@ -50,6 +50,5 @@ export class BoutiqueCommand extends Command {
 			components: response.components,
 			flags: MessageFlags.IsComponentsV2
 		});
-		// disableComponentsAfter(sentMessage, response.components, 5);
 	}
 }

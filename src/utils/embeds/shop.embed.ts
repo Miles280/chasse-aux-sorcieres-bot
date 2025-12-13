@@ -93,3 +93,31 @@ export function inventoryEmbed({ member, items }: { member: GuildMember; items: 
 		.setColor('#360a5c')
 		.setFooter({ text: 'Vendez un de vos items à un joueur avec /item sell !' });
 }
+
+export function sellProposalEmbed({
+	seller,
+	buyer,
+	item,
+	price,
+	currency
+}: {
+	seller: GuildMember;
+	buyer: GuildMember;
+	item: Item;
+	price: number;
+	currency: 'gems' | 'rubies';
+}) {
+	return new EmbedBuilder()
+		.setTitle(`${emojis.yellowcheck} Proposition de vente`)
+		.setDescription(
+			`<@${seller.id}> souhaite te vendre un item :\n\n` +
+				`**Item :** ${item.name}\n` +
+				`**Prix :** ${price} ${currency === 'gems' ? emojis.gems : emojis.rubies}\n\n` +
+				`Souhaites-tu acheter cette article ? <@${buyer.id}>`
+		)
+		.setColor('#f5cb26')
+		.setFooter({
+			text: `Une minute avant refus automatique.`
+		})
+		.setTimestamp();
+}

@@ -1,6 +1,6 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { Subcommand } from '@sapphire/plugin-subcommands';
-import { GuildMember, InteractionContextType, MessageFlags } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ComponentType, GuildMember, InteractionContextType, MessageFlags } from 'discord.js';
 import { container } from '@sapphire/framework';
 import { Currency } from '../enums/Currency';
 import * as Embeds from '../utils/embeds';
@@ -69,10 +69,10 @@ export class itemCommand extends Subcommand {
 	}
 
 	public async chatInputInfo(interaction: Subcommand.ChatInputCommandInteraction) {
-		const item = Number(interaction.options.getString('item'));
+		const itemId = Number(interaction.options.getString('item'));
 
 		// Demande à l'API les informations de l'inventaire du membre
-		const response = await container.shopService.getDetail(item);
+		const response = await container.shopService.getDetail(itemId);
 		if (response.error) {
 			await interaction.reply({
 				embeds: [Embeds.errorEmbed({ member: interaction.member as GuildMember, message: response.error })],
@@ -90,15 +90,84 @@ export class itemCommand extends Subcommand {
 	}
 
 	public async chatInputSell(interaction: Subcommand.ChatInputCommandInteraction) {
-		// const sellerId = interaction.user.id;
-		const buyerId = interaction.options.getUser('membre')!.id;
-		const itemId = interaction.options.getString('item')!;
+		const seller = interaction.member as GuildMember;
+		const buyer = interaction.options.getMember('membre') as GuildMember;
+		const itemId = Number(interaction.options.getString('item'));
 		const currency = interaction.options.getString('monnaie')! as Currency;
-		const amount = interaction.options.getNumber('valeur')!;
+		const price = interaction.options.getNumber('valeur')!;
 
-		return interaction.reply({
-			content: `<@${buyerId}> viens tu achetes ${itemId} pour ${amount} ${currency}`,
-			components: [Components.buildSellButtons()]
+		if (seller === buyer) {
+			return interaction.reply({
+				embeds: [
+					Embeds.errorEmbed({
+						member: seller,
+						title: 'Euuuh...',
+						message: "Viens tu arrêtes d'être con ?\n Nan parce que te vendre un item à toi-même..."
+					})
+				],
+				flags: MessageFlags.Ephemeral
+			});
+		}
+
+		const response = await container.shopService.getDetail(itemId);
+
+		if (response.error || !response.item) {
+			return interaction.reply({
+				embeds: [Embeds.errorEmbed({ member: seller, title: 'Vente annulée', message: response.error ?? 'Impossible de trouver cet item.' })],
+				flags: MessageFlags.Ephemeral
+			});
+		}
+
+		const item = response.item;
+
+		const embed = Embeds.sellProposalEmbed({ seller, buyer, item, currency, price });
+
+		const messageRaw = await interaction.reply({
+			content: `<@${buyer.id}> Une opportunité s'offre à toi.`,
+			embeds: [embed],
+			components: [Components.buildSellButtons({ sellerId: seller.id, buyerId: buyer.id, itemId, currency, price })],
+			withResponse: true
 		});
+
+		const message = messageRaw.resource!.message!;
+
+		const collector = message.createMessageComponentCollector({
+			componentType: ComponentType.Button,
+			time: 60_000 * 1,
+			filter: (i) => i.user.id === buyer.id
+		});
+
+		collector.on('collect', () => {
+			collector.stop('clicked');
+		});
+
+		collector.on('end', async (_collected, reason) => {
+			const row = Components.buildSellButtons({
+				sellerId: seller.id,
+				buyerId: buyer.id,
+				itemId,
+				currency,
+				price
+			});
+
+			// Désactiver chaque bouton
+			const disabledRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+				row.components.map((button) => ButtonBuilder.from(button).setDisabled(true))
+			);
+
+			await message.edit({ components: [disabledRow] });
+
+			if (reason === 'time') {
+				await interaction.followUp({
+					embeds: [
+						Embeds.errorEmbed({
+							title: 'Vente expirée',
+							message: 'Le temps de réponse est écoulé.\nLa proposition a été automatiquement refusée.'
+						})
+					]
+				});
+			}
+		});
+		return;
 	}
 }

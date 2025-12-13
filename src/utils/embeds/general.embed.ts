@@ -27,7 +27,7 @@ export function successEmbed({ message, member, title }: { message: string; memb
 	}
 
 	if (title) {
-		embed.setTitle(`${emojis.check} ${title}`);
+		embed.setTitle(`${emojis.greencheck} ${title}`);
 	}
 	return embed;
 }

@@ -5,12 +5,14 @@ export function buildHistorySelect(discordId: string, page: number) {
 	const labels: Record<TransactionType, string> = {
 		[TransactionType.GAIN]: 'Gain',
 		[TransactionType.LOSE]: 'Perte',
-		[TransactionType.PURCHASE]: 'Achat',
 		[TransactionType.DONATION]: 'Donation',
 		[TransactionType.RECEIVE]: 'Reçu',
-		[TransactionType.CONVERSION]: 'Conversion',
-		[TransactionType.ADMIN]: 'Ajustement',
-		[TransactionType.SET]: 'Solde défini'
+		[TransactionType.PURCHASE]: 'Achat',
+		[TransactionType.SELL]: 'Vente',
+		[TransactionType.ADD]: 'Ajout',
+		[TransactionType.REMOVE]: 'Retrait',
+		[TransactionType.SET]: 'Solde défini',
+		[TransactionType.CONVERSION]: 'Conversion'
 	};
 
 	return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
