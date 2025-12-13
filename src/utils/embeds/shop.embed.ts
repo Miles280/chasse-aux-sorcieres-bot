@@ -61,7 +61,7 @@ export function itemInfoEmbed(item: Item) {
 	}
 
 	if (item.requiredItem) {
-		prereq.push(`${item.requiredItem.name}`);
+		prereq.push(`__${item.requiredItem.name}__`);
 	}
 
 	if (prereq.length > 0) {

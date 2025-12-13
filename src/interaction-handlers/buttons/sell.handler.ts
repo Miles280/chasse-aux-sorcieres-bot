@@ -46,7 +46,6 @@ export class SellHandler extends InteractionHandler {
 			const response = await container.inventoryService.tradeItem(sellerId, buyerId, itemId, currency, price);
 
 			if (response.error) {
-				console.log(response.error);
 				return interaction.reply({
 					embeds: [
 						Embeds.errorEmbed({
