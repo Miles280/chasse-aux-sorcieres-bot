@@ -2,9 +2,11 @@ import './lib/setup';
 
 import { LogLevel, SapphireClient, container } from '@sapphire/framework';
 import { GatewayIntentBits } from 'discord.js';
-import { ApiClient } from './services/ApiClient';
-import { EconomyService } from './services/EconomyService';
-import { DiscordService } from './services/DiscordService';
+import { ApiClient } from './services/apiClient.service';
+import { EconomyService } from './services/economy.service';
+import { DiscordService } from './services/discord.service';
+import { ShopService } from './services/shop.service';
+import { InventoryService } from './services/inventory.service';
 
 const client = new SapphireClient({
 	defaultPrefix: ',',
@@ -16,9 +18,11 @@ const client = new SapphireClient({
 	loadMessageCommandListeners: true
 });
 
+container.discordService = new DiscordService();
 container.apiClient = new ApiClient(process.env.API_URL!, process.env.BOT_SECRET_KEY!);
 container.economyService = new EconomyService(container.apiClient);
-container.discordService = new DiscordService();
+container.shopService = new ShopService(container.apiClient);
+container.inventoryService = new InventoryService(container.apiClient);
 
 const main = async () => {
 	try {

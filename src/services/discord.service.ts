@@ -45,4 +45,23 @@ export class DiscordService {
 	hasStaffRole(member: GuildMember): boolean {
 		return member.roles.cache.some((role) => STAFF_ROLES.includes(role.id));
 	}
+
+	/**
+	 * Vérifie si un membre a un rôle spécifique.
+	 * @param member Le membre à vérifier
+	 * @param roleId L'ID du rôle à vérifier
+	 * @returns true si le membre possède le rôle, false sinon
+	 */
+	hasRole(member: GuildMember, roleId: string): boolean {
+		return member.roles.cache.has(roleId);
+	}
+
+	/**
+	 * Vérifie si un membre a l'un des rôles d'une liste.
+	 * @param member Le membre à vérifier
+	 * @param roleIds Liste des IDs de rôles
+	 */
+	hasAnyRole(member: GuildMember, roleIds: string[]): boolean {
+		return member.roles.cache.some((role) => roleIds.includes(role.id));
+	}
 }

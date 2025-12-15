@@ -1,5 +1,6 @@
 import { EmbedBuilder, GuildMember } from 'discord.js';
-import { emojis } from '../utils/emojis';
+import { emojis } from '../emojis';
+import { formatTransactions } from '../formatTransactions';
 
 interface BourseEmbedParams {
 	member: GuildMember;
@@ -14,7 +15,7 @@ export function bourseEmbed({ member, gems, rubies, transactionsText }: BourseEm
 			name: member.displayName,
 			iconURL: member.user.displayAvatarURL()
 		})
-		.setTitle(`__Bourse de ${member.displayName}__`)
+		.setTitle(`${emojis.purplecheck} __Bourse de ${member.displayName}__`)
 		.addFields(
 			{ name: 'Contenu :', value: `> \`${gems}\` ${emojis.gems}`, inline: true },
 			{ name: '\u200B', value: `> \`${rubies}\` ${emojis.rubies}`, inline: true }
@@ -92,4 +93,17 @@ export function economyActionEmbed(opts: EconomyEmbedOptions) {
 		.setTitle(action.title)
 		.setDescription(action.format(opts.targetId, opts.amount, emoji))
 		.addFields(fields);
+}
+
+export function buildHistoryEmbed(member: GuildMember, data: { transactions: any[]; page: number; pages: number }): EmbedBuilder {
+	return new EmbedBuilder()
+		.setAuthor({
+			name: member.displayName,
+			iconURL: member.user.displayAvatarURL()
+		})
+		.setTitle(`${emojis.purplecheck} __Historique des transactions de ${member.displayName}__`)
+		.setDescription(formatTransactions(data.transactions))
+		.setFooter({ text: `Page ${data.page}/${data.pages}` })
+		.setColor(0x360a5c)
+		.setTimestamp();
 }

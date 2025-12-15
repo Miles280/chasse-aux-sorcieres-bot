@@ -1,4 +1,4 @@
-import { Transaction } from '../models/Transaction';
+import { Transaction } from '../models/Transaction.interface';
 import { emojis } from './emojis';
 import { TransactionType } from '../enums/TransactionType';
 
@@ -20,29 +20,32 @@ export function formatTransactions(transactions: Transaction[]): string {
 				case TransactionType.LOSE:
 					description = `Vous avez perdu **-${tx.amount} ${currencyEmoji}**...`;
 					break;
-				case TransactionType.PURCHASE:
-					description = `Achat de « __${tx.description}__ » pour **-${tx.amount} ${currencyEmoji}**.`;
-					break;
 				case TransactionType.DONATION:
 					description = `Vous avez offert **-${tx.amount} ${currencyEmoji}** à ${other}.`;
 					break;
 				case TransactionType.RECEIVE:
 					description = `Vous avez reçu **+${tx.amount} ${currencyEmoji}** de la part de ${other}.`;
 					break;
+				case TransactionType.ADD:
+					description = `Vous avez reçu **+${tx.amount} ${currencyEmoji}** suite à un ajustement.`;
+					break;
+				case TransactionType.REMOVE:
+					description = `Vous avez perdu **-${tx.amount} ${currencyEmoji}** suite à un ajustement.`;
+					break;
+				case TransactionType.PURCHASE:
+					description = `Achat de « __${tx.description}__ » pour **-${tx.amount} ${currencyEmoji}**${other ? ` à ${other}` : ''}.`;
+					break;
+				case TransactionType.SELL:
+					description = `Vente de « __${tx.description}__ » pour **+${tx.amount} ${currencyEmoji}** à ${other}.`;
+					break;
+				case TransactionType.SET:
+					description = `Solde défini à **${tx.amount} ${currencyEmoji}**.`;
+					break;
 				case TransactionType.CONVERSION:
 					description =
 						tx.amount > 0
 							? `Vous avez reçu **+${tx.amount} ${currencyEmoji}** lors d'une conversion.`
 							: `Vous avez converti **-${Math.abs(tx.amount)} ${currencyEmoji}**.`;
-					break;
-				case TransactionType.ADMIN:
-					description =
-						tx.amount > 0
-							? `Ajustement administratif de **+${tx.amount} ${currencyEmoji}**.`
-							: `Ajustement administratif de **-${Math.abs(tx.amount)} ${currencyEmoji}**.`;
-					break;
-				case TransactionType.SET:
-					description = `Solde défini à **${tx.amount} ${currencyEmoji}**.`;
 					break;
 				default:
 					description = `❔ Transaction inconnue : **${tx.amount} ${currencyEmoji}**.`;

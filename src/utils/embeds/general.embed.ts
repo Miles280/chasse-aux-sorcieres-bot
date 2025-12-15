@@ -1,0 +1,33 @@
+import { EmbedBuilder, GuildMember } from 'discord.js';
+import { emojis } from '../emojis';
+
+export function errorEmbed({ message, member, title }: { message: string; member?: GuildMember; title?: string }): EmbedBuilder {
+	const embed = new EmbedBuilder().setDescription(message).setColor(0xe74c3c);
+
+	if (member) {
+		embed.setAuthor({
+			name: member.displayName,
+			iconURL: member.user.displayAvatarURL()
+		});
+	}
+	if (title) {
+		embed.setTitle(`${emojis.deny} ${title}`);
+	}
+	return embed;
+}
+
+export function successEmbed({ message, member, title }: { message: string; member?: GuildMember; title?: string }): EmbedBuilder {
+	const embed = new EmbedBuilder().setDescription(message).setColor(0x2ecc71);
+
+	if (member) {
+		embed.setAuthor({
+			name: member.displayName,
+			iconURL: member.user.displayAvatarURL()
+		});
+	}
+
+	if (title) {
+		embed.setTitle(`${emojis.greencheck} ${title}`);
+	}
+	return embed;
+}
