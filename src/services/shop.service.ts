@@ -42,7 +42,9 @@ export class ShopService {
 			return { error: data.error };
 		}
 
-		const container = Components.buildShopContainer();
+		const empty = data.items.length === 0 ? true : false;
+
+		const container = Components.buildShopContainer(empty);
 
 		for (const item of data.items) {
 			const { separator, section } = Components.buildShopItem(item, currency, page);
