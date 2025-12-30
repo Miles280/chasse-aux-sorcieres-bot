@@ -1,19 +1,19 @@
 export const emojis = {
-	gems: '<:gems:1444369345303150766>',
-	rubies: '<:rubies:1444369364294963341>',
-	check: '<:check:1437497515741024318>',
-	uncheck: '<:uncheck:1437497529632559264>',
-	yellowcheck: '<a:yellowcheck:1437840745854795947>',
-	bluecheck: '<a:bluecheck:1437869154748338357>',
-	greencheck: '<a:greencheck:1437840708483682466>',
-	orangecheck: '<a:orangecheck:1437840718960918590>',
-	redcheck: '<a:redcheck:1437840727513235627>',
-	pinkcheck: '<a:pinkcheck:1437840735599726663>',
-	purplecheck: '<a:purplecheck:1437840755065487421>',
-	deny: '<:deny:1437847105040416819>'
+	gems: `<:gems:${process.env.EMOJI_GEMS_ID}>`,
+	rubies: `<:rubies:${process.env.EMOJI_RUBIES_ID}>`,
+	check: `<:check:${process.env.EMOJI_CHECK_ID}>`,
+	uncheck: `<:uncheck:${process.env.EMOJI_UNCHECK_ID}>`,
+	yellowcheck: `<a:yellowcheck:${process.env.EMOJI_YELLOWCHECK_ID}>`,
+	bluecheck: `<a:bluecheck:${process.env.EMOJI_BLUECHECK_ID}>`,
+	greencheck: `<a:greencheck:${process.env.EMOJI_GREENCHECK_ID}>`,
+	orangecheck: `<a:orangecheck:${process.env.EMOJI_ORANGECHECK_ID}>`,
+	redcheck: `<a:redcheck:${process.env.EMOJI_REDCHECK_ID}>`,
+	pinkcheck: `<a:pinkcheck:${process.env.EMOJI_PINKCHECK_ID}>`,
+	purplecheck: `<a:purplecheck:${process.env.EMOJI_PURPLECHECK_ID}>`,
+	deny: `<:deny:${process.env.EMOJI_DENY_ID}>`
 };
 
 export const emojisV2 = {
-	gems: { name: 'gems', id: '1444369345303150766' },
-	rubies: { name: 'rubies', id: '1444369364294963341' }
+	gems: { name: `gems`, id: `${process.env.EMOJI_GEMS_ID}` },
+	rubies: { name: `rubies`, id: `${process.env.EMOJI_RUBIES_ID}` }
 };
