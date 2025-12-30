@@ -108,7 +108,7 @@ export class EconomyService {
 		}
 
 		return {
-			embeds: [Embeds.buildHistoryEmbed(member, data)],
+			embeds: [Embeds.buildHistoryEmbed(member, data, types)],
 			components: [Components.buildHistoryButtons(discordId, page, data.pages, types), Components.buildHistorySelect(discordId, page)]
 		};
 	}
