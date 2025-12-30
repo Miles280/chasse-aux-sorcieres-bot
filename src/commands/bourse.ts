@@ -225,13 +225,15 @@ export class BourseCommand extends Subcommand {
 			const currency = interaction.options.getString('monnaie')! as Currency;
 			const amount = interaction.options.getNumber('valeur')!;
 
-			// if (!container.discordService.hasStaffRole(staffMember as GuildMember)) {
-			// 	await interaction.reply({
-			// 		embeds: [errorEmbed({ member: staffMember as GuildMember, message: "Tu n'as pas la permission d'utiliser cette commande." })],
-			// 		flags: MessageFlags.Ephemeral
-			// 	});
-			// 	return;
-			// }
+			if (!container.discordService.hasStaffRole(staffMember as GuildMember)) {
+				await interaction.reply({
+					embeds: [
+						Embeds.errorEmbed({ member: staffMember as GuildMember, message: "Tu n'as pas la permission d'utiliser cette commande." })
+					],
+					flags: MessageFlags.Ephemeral
+				});
+				return;
+			}
 
 			// Envoie à l'API toutes les informations pour qu'elle fasse le nécessaire
 			const response = await container.economyService.add(targetId, currency, amount);
@@ -273,13 +275,15 @@ export class BourseCommand extends Subcommand {
 			const currency = interaction.options.getString('monnaie')! as Currency;
 			const amount = interaction.options.getNumber('valeur')!;
 
-			// if (!container.discordService.hasStaffRole(staffMember as GuildMember)) {
-			// 	await interaction.reply({
-			// 		embeds: [errorEmbed({ member: staffMember as GuildMember, message: "Tu n'as pas la permission d'utiliser cette commande." })],
-			// 		flags: MessageFlags.Ephemeral
-			// 	});
-			// 	return;
-			// }
+			if (!container.discordService.hasStaffRole(staffMember as GuildMember)) {
+				await interaction.reply({
+					embeds: [
+						Embeds.errorEmbed({ member: staffMember as GuildMember, message: "Tu n'as pas la permission d'utiliser cette commande." })
+					],
+					flags: MessageFlags.Ephemeral
+				});
+				return;
+			}
 
 			// Envoie à l'API toutes les informations pour qu'elle fasse le nécessaire
 			const response = await container.economyService.remove(targetId, currency, amount);
@@ -321,13 +325,15 @@ export class BourseCommand extends Subcommand {
 			const currency = interaction.options.getString('monnaie')! as Currency;
 			const amount = interaction.options.getNumber('valeur')!;
 
-			// if (!container.discordService.hasStaffRole(staffMember as GuildMember)) {
-			// 	await interaction.reply({
-			// 		embeds: [errorEmbed({ member: staffMember as GuildMember, message: "Tu n'as pas la permission d'utiliser cette commande." })],
-			// 		flags: MessageFlags.Ephemeral
-			// 	});
-			// 	return;
-			// }
+			if (!container.discordService.hasStaffRole(staffMember as GuildMember)) {
+				await interaction.reply({
+					embeds: [
+						Embeds.errorEmbed({ member: staffMember as GuildMember, message: "Tu n'as pas la permission d'utiliser cette commande." })
+					],
+					flags: MessageFlags.Ephemeral
+				});
+				return;
+			}
 
 			// Envoie à l'API toutes les informations pour qu'elle fasse le nécessaire
 			const response = await container.economyService.set(targetId, currency, amount);

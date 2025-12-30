@@ -1,6 +1,7 @@
 import { EmbedBuilder, GuildMember } from 'discord.js';
 import { emojis } from '../emojis';
 import { formatTransactions } from '../formatTransactions';
+import { formatTransactionLabel } from '../transactionLabels';
 
 interface BourseEmbedParams {
 	member: GuildMember;
@@ -95,15 +96,24 @@ export function economyActionEmbed(opts: EconomyEmbedOptions) {
 		.addFields(fields);
 }
 
-export function buildHistoryEmbed(member: GuildMember, data: { transactions: any[]; page: number; pages: number }): EmbedBuilder {
+function formatActiveFilters(types: string[]) {
+	if (!types.length) return '**Filtres actifs :** Tous';
+
+	return `**Filtres actifs :** ${types.map((t) => `\`${formatTransactionLabel(t)}\``).join(' + ')}`;
+}
+
+export function buildHistoryEmbed(
+	member: GuildMember,
+	data: { transactions: any[]; page: number; pages: number; total: number },
+	types: string[]
+): EmbedBuilder {
 	return new EmbedBuilder()
 		.setAuthor({
 			name: member.displayName,
 			iconURL: member.user.displayAvatarURL()
 		})
 		.setTitle(`${emojis.purplecheck} __Historique des transactions de ${member.displayName}__`)
-		.setDescription(formatTransactions(data.transactions))
-		.setFooter({ text: `Page ${data.page}/${data.pages}` })
-		.setColor(0x360a5c)
-		.setTimestamp();
+		.setDescription(formatActiveFilters(types) + '\n\n' + formatTransactions(data.transactions))
+		.setFooter({ text: `Page ${data.page}/${data.pages}  •  Transactions total : ${data.total}` })
+		.setColor(0x360a5c);
 }
