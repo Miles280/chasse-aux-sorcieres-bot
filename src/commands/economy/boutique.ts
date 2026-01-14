@@ -1,9 +1,9 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { Command } from '@sapphire/framework';
 import { container } from '@sapphire/framework';
-import { Currency } from '../enums/Currency';
+import { Currency } from '../../enums/Currency';
 import { InteractionContextType, MessageFlags } from 'discord.js';
-import * as Embeds from '../utils/embeds';
+import * as Embeds from '../../utils/embeds';
 
 @ApplyOptions<Command.Options>({
 	name: 'boutique',

@@ -1,7 +1,7 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { Command, container } from '@sapphire/framework';
 import { ChatInputCommandInteraction, InteractionContextType } from 'discord.js';
-import { disableComponentsAfter } from '../utils/disableComponents';
+import { disableComponentsAfter } from '../../utils/disableComponents';
 
 @ApplyOptions<Command.Options>({
 	name: 'historique',

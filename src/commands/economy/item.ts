@@ -2,9 +2,9 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { Subcommand } from '@sapphire/plugin-subcommands';
 import { ActionRowBuilder, ButtonBuilder, ComponentType, GuildMember, InteractionContextType, MessageFlags } from 'discord.js';
 import { container } from '@sapphire/framework';
-import { Currency } from '../enums/Currency';
-import * as Embeds from '../utils/embeds';
-import * as Components from '../utils/components';
+import { Currency } from '../../enums/Currency';
+import * as Embeds from '../../utils/embeds';
+import * as Components from '../../utils/components';
 
 @ApplyOptions<Subcommand.Options>({
 	name: 'item',

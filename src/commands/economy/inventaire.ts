@@ -2,7 +2,7 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { Command } from '@sapphire/framework';
 import { container } from '@sapphire/framework';
 import { GuildMember, InteractionContextType, MessageFlags } from 'discord.js';
-import * as Embeds from '../utils/embeds';
+import * as Embeds from '../../utils/embeds';
 
 @ApplyOptions<Command.Options>({
 	name: 'inventaire',

@@ -1,10 +1,10 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { container } from '@sapphire/framework';
 import { GuildMember, InteractionContextType, MessageFlags } from 'discord.js';
-import { formatTransactions } from '../utils/formatTransactions';
+import { formatTransactions } from '../../utils/formatTransactions';
 import { Subcommand } from '@sapphire/plugin-subcommands';
-import { Currency } from '../enums/Currency';
-import * as Embeds from '../utils/embeds';
+import { Currency } from '../../enums/Currency';
+import * as Embeds from '../../utils/embeds';
 
 @ApplyOptions<Subcommand.Options>({
 	name: 'bourse',
