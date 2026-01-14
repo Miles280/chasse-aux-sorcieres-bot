@@ -46,8 +46,8 @@ export function towerEmbed(grid: number[], history: number[], currentFloor: numb
 		.setTitle('La Tour de la Fortune')
 		.addFields(
 			{ name: 'Mise', value: `${bet} ${emojis.rubies}`, inline: true },
-			{ name: 'Gain actuel', value: `${currentFloor === 0 ? 0 : calculateGain(bet, currentFloor)} Rubis`, inline: true },
-			{ name: 'Prochain gain', value: `${calculateGain(bet, currentFloor + 1)} Rubis`, inline: true }
+			{ name: 'Gain actuel', value: `${currentFloor === 0 ? 0 : calculateGain(bet, currentFloor)} ${emojis.rubies}`, inline: true },
+			{ name: 'Prochain gain', value: `${calculateGain(bet, currentFloor + 1)} ${emojis.rubies}`, inline: true }
 		)
 		.setDescription(`\`\`\`\n${towerVisual}\`\`\``);
 }
