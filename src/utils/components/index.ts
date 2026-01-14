@@ -7,3 +7,5 @@ export * from './shop/shop.item';
 export * from './shop/shop.footer';
 
 export * from './sell/sell.buttons';
+
+export * from './tower/tower.buttons';
