@@ -3,6 +3,7 @@ import { TowerGame, TowerResult } from '../models/TowerGame.interface';
 import { container } from '@sapphire/framework';
 import * as Embeds from '../utils/embeds';
 import * as Components from '../utils/components';
+import { colors } from '../utils/customColors';
 
 export class TowerService {
 	// Stockage en mémoire RAM des parties en cours
@@ -18,7 +19,7 @@ export class TowerService {
 		const grid = this.generateGrid();
 		const history: number[] = [];
 
-		const embed = Embeds.towerEmbed(grid, history, 0, bet);
+		const embed = Embeds.towerEmbed(grid, history, 0, bet, interaction.user.id);
 		const components = Components.buildTowerButtons(0);
 
 		const response = await interaction.reply({
@@ -82,7 +83,7 @@ export class TowerService {
 		game.timer = this.startTimer(messageId);
 
 		// Mise à jour visuelle
-		const embed = Embeds.towerEmbed(game.grid, game.history, game.currentFloor, game.bet);
+		const embed = Embeds.towerEmbed(game.grid, game.history, game.currentFloor, game.bet, game.userId);
 		const components = Components.buildTowerButtons(game.currentFloor);
 
 		return {
@@ -104,8 +105,8 @@ export class TowerService {
 		this.games.delete(messageId);
 
 		const timeoutEmbed = new EmbedBuilder()
-			.setColor(0xff0000)
-			.setTitle('Temps écoulé !')
+			.setColor(colors.fail)
+			.setTitle('⌛ Temps écoulé !')
 			.setDescription('Vous avez été trop lent. La partie est terminée.');
 
 		try {
@@ -131,10 +132,11 @@ export class TowerService {
 			await container.economyService.casino(game.userId, winAmount, 'add');
 		}
 
-		const embed = Embeds.towerEndEmbed(game, reason, winAmount, badChoice);
+		const embed = Embeds.towerEndEmbed(game, reason, winAmount, game.userId, badChoice);
+		const components = Components.buildTowerPlayAgainButton(game.userId, game.bet);
 
 		return {
-			payload: { embeds: [embed], components: [] },
+			payload: { embeds: [embed], components: [components] },
 			finished: true
 		};
 	}

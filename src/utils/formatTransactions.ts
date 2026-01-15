@@ -51,7 +51,7 @@ export function formatTransactions(transactions: Transaction[]): string {
 					description =
 						tx.amount >= 0
 							? `Vous avez gagné **+${tx.amount} ${currencyEmoji}** au casino.`
-							: `Vous avez perdu **-${tx.amount} ${currencyEmoji}**au casino...`;
+							: `Vous avez perdu **${tx.amount} ${currencyEmoji}**au casino...`;
 					break;
 				default:
 					description = `❔ Transaction inconnue : **${tx.amount} ${currencyEmoji}**.`;

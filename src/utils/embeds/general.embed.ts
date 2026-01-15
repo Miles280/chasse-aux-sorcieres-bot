@@ -12,7 +12,7 @@ export function errorEmbed({ message, member, title }: { message: string; member
 		});
 	}
 	if (title) {
-		embed.setTitle(`${emojis.deny} ${title}`);
+		embed.setTitle(`${emojis.redcheck} ${title}`);
 	}
 	return embed;
 }

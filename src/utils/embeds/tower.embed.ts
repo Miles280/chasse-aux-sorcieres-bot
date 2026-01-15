@@ -7,7 +7,7 @@ function calculateGain(bet: number, floor: number) {
 	return Math.ceil(bet * (1 + 0.1 * Math.pow(floor, 2)));
 }
 
-export function towerEmbed(grid: number[], history: number[], currentFloor: number, bet: number) {
+export function towerEmbed(grid: number[], history: number[], currentFloor: number, bet: number, userId: string) {
 	let towerVisual = '';
 
 	// On dessine de haut en bas
@@ -50,10 +50,10 @@ export function towerEmbed(grid: number[], history: number[], currentFloor: numb
 			{ name: 'Gain actuel', value: `${currentFloor === 0 ? 0 : calculateGain(bet, currentFloor)} ${emojis.rubies}`, inline: true },
 			{ name: 'Prochain gain', value: `${calculateGain(bet, currentFloor + 1)} ${emojis.rubies}`, inline: true }
 		)
-		.setDescription(`\`\`\`\n${towerVisual}\`\`\``);
+		.setDescription(`**__Joueur__ :** <@${userId}>\n\`\`\`\n${towerVisual}\`\`\``);
 }
 
-export function towerEndEmbed(game: TowerGame, reason: 'win' | 'lose' | 'cashout', winAmount: number, badChoice?: number) {
+export function towerEndEmbed(game: TowerGame, reason: 'win' | 'lose' | 'cashout', winAmount: number, userId: string, badChoice?: number) {
 	let towerVisual = '';
 
 	for (let i = 9; i >= 0; i--) {
@@ -99,5 +99,5 @@ export function towerEndEmbed(game: TowerGame, reason: 'win' | 'lose' | 'cashout
 	const desc =
 		reason === 'lose' ? `Vous perdez votre mise de **${game.bet} ${emojis.rubies}**.` : `Vous repartez avec **${winAmount} ${emojis.rubies}** !`;
 
-	return new EmbedBuilder().setColor(color).setTitle(title).setDescription(`\`\`\`\n${towerVisual}\`\`\`\n${desc}`);
+	return new EmbedBuilder().setColor(color).setTitle(title).setDescription(`**__Joueur__ :** <@${userId}>\n\`\`\`\n${towerVisual}\`\`\`\n${desc}`);
 }

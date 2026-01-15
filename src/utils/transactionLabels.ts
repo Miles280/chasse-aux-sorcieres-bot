@@ -10,7 +10,8 @@ export const TRANSACTION_LABELS: Record<string, string> = {
 	[TransactionType.ADD]: 'Ajout',
 	[TransactionType.REMOVE]: 'Retrait',
 	[TransactionType.SET]: 'Solde défini',
-	[TransactionType.CONVERSION]: 'Conversion'
+	[TransactionType.CONVERSION]: 'Conversion',
+	[TransactionType.CASINO]: 'Casino'
 };
 
 /**
