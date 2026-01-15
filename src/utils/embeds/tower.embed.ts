@@ -1,6 +1,7 @@
 import { EmbedBuilder } from 'discord.js';
 import { TowerGame } from '../../models/TowerGame.interface';
 import { emojis } from '../emojis';
+import { colors } from '../customColors';
 
 function calculateGain(bet: number, floor: number) {
 	return Math.ceil(bet * (1 + 0.1 * Math.pow(floor, 2)));
@@ -42,8 +43,8 @@ export function towerEmbed(grid: number[], history: number[], currentFloor: numb
 	}
 
 	return new EmbedBuilder()
-		.setColor(0x360a5c)
-		.setTitle('La Tour de la Fortune')
+		.setColor(colors.goldCasino)
+		.setTitle(`${emojis.yellowcheck} La Tour de la Fortune`)
 		.addFields(
 			{ name: 'Mise', value: `${bet} ${emojis.rubies}`, inline: true },
 			{ name: 'Gain actuel', value: `${currentFloor === 0 ? 0 : calculateGain(bet, currentFloor)} ${emojis.rubies}`, inline: true },
@@ -81,13 +82,22 @@ export function towerEndEmbed(game: TowerGame, reason: 'win' | 'lose' | 'cashout
 		});
 
 		line += tiles.join(' ');
+
+		if (reason === 'lose' && i === game.currentFloor) {
+			// En cas de défaite, le marqueur est sur l'étage de l'explosion
+			line += ' 📍';
+		} else if ((reason === 'cashout' || reason === 'win') && i === game.currentFloor - 1) {
+			// En cas de succès/cashout, le marqueur est sur le dernier étage validé
+			line += ' 📍';
+		}
+
 		towerVisual += line + '\n';
 	}
 
-	const color = reason === 'lose' ? 0xff0000 : 0x00ff00;
-	const title = reason === 'lose' ? "💥 BOUM ! C'est perdu." : '🎉 Partie terminée !';
+	const color = reason === 'lose' ? colors.fail : colors.success;
+	const title = reason === 'lose' ? `${emojis.redcheck} La Tour de la Fortune` : `${emojis.greencheck} La Tour de la Fortune`;
 	const desc =
-		reason === 'lose' ? `Vous avez perdu votre mise de ${game.bet} ${emojis.rubies}.` : `Vous repartez avec **${winAmount} ${emojis.rubies}** !`;
+		reason === 'lose' ? `Vous perdez votre mise de **${game.bet} ${emojis.rubies}**.` : `Vous repartez avec **${winAmount} ${emojis.rubies}** !`;
 
-	return new EmbedBuilder().setColor(color).setTitle(title).setDescription(`${desc}\n\`\`\`\n${towerVisual}\`\`\``);
+	return new EmbedBuilder().setColor(color).setTitle(title).setDescription(`\`\`\`\n${towerVisual}\`\`\`\n${desc}`);
 }
