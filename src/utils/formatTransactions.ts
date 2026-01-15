@@ -47,6 +47,12 @@ export function formatTransactions(transactions: Transaction[]): string {
 							? `Vous avez reçu **+${tx.amount} ${currencyEmoji}** lors d'une conversion.`
 							: `Vous avez converti **-${Math.abs(tx.amount)} ${currencyEmoji}**.`;
 					break;
+				case TransactionType.CASINO:
+					description =
+						tx.amount >= 0
+							? `Vous avez gagné **+${tx.amount} ${currencyEmoji}** au casino.`
+							: `Vous avez perdu **-${tx.amount} ${currencyEmoji}**au casino...`;
+					break;
 				default:
 					description = `❔ Transaction inconnue : **${tx.amount} ${currencyEmoji}**.`;
 			}

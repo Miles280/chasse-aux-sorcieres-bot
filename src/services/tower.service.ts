@@ -1,5 +1,6 @@
 import { EmbedBuilder, Collection } from 'discord.js';
 import { TowerGame, TowerResult } from '../models/TowerGame.interface';
+import { container } from '@sapphire/framework';
 import * as Embeds from '../utils/embeds';
 import * as Components from '../utils/components';
 
@@ -20,11 +21,17 @@ export class TowerService {
 		const embed = Embeds.towerEmbed(grid, history, 0, bet);
 		const components = Components.buildTowerButtons(0);
 
-		const message = await interaction.reply({
+		const response = await interaction.reply({
 			embeds: [embed],
 			components: [components],
-			fetchReply: true
+			withResponse: true
 		});
+
+		const message = response.resource?.message;
+
+		if (!message) {
+			return;
+		}
 
 		// On sauvegarde l'état
 		const game: TowerGame = {
@@ -121,8 +128,7 @@ export class TowerService {
 
 		if (reason === 'cashout' || reason === 'win') {
 			winAmount = Math.ceil(game.bet * multiplier);
-			// TODO: Ajouter l'appel API ici pour créditer le joueur
-			// await this.api.post('/user/add', { userId: game.userId, amount: winAmount ... });
+			await container.economyService.casino(game.userId, winAmount, 'add');
 		}
 
 		const embed = Embeds.towerEndEmbed(game, reason, winAmount, badChoice);
