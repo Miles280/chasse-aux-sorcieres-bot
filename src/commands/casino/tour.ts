@@ -33,16 +33,26 @@ export class TowerCommand extends Command {
 			return;
 		}
 		const userBalance = response.balance!;
-		if (userBalance.rubies < bet) return interaction.reply({ content: 'Pas assez de rubis !', ephemeral: true });
+		if (userBalance.rubies < bet) {
+			return interaction.reply({
+				embeds: [
+					Embeds.errorEmbed({
+						member: interaction.member as GuildMember,
+						title: 'Regardez le ce sale pauvre',
+						message: 'Eh bah alors ? On as pas assez de Rubis pour jouer ?\n Aller dehors le gueux.'
+					})
+				],
+				flags: MessageFlags.Ephemeral
+			});
+		}
 
 		// 2. Déduire la mise immédiatement (important pour éviter les glitchs)
 		const reponseCasino = await container.economyService.casino(userId, bet, 'remove');
 		if (reponseCasino.error) {
-			await interaction.reply({
+			return interaction.reply({
 				embeds: [Embeds.errorEmbed({ member: interaction.member as GuildMember, message: reponseCasino.error })],
 				flags: MessageFlags.Ephemeral
 			});
-			return;
 		}
 
 		// 3. Lancer le jeu
