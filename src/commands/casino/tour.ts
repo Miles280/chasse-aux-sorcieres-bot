@@ -47,7 +47,7 @@ export class TowerCommand extends Command {
 		}
 
 		// 2. Déduire la mise immédiatement (important pour éviter les glitchs)
-		const reponseCasino = await container.economyService.casino(userId, bet, 'remove');
+		const reponseCasino = await container.casinoService.transaction(userId, bet, 'remove');
 		if (reponseCasino.error) {
 			return interaction.reply({
 				embeds: [Embeds.errorEmbed({ member: interaction.member as GuildMember, message: reponseCasino.error })],

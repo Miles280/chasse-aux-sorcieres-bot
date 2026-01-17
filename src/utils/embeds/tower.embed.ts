@@ -3,8 +3,18 @@ import { TowerGame } from '../../models/TowerGame.interface';
 import { emojis } from '../emojis';
 import { colors } from '../customColors';
 
-function calculateGain(bet: number, floor: number) {
-	return Math.ceil(bet * (1 + 0.1 * Math.pow(floor, 2)));
+export const TOWER_MULTIPLIERS = [1.35, 1.85, 2.6, 3.6, 5.0, 7.0, 10.0, 14.0, 20.0, 30.0];
+
+/**
+ * Calcule le gain en fonction de la mise et de l'étage
+ */
+function getGain(bet: number, floor: number): number {
+	if (floor <= 0) return 0;
+	if (floor > 10) floor = 10;
+
+	// floor 1 correspond à l'index 0 du tableau
+	const multiplier = TOWER_MULTIPLIERS[floor - 1];
+	return Math.ceil(bet * multiplier);
 }
 
 export function towerEmbed(grid: number[], history: number[], currentFloor: number, bet: number, userId: string) {
@@ -42,15 +52,18 @@ export function towerEmbed(grid: number[], history: number[], currentFloor: numb
 		towerVisual += line + '\n';
 	}
 
+	const currentGain = getGain(bet, currentFloor);
+	const nextGain = currentFloor < 10 ? getGain(bet, currentFloor + 1) : currentGain;
+
 	return new EmbedBuilder()
 		.setColor(colors.goldCasino)
 		.setTitle(`${emojis.yellowcheck} La Tour de la Fortune`)
 		.addFields(
 			{ name: 'Mise', value: `${bet} ${emojis.rubies}`, inline: true },
-			{ name: 'Gain actuel', value: `${currentFloor === 0 ? 0 : calculateGain(bet, currentFloor)} ${emojis.rubies}`, inline: true },
-			{ name: 'Prochain gain', value: `${calculateGain(bet, currentFloor + 1)} ${emojis.rubies}`, inline: true }
+			{ name: 'Gain actuel', value: `${currentGain} ${emojis.rubies}`, inline: true },
+			{ name: 'Prochain gain', value: `${nextGain} ${emojis.rubies}`, inline: true }
 		)
-		.setDescription(`**__Joueur__ :** <@${userId}>\n\`\`\`\n${towerVisual}\`\`\``);
+		.setDescription(`**__Joueur__** : <@${userId}>\n\`\`\`\n${towerVisual}\`\`\``);
 }
 
 export function towerEndEmbed(game: TowerGame, reason: 'win' | 'lose' | 'cashout', winAmount: number, userId: string, badChoice?: number) {
@@ -99,5 +112,5 @@ export function towerEndEmbed(game: TowerGame, reason: 'win' | 'lose' | 'cashout
 	const desc =
 		reason === 'lose' ? `Vous perdez votre mise de **${game.bet} ${emojis.rubies}**.` : `Vous repartez avec **${winAmount} ${emojis.rubies}** !`;
 
-	return new EmbedBuilder().setColor(color).setTitle(title).setDescription(`**__Joueur__ :** <@${userId}>\n\`\`\`\n${towerVisual}\`\`\`\n${desc}`);
+	return new EmbedBuilder().setColor(color).setTitle(title).setDescription(`**__Joueur__** : <@${userId}>\n\`\`\`\n${towerVisual}\`\`\`\n${desc}`);
 }

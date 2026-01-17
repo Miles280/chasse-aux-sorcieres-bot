@@ -123,13 +123,11 @@ export class TowerService {
 
 		let winAmount = 0;
 
-		// Logique de calcul (Maths)
-		const floorToCalculate = reason === 'lose' ? game.currentFloor : game.currentFloor;
-		const multiplier = 1 + 0.1 * Math.pow(floorToCalculate, 2);
-
 		if (reason === 'cashout' || reason === 'win') {
+			const multiplier = Embeds.TOWER_MULTIPLIERS[game.currentFloor - 1] || 1;
 			winAmount = Math.ceil(game.bet * multiplier);
-			await container.economyService.casino(game.userId, winAmount, 'add');
+
+			await container.casinoService.transaction(game.userId, winAmount, 'add');
 		}
 
 		const embed = Embeds.towerEndEmbed(game, reason, winAmount, game.userId, badChoice);

@@ -4,7 +4,6 @@ import { Transaction } from '../models/Transaction.interface';
 import { GuildMember } from 'discord.js';
 import * as Embeds from '../utils/embeds';
 import * as Components from '../utils/components';
-import { CasinoResponse } from '../models/Economy.interface';
 
 export interface UserBalance {
 	gems: number;
@@ -112,14 +111,5 @@ export class EconomyService {
 			embeds: [Embeds.buildHistoryEmbed(member, data, types)],
 			components: [Components.buildHistoryButtons(discordId, page, data.pages, types), Components.buildHistorySelect(discordId, page)]
 		};
-	}
-
-	async casino(discordId: string, amount: number, operation: 'add' | 'remove'): Promise<CasinoResponse> {
-		try {
-			return await this.api.post<TransactionResponse>('/economy/casino', { discordId, amount, operation });
-		} catch (err: any) {
-			console.error('[EconomyService] error in casino method :', err);
-			return { success: false, error: err.response.data.error || 'Une erreur est survenue lors de la transaction.' };
-		}
 	}
 }

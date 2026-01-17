@@ -28,7 +28,7 @@ export class TowerHandler extends InteractionHandler {
 					embeds: [
 						Embeds.errorEmbed({
 							member: interaction.member as GuildMember,
-							title: 'Petite voleur vas',
+							title: 'Petit voleur vas',
 							message: 'Il est pas pour toi ce bouton, si tu veux jouer fait le comme un grand avec /tour.'
 						})
 					],
@@ -60,7 +60,7 @@ export class TowerHandler extends InteractionHandler {
 			}
 
 			// 2. Déduire la mise immédiatement (important pour éviter les glitchs)
-			const reponseCasino = await container.economyService.casino(ownerId, bet, 'remove');
+			const reponseCasino = await container.casinoService.transaction(ownerId, bet, 'remove');
 			if (reponseCasino.error) {
 				return interaction.reply({
 					embeds: [Embeds.errorEmbed({ member: interaction.member as GuildMember, message: reponseCasino.error })],
