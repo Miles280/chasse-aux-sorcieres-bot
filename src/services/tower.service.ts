@@ -130,6 +130,13 @@ export class TowerService {
 			await container.casinoService.transaction(game.userId, winAmount, 'add');
 		}
 
+		const details = {
+			floor: game.currentFloor,
+			stop_reason: reason
+		};
+
+		container.casinoService.logGame(game.userId, 'tower', game.bet, winAmount, details);
+
 		const embed = Embeds.towerEndEmbed(game, reason, winAmount, game.userId, badChoice);
 		const components = Components.buildTowerPlayAgainButton(game.userId, game.bet);
 

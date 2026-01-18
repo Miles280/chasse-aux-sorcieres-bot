@@ -3,7 +3,7 @@ import { TowerGame } from '../../models/TowerGame.interface';
 import { emojis } from '../emojis';
 import { colors } from '../customColors';
 
-export const TOWER_MULTIPLIERS = [1.35, 1.85, 2.6, 3.6, 5.0, 7.0, 10.0, 14.0, 20.0, 30.0];
+export const TOWER_MULTIPLIERS = [1.35, 1.85, 2.6, 3.6, 5.0, 7.0, 10.0, 14.0, 19.0, 25.0];
 
 /**
  * Calcule le gain en fonction de la mise et de l'étage
