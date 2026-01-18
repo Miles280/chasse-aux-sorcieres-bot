@@ -3,14 +3,7 @@ import { emojis } from '../emojis';
 import { formatTransactions } from '../formatTransactions';
 import { formatTransactionLabel } from '../transactionLabels';
 
-interface BourseEmbedParams {
-	member: GuildMember;
-	gems: number;
-	rubies: number;
-	transactionsText?: string;
-}
-
-export function bourseEmbed({ member, gems, rubies, transactionsText }: BourseEmbedParams): EmbedBuilder {
+export function bourseEmbed(member: GuildMember, gems: number, rubies: number, transactionsText: string): EmbedBuilder {
 	return new EmbedBuilder()
 		.setAuthor({
 			name: member.displayName,

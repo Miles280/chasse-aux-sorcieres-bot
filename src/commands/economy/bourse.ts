@@ -158,12 +158,7 @@ export class BourseCommand extends Subcommand {
 			if (!member) return;
 
 			// Création et envoie de l'embed final
-			const embed = Embeds.bourseEmbed({
-				member,
-				gems: userBalance.gems,
-				rubies: userBalance.rubies,
-				transactionsText: formatTransactions(userBalance.transactions ?? [])
-			});
+			const embed = Embeds.bourseEmbed(member, userBalance.gems, userBalance.rubies, formatTransactions(userBalance.transactions ?? []));
 			await interaction.reply({ embeds: [embed] });
 		} catch (error) {
 			console.error(error);

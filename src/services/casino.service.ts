@@ -9,7 +9,7 @@ export class CasinoService {
 			return await this.api.post<CasinoResponse>('/casino/transaction', { discordId, amount, operation });
 		} catch (err: any) {
 			console.error('[CasinoService] error in transaction method :', err);
-			return { success: false, error: err.response.data.error || 'Une erreur est survenue lors de la transaction.' };
+			return { error: err.response.data.error || "Une erreur est survenue lors de l'enregistrement de la transaction du casino." };
 		}
 	}
 

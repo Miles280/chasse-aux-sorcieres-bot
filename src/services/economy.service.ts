@@ -1,31 +1,9 @@
 import { ApiClient } from './apiClient.service';
 import { Currency } from '../enums/Currency';
-import { Transaction } from '../models/Transaction.interface';
 import { GuildMember } from 'discord.js';
 import * as Embeds from '../utils/embeds';
 import * as Components from '../utils/components';
-
-export interface UserBalance {
-	gems: number;
-	rubies: number;
-	transactions?: Transaction[];
-}
-
-export interface TransactionResponse {
-	success: boolean;
-	currency?: Currency;
-	old?: number;
-	balance?: UserBalance;
-	error?: string;
-}
-
-export interface TransactionHistory {
-	transactions: Transaction[];
-	page: number;
-	total: number;
-	pages: number;
-	error?: string;
-}
+import { TransactionHistory, TransactionResponse, UserBalance } from '../models/Economy.interface';
 
 export class EconomyService {
 	constructor(private api: ApiClient) {}
@@ -33,10 +11,10 @@ export class EconomyService {
 	async view(discordId: string): Promise<TransactionResponse> {
 		try {
 			const balance = await this.api.get<UserBalance>(`/economy/${discordId}`);
-			return { success: true, balance };
+			return { balance };
 		} catch (err) {
 			console.error(`[EconomyService] error in view method :`, err);
-			return { success: false, error: 'Une erreur est survenue lors de la récupération du solde.' };
+			return { error: 'Une erreur est survenue lors de la récupération du solde.' };
 		}
 	}
 
@@ -45,7 +23,7 @@ export class EconomyService {
 			return await this.api.post<TransactionResponse>('/economy/give', { senderId, receiverId, currency, amount });
 		} catch (err: any) {
 			console.error('[EconomyService] error in give method :', err);
-			return { success: false, error: err.response.data.error || 'Une erreur est survenue lors de la transaction.' };
+			return { error: err.response.data.error || 'Une erreur est survenue lors de la transaction.' };
 		}
 	}
 
@@ -54,7 +32,7 @@ export class EconomyService {
 			return await this.api.post<TransactionResponse>('/economy/add', { discordId, currency, amount });
 		} catch (err: any) {
 			console.error('[EconomyService] error in add method :', err);
-			return { success: false, error: err.response.data.error || 'Une erreur est survenue lors de la transaction.' };
+			return { error: err.response.data.error || 'Une erreur est survenue lors de la transaction.' };
 		}
 	}
 
@@ -63,7 +41,7 @@ export class EconomyService {
 			return await this.api.post<TransactionResponse>('/economy/remove', { discordId, currency, amount });
 		} catch (err: any) {
 			console.error('[EconomyService] error in remove method :', err);
-			return { success: false, error: err.response.data.error || 'Une erreur est survenue lors de la transaction.' };
+			return { error: err.response.data.error || 'Une erreur est survenue lors de la transaction.' };
 		}
 	}
 
@@ -72,7 +50,7 @@ export class EconomyService {
 			return await this.api.post<TransactionResponse>('/economy/set', { discordId, currency, amount });
 		} catch (err: any) {
 			console.error('[EconomyService] error in set method :', err);
-			return { success: false, error: err.response.data.error || 'Une erreur est survenue lors de la transaction.' };
+			return { error: err.response.data.error || 'Une erreur est survenue lors de la transaction.' };
 		}
 	}
 
