@@ -1,10 +1,20 @@
 import { Currency } from '../enums/Currency';
-import { Transaction } from './Transaction.interface';
+import { TransactionType } from '../enums/TransactionType';
 
 export interface UserBalance {
 	gems: number;
 	rubies: number;
 	transactions?: Transaction[];
+}
+
+export interface Transaction {
+	id: number;
+	type: TransactionType;
+	currency: Currency;
+	amount: number;
+	description?: string | null;
+	relatedUserId?: string | null;
+	createdAt: number; // timestamp Unix (secondes)
 }
 
 export interface BalanceUpdate {
@@ -36,9 +46,10 @@ export interface TransactionResponse {
 }
 
 export interface TransactionHistory {
-	transactions: Transaction[];
-	page: number;
-	total: number;
-	pages: number;
-	error?: string;
+	items: Transaction[];
+	pagination: {
+		currentPage: number;
+		totalPages: number;
+		totalItems: number;
+	};
 }

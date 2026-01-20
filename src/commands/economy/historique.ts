@@ -1,7 +1,8 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { Command, container } from '@sapphire/framework';
-import { ChatInputCommandInteraction, InteractionContextType } from 'discord.js';
-import { disableComponentsAfter } from '../../utils/disableComponents';
+import { ChatInputCommandInteraction, InteractionContextType, MessageFlags } from 'discord.js';
+import { HistoryMessageBuilder } from '../../builders/HistoryMessage.builder';
+import * as Embeds from '../../utils/embeds';
 
 @ApplyOptions<Command.Options>({
 	name: 'historique',
@@ -30,8 +31,38 @@ export class HistoriqueCommand extends Command {
 		const member = await container.discordService.fetchMemberOrReply(interaction.guild, discordId, interaction);
 		if (!member) return;
 
-		const response = await container.economyService.buildHistoryMessage(member, discordId, 1, []);
-		const sentMessage = await interaction.reply({ ...response });
-		disableComponentsAfter(sentMessage, response.components, 2);
+		const response = await container.economyService.getHistory(discordId);
+
+		// Gestion d'erreur AVANT le builder
+		if (!response.success) {
+			return interaction.reply({
+				embeds: [Embeds.errorEmbed({ message: response.error })],
+				flags: [MessageFlags.Ephemeral]
+			});
+		}
+
+		const messageOptions = HistoryMessageBuilder.build(member, discordId, response.data);
+
+		const messageRaw = await interaction.reply({ ...messageOptions, withResponse: true });
+		const message = messageRaw.resource?.message ?? (await interaction.fetchReply());
+
+		// Désactivation des composants du message au bout de 2min
+		const collector = message.createMessageComponentCollector({
+			time: 60_000 * 2
+		});
+
+		collector.on('end', async () => {
+			try {
+				// On reprend les options actuelles mais avec les composants désactivés
+				const disabledComponents = HistoryMessageBuilder.disableComponents(messageOptions);
+
+				await interaction.editReply({
+					components: disabledComponents
+				});
+			} catch (error) {
+				// On ignore l'erreur si le message a été supprimé entre temps
+			}
+		});
+		return;
 	}
 }

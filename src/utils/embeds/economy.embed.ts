@@ -2,7 +2,7 @@ import { EmbedBuilder, GuildMember } from 'discord.js';
 import { emojis } from '../emojis';
 import { formatTransactions } from '../formatTransactions';
 import { formatTransactionLabel } from '../transactionLabels';
-import { EconomyAction, EconomyEmbedOptions } from '../../models/Economy.interface';
+import { EconomyAction, EconomyEmbedOptions, TransactionHistory } from '../../models/Economy.interface';
 import { colors } from '../customColors';
 
 export function bourseEmbed(member: GuildMember, gems: number, rubies: number, transactionsText: string): EmbedBuilder {
@@ -89,16 +89,25 @@ function formatActiveFilters(types: string[]) {
 
 export function buildHistoryEmbed(
 	member: GuildMember,
-	data: { transactions: any[]; page: number; pages: number; total: number },
+	history: TransactionHistory, // On utilise maintenant l'interface propre
 	types: string[]
 ): EmbedBuilder {
-	return new EmbedBuilder()
-		.setAuthor({
-			name: member.displayName,
-			iconURL: member.user.displayAvatarURL()
-		})
-		.setTitle(`${emojis.purplecheck} __Historique des transactions de ${member.displayName}__`)
-		.setDescription(formatActiveFilters(types) + '\n\n' + formatTransactions(data.transactions))
-		.setFooter({ text: `Page ${data.page}/${data.pages}  •  Transactions total : ${data.total}` })
-		.setColor(0x360a5c);
+	// 1. On extrait les données pour plus de lisibilité
+	const { items, pagination } = history;
+
+	return (
+		new EmbedBuilder()
+			.setAuthor({
+				name: member.displayName,
+				iconURL: member.user.displayAvatarURL()
+			})
+			.setTitle(`${emojis.purplecheck} __Historique des transactions de ${member.displayName}__`)
+			// 2. On utilise 'items' au lieu de 'transactions'
+			.setDescription(formatActiveFilters(types) + '\n\n' + (items.length > 0 ? formatTransactions(items) : '*Aucune transaction trouvée.*'))
+			// 3. On utilise les nouvelles clés de pagination
+			.setFooter({
+				text: `Page ${pagination.currentPage}/${pagination.totalPages}  •  Transactions totales : ${pagination.totalItems}`
+			})
+			.setColor(0x360a5c)
+	);
 }

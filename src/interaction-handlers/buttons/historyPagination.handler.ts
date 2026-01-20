@@ -1,6 +1,8 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes, container } from '@sapphire/framework';
-import { ButtonInteraction } from 'discord.js';
+import { ButtonInteraction, MessageFlags } from 'discord.js';
+import { HistoryMessageBuilder } from '../../builders/HistoryMessage.builder';
+import * as Embeds from '../../utils/embeds';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.Button
@@ -11,20 +13,34 @@ export class HistoryPaginationHandler extends InteractionHandler {
 	}
 
 	public override async run(interaction: ButtonInteraction) {
-		// Ex: history_next_123456789_2_GAIN,TRANSFER
+		// 1. Extraction des données du customId
 		const [, direction, discordId, currentPage, typesEncoded] = interaction.customId.split('_');
 		const types = decodeURIComponent(typesEncoded || '')
 			.split(',')
 			.filter(Boolean);
-		let page = Number(currentPage);
 
+		let page = Number(currentPage);
 		page = direction === 'next' ? page + 1 : page - 1;
 
-		// Vérification que le membre est sur le serveur (pour pouvoir afficher l'utilisateur dans l'embed)
+		// 2. Vérification du membre
 		const member = await container.discordService.fetchMemberOrReply(interaction.guild, discordId, interaction);
 		if (!member) return;
 
-		const messageData = await container.economyService.buildHistoryMessage(member, discordId, page, types);
-		await interaction.update({ ...messageData });
+		// 3. Appel au SERVICE pour récupérer les nouvelles données de la page
+		const response = await container.economyService.getHistory(discordId, page, types);
+
+		// 4. Gestion d'erreur (AVANT le builder)
+		if (!response.success) {
+			return interaction.reply({
+				embeds: [Embeds.errorEmbed({ message: response.error })],
+				flags: [MessageFlags.Ephemeral]
+			});
+		}
+
+		// 5. Appel au BUILDER avec les données validées
+		const messageOptions = HistoryMessageBuilder.build(member, discordId, response.data, page, types);
+
+		// 6. Mise à jour du message
+		return interaction.update(messageOptions);
 	}
 }
