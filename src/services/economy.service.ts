@@ -3,55 +3,30 @@ import { Currency } from '../enums/Currency';
 import { GuildMember } from 'discord.js';
 import * as Embeds from '../utils/embeds';
 import * as Components from '../utils/components';
-import { TransactionHistory, TransactionResponse, UserBalance } from '../models/Economy.interface';
+import { BalanceUpdate, TransactionHistory, UserBalance } from '../models/Economy.interface';
+import { ApiResponse } from '../models/ApiResponse.interface';
 
 export class EconomyService {
 	constructor(private api: ApiClient) {}
 
-	async view(discordId: string): Promise<TransactionResponse> {
-		try {
-			const balance = await this.api.get<UserBalance>(`/economy/${discordId}`);
-			return { balance };
-		} catch (err) {
-			console.error(`[EconomyService] error in view method :`, err);
-			return { error: 'Une erreur est survenue lors de la récupération du solde.' };
-		}
+	async view(discordId: string): Promise<ApiResponse<UserBalance>> {
+		return await this.api.get<UserBalance>(`/economy/view${discordId}`);
 	}
 
-	async give(senderId: string, receiverId: string, currency: Currency, amount: number): Promise<TransactionResponse> {
-		try {
-			return await this.api.post<TransactionResponse>('/economy/give', { senderId, receiverId, currency, amount });
-		} catch (err: any) {
-			console.error('[EconomyService] error in give method :', err);
-			return { error: err.response.data.error || 'Une erreur est survenue lors de la transaction.' };
-		}
+	async give(senderId: string, receiverId: string, currency: Currency, amount: number): Promise<ApiResponse<BalanceUpdate>> {
+		return await this.api.post<BalanceUpdate>('/economy/give', { senderId, receiverId, currency, amount });
 	}
 
-	async add(discordId: string, currency: Currency, amount: number): Promise<TransactionResponse> {
-		try {
-			return await this.api.post<TransactionResponse>('/economy/add', { discordId, currency, amount });
-		} catch (err: any) {
-			console.error('[EconomyService] error in add method :', err);
-			return { error: err.response.data.error || 'Une erreur est survenue lors de la transaction.' };
-		}
+	async add(discordId: string, currency: Currency, amount: number): Promise<ApiResponse<BalanceUpdate>> {
+		return await this.api.post<BalanceUpdate>('/economy/add', { discordId, currency, amount });
 	}
 
-	async remove(discordId: string, currency: Currency, amount: number): Promise<TransactionResponse> {
-		try {
-			return await this.api.post<TransactionResponse>('/economy/remove', { discordId, currency, amount });
-		} catch (err: any) {
-			console.error('[EconomyService] error in remove method :', err);
-			return { error: err.response.data.error || 'Une erreur est survenue lors de la transaction.' };
-		}
+	async remove(discordId: string, currency: Currency, amount: number): Promise<ApiResponse<BalanceUpdate>> {
+		return await this.api.post<BalanceUpdate>('/economy/remove', { discordId, currency, amount });
 	}
 
-	async set(discordId: string, currency: Currency, amount: number): Promise<TransactionResponse> {
-		try {
-			return await this.api.post<TransactionResponse>('/economy/set', { discordId, currency, amount });
-		} catch (err: any) {
-			console.error('[EconomyService] error in set method :', err);
-			return { error: err.response.data.error || 'Une erreur est survenue lors de la transaction.' };
-		}
+	async set(discordId: string, currency: Currency, amount: number): Promise<ApiResponse<BalanceUpdate>> {
+		return await this.api.post<BalanceUpdate>('/economy/set', { discordId, currency, amount });
 	}
 
 	async getTransactions(discordId: string, page = 1, types: string[] = []): Promise<TransactionHistory> {

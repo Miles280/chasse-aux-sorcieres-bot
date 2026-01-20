@@ -1,16 +1,31 @@
 import { Currency } from '../enums/Currency';
 import { Transaction } from './Transaction.interface';
 
-export interface CasinoResponse {
-	old?: number;
-	rubies?: number;
-	error?: string;
-}
-
 export interface UserBalance {
 	gems: number;
 	rubies: number;
 	transactions?: Transaction[];
+}
+
+export interface BalanceUpdate {
+	previous: UserBalance;
+	current: UserBalance;
+}
+
+export type EconomyAction = 'add' | 'remove' | 'set' | 'give';
+
+export type EconomyEmbedOptions = {
+	targetId: string;
+	action: EconomyAction;
+	currency: 'gems' | 'rubies';
+	amount: number;
+	update: BalanceUpdate;
+};
+
+export interface CasinoResponse {
+	old?: number;
+	rubies?: number;
+	error?: string;
 }
 
 export interface TransactionResponse {
