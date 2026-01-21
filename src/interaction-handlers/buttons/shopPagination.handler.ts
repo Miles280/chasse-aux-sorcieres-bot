@@ -37,7 +37,7 @@ export class ShopPaginationHandler extends InteractionHandler {
 
 		const messageOptions = ShopMessageBuilder.build(currency, page, response.data);
 
-		return interaction.reply({
+		return interaction.update({
 			...messageOptions,
 			flags: [MessageFlags.IsComponentsV2]
 		});

@@ -54,7 +54,6 @@ export function economyActionEmbed(opts: EconomyEmbedOptions) {
 	// 1. Choix de l'emoji et du label
 	const isGems = currency === 'gems';
 	const emoji = isGems ? emojis.gems : emojis.rubies;
-	const label = isGems ? 'Gemmes' : 'Rubis';
 
 	// 2. Extraction dynamique des valeurs (Zéro calcul ici !)
 	// On va chercher la valeur exacte dans les objets reçus de l'API
@@ -73,7 +72,7 @@ export function economyActionEmbed(opts: EconomyEmbedOptions) {
 		.addFields([
 			{
 				// Ex: "💎 Gemmes modifiées :"
-				name: `${emoji} ${label} modifié${isGems ? 'es' : 's'} :`,
+				name: `${emoji} Solde modifié :`,
 				// Ex: "1 000 💎 → 1 500 💎"
 				value: `\`${oldFmt}\` ${emoji} **→** \`${newFmt}\` ${emoji}`,
 				inline: true
@@ -108,6 +107,6 @@ export function buildHistoryEmbed(
 			.setFooter({
 				text: `Page ${pagination.currentPage}/${pagination.totalPages}  •  Transactions totales : ${pagination.totalItems}`
 			})
-			.setColor(0x360a5c)
+			.setColor(colors.purpleWitch)
 	);
 }
