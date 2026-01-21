@@ -202,7 +202,7 @@ export class BourseCommand extends Subcommand {
 			const embed = Embeds.economyActionEmbed({
 				action: 'give',
 				targetId: receiverId,
-				currency: 'rubies',
+				currency: currency,
 				amount: amount,
 				update: response.data
 			});
@@ -254,7 +254,7 @@ export class BourseCommand extends Subcommand {
 			const embed = Embeds.economyActionEmbed({
 				action: 'add',
 				targetId: targetId,
-				currency: 'rubies',
+				currency: currency,
 				amount: amount,
 				update: response.data
 			});
@@ -306,7 +306,7 @@ export class BourseCommand extends Subcommand {
 			const embed = Embeds.economyActionEmbed({
 				action: 'remove',
 				targetId: targetId,
-				currency: 'rubies',
+				currency: currency,
 				amount: amount,
 				update: response.data
 			});
@@ -358,7 +358,7 @@ export class BourseCommand extends Subcommand {
 			const embed = Embeds.economyActionEmbed({
 				action: 'set',
 				targetId: targetId,
-				currency: 'rubies',
+				currency: currency,
 				amount: amount,
 				update: response.data
 			});

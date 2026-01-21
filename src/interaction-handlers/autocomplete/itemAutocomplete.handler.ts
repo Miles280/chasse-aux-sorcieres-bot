@@ -19,7 +19,7 @@ export class ItemAutocompleteHandler extends InteractionHandler {
 
 		// ----- AUTOCOMPLETE POUR /item info (Tous les items du shop) -----
 		if (sub === 'info') {
-			const response = await container.shopService.getAllArticles(); // Ajuste selon le nom de ta méthode
+			const response = await container.shopService.getAllArticles();
 
 			if (!response.success) return this.none();
 
