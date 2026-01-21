@@ -26,16 +26,11 @@ export class EconomyService {
 		return await this.api.post<BalanceUpdate>('/economy/set', { discordId, currency, amount });
 	}
 
-	async getTransactions(discordId: string, page = 1, types: string[] = []): Promise<ApiResponse<TransactionHistory>> {
+	async getTransactions(discordId: string, page: number = 1, types: string[] = []): Promise<ApiResponse<TransactionHistory>> {
 		const queryParams = new URLSearchParams({
 			page: String(page),
 			types: types.join(',')
 		});
 		return await this.api.get<TransactionHistory>(`/economy/transactions/${discordId}?${queryParams.toString()}`);
-	}
-
-	async getHistory(discordId: string, page: number = 1, types: string[] = ['ALL']): Promise<ApiResponse<TransactionHistory>> {
-		const query = new URLSearchParams({ page: page.toString(), types: types.join(',') });
-		return await this.api.get<TransactionHistory>(`/economy/${discordId}/history?${query}`);
 	}
 }

@@ -2,6 +2,8 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes, container } from '@sapphire/framework';
 import { MessageFlags, type ButtonInteraction } from 'discord.js';
 import { Currency } from '../../enums/Currency';
+import * as Embeds from '../../utils/embeds';
+import { ShopMessageBuilder } from '../../builders/ShopMessage.builder';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.Button
@@ -24,11 +26,20 @@ export class ShopPaginationHandler extends InteractionHandler {
 			page--;
 		}
 
-		const { components } = await container.shopService.buildShopView(currency, page);
+		const response = await container.shopService.getArticles(currency, page);
 
-		return interaction.update({
-			components: components,
-			flags: MessageFlags.IsComponentsV2
+		if (!response.success) {
+			return interaction.reply({
+				embeds: [Embeds.errorEmbed({ message: response.error })],
+				flags: [MessageFlags.Ephemeral]
+			});
+		}
+
+		const messageOptions = ShopMessageBuilder.build(currency, page, response.data);
+
+		return interaction.reply({
+			...messageOptions,
+			flags: [MessageFlags.IsComponentsV2]
 		});
 	}
 }

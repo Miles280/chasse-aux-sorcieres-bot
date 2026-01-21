@@ -31,7 +31,7 @@ export class HistoriqueCommand extends Command {
 		const member = await container.discordService.fetchMemberOrReply(interaction.guild, discordId, interaction);
 		if (!member) return;
 
-		const response = await container.economyService.getHistory(discordId);
+		const response = await container.economyService.getTransactions(discordId);
 
 		// Gestion d'erreur AVANT le builder
 		if (!response.success) {

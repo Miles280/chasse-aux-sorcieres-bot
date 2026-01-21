@@ -3,6 +3,7 @@ import { Command } from '@sapphire/framework';
 import { container } from '@sapphire/framework';
 import { Currency } from '../../enums/Currency';
 import { InteractionContextType, MessageFlags } from 'discord.js';
+import { ShopMessageBuilder } from '../../builders/ShopMessage.builder';
 import * as Embeds from '../../utils/embeds';
 
 @ApplyOptions<Command.Options>({
@@ -35,20 +36,20 @@ export class BoutiqueCommand extends Command {
 		const currency = (interaction.options.getString('monnaie') as Currency) ?? 'gems';
 		const page = interaction.options.getInteger('page') ?? 1;
 
-		await interaction.deferReply();
+		const response = await container.shopService.getArticles(currency, page);
 
-		const response = await container.shopService.buildShopView(currency, page);
-
-		if (response.error) {
-			await interaction.editReply({
-				embeds: [Embeds.errorEmbed({ title: 'Boutique fermée !', message: response.error })]
+		if (!response.success) {
+			return interaction.reply({
+				embeds: [Embeds.errorEmbed({ message: response.error })],
+				flags: [MessageFlags.Ephemeral]
 			});
-			return;
 		}
 
-		await interaction.editReply({
-			components: response.components,
-			flags: MessageFlags.IsComponentsV2
+		const messageOptions = ShopMessageBuilder.build(currency, page, response.data);
+
+		return interaction.reply({
+			...messageOptions,
+			flags: [MessageFlags.IsComponentsV2]
 		});
 	}
 }

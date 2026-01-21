@@ -1,23 +1,7 @@
 import { EmbedBuilder, GuildMember } from 'discord.js';
-import { Item, ShopResponse } from '../../models/Shop.interface';
+import { Inventory, Item } from '../../models/Shop.interface';
 import { emojis } from '../emojis';
-
-export function shopEmbed(shopData: ShopResponse) {
-	const embed = new EmbedBuilder()
-		.setTitle(`Boutique de Nistrium`)
-		.setColor('#360a5c')
-		.setFooter({ text: `Page ${shopData.page}/${shopData.pages}` })
-		.setTimestamp();
-
-	shopData.items.forEach((item, index) => {
-		embed.addFields({
-			name: `${index + 1}. ${item.name} (${item.price} ${item.currency})`,
-			value: item.description
-		});
-	});
-
-	return embed;
-}
+import { colors } from '../customColors';
 
 export function itemInfoEmbed(item: Item) {
 	const fields = [];
@@ -73,15 +57,20 @@ export function itemInfoEmbed(item: Item) {
 	}
 
 	return new EmbedBuilder()
-		.setColor('#360a5c')
+		.setColor(colors.purpleWitch)
 		.setTitle(`${emojis.purplecheck} __Détail d'un article__`)
 		.addFields(fields)
 		.setFooter({ text: 'Faites /boutique pour explorer les autres articles en vente.' });
 }
 
-export function inventoryEmbed({ member, items }: { member: GuildMember; items: Item[] }): EmbedBuilder {
+export function inventoryEmbed({ member, inventory }: { member: GuildMember; inventory: Inventory }): EmbedBuilder {
 	const formattedItems =
-		items.length > 0 ? items.map((item) => `> - ${item.name}  x\`${item.quantity}\` `).join('\n') : '> Aucun item dans votre inventaire.';
+		inventory.items.length > 0
+			? inventory.items
+					// On déstructure "item" (les infos de l'objet) et "quantity" (le nombre possédé)
+					.map(({ item, quantity }) => `> - ${item.name}  x\`${quantity}\``)
+					.join('\n')
+			: '> Aucun item dans votre inventaire.';
 
 	return new EmbedBuilder()
 		.setAuthor({
@@ -90,7 +79,7 @@ export function inventoryEmbed({ member, items }: { member: GuildMember; items: 
 		})
 		.setTitle(`${emojis.purplecheck} __Inventaire de ${member.displayName}__`)
 		.setDescription(formattedItems)
-		.setColor('#360a5c')
+		.setColor(colors.purpleWitch)
 		.setFooter({ text: 'Vendez un de vos items à un joueur avec /item sell !' });
 }
 

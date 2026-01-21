@@ -27,7 +27,7 @@ export class HistoryPaginationHandler extends InteractionHandler {
 		if (!member) return;
 
 		// 3. Appel au SERVICE pour récupérer les nouvelles données de la page
-		const response = await container.economyService.getHistory(discordId, page, types);
+		const response = await container.economyService.getTransactions(discordId, page, types);
 
 		// 4. Gestion d'erreur (AVANT le builder)
 		if (!response.success) {

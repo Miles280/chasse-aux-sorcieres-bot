@@ -45,22 +45,21 @@ export class SellHandler extends InteractionHandler {
 		} else {
 			const response = await container.inventoryService.tradeItem(sellerId, buyerId, itemId, currency, price);
 
-			if (response.error) {
+			// Gestion d'erreur AVANT le builder
+			if (!response.success) {
 				return interaction.reply({
-					embeds: [
-						Embeds.errorEmbed({
-							title: 'Achat annulé',
-							message: response.error ?? 'Une erreur inconnue est survenue.'
-						})
-					]
+					embeds: [Embeds.errorEmbed({ message: response.error })],
+					flags: [MessageFlags.Ephemeral]
 				});
 			}
+
+			const message = response.data.message;
 
 			return interaction.reply({
 				embeds: [
 					Embeds.successEmbed({
 						title: 'Achat réalisé avec succès',
-						message: response.message ?? 'Action réussie'
+						message: message ?? 'Action réussie'
 					})
 				]
 			});
