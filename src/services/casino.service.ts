@@ -1,16 +1,12 @@
 import { ApiClient } from './apiClient.service';
-import { CasinoResponse } from '../models/Economy.interface';
+import { CasinoUpdate } from '../models/Economy.interface';
+import { ApiResponse } from '../models/ApiResponse.interface';
 
 export class CasinoService {
 	constructor(private api: ApiClient) {}
 
-	async transaction(discordId: string, amount: number, operation: 'add' | 'remove'): Promise<CasinoResponse> {
-		try {
-			return await this.api.post<CasinoResponse>('/casino/transaction', { discordId, amount, operation });
-		} catch (err: any) {
-			console.error('[CasinoService] error in transaction method :', err);
-			return { error: err.response.data.error || "Une erreur est survenue lors de l'enregistrement de la transaction du casino." };
-		}
+	async transaction(discordId: string, amount: number, operation: 'add' | 'remove'): Promise<ApiResponse<CasinoUpdate>> {
+		return await this.api.post<CasinoUpdate>('/casino/transaction', { discordId, amount, operation });
 	}
 
 	public logGame(userId: string, gameName: string, betAmount: number, winAmount: number, details: any) {

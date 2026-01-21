@@ -7,7 +7,7 @@ export class EconomyService {
 	constructor(private api: ApiClient) {}
 
 	async view(discordId: string): Promise<ApiResponse<UserBalance>> {
-		return await this.api.get<UserBalance>(`/economy/view${discordId}`);
+		return await this.api.get<UserBalance>(`/economy/view/${discordId}`);
 	}
 
 	async give(senderId: string, receiverId: string, currency: Currency, amount: number): Promise<ApiResponse<BalanceUpdate>> {

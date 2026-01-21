@@ -6,7 +6,7 @@ import { ApiClient } from './apiClient.service';
 export class InventoryService {
 	constructor(private api: ApiClient) {}
 
-	async getInventory(discordId: string): Promise<ApiResponse<Inventory>> {
+	async getUserInventory(discordId: string): Promise<ApiResponse<Inventory>> {
 		return await this.api.post<Inventory>(`/inventory/view`, { discordId });
 	}
 

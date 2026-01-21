@@ -1,53 +1,48 @@
 import { ApplyOptions } from '@sapphire/decorators';
-import { InteractionHandler, InteractionHandlerTypes } from '@sapphire/framework';
+import { InteractionHandler, InteractionHandlerTypes, container } from '@sapphire/framework';
 import type { AutocompleteInteraction } from 'discord.js';
-import { container } from '@sapphire/framework';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.Autocomplete
 })
 export class ItemAutocompleteHandler extends InteractionHandler {
 	public override async parse(interaction: AutocompleteInteraction) {
-		if (interaction.commandName !== 'item') {
-			return this.none();
-		}
+		if (interaction.commandName !== 'item') return this.none();
 
-		let sub: string;
-		try {
-			sub = interaction.options.getSubcommand();
-		} catch {
-			return this.none();
-		}
-
+		const sub = interaction.options.getSubcommand(false);
 		const focused = interaction.options.getFocused(true);
-		if (focused.name !== 'item') {
-			return this.none();
-		}
 
+		if (focused.name !== 'item' || !sub) return this.none();
+
+		const searchTerm = focused.value.toLowerCase();
 		let choices: { name: string; value: string }[] = [];
 
-		// ----- AUTOCOMPLETE POUR /item info -----
+		// ----- AUTOCOMPLETE POUR /item info (Tous les items du shop) -----
 		if (sub === 'info') {
-			const response = await container.shopService.getAllArticles();
-			if (response.error) return this.none();
+			const response = await container.shopService.getAllArticles(); // Ajuste selon le nom de ta méthode
 
-			choices = response.items
-				.filter((i) => i.name.toLowerCase().includes(focused.value.toLowerCase()))
+			if (!response.success) return this.none();
+
+			choices = response.data
+				.filter((i) => i.name.toLowerCase().includes(searchTerm))
 				.slice(0, 25)
 				.map((i) => ({ name: i.name, value: i.id.toString() }));
 		}
 
-		// ----- AUTOCOMPLETE POUR /item sell -----
+		// ----- AUTOCOMPLETE POUR /item sell (Seulement les items du joueur) -----
 		if (sub === 'sell') {
 			const userId = interaction.user.id;
+			const response = await container.inventoryService.getUserInventory(userId);
 
-			const inventory = await container.inventoryService.getInventory(userId);
-			if (inventory.error) return this.none();
+			if (!response.success) return this.none();
 
-			choices = inventory.items
-				.filter((i) => i.item.name.toLowerCase().includes(focused.value.toLowerCase()))
+			choices = response.data.items
+				.filter((entry) => entry.item.name.toLowerCase().includes(searchTerm))
 				.slice(0, 25)
-				.map((i) => ({ name: i.item.name, value: i.item.id.toString() }));
+				.map((entry) => ({
+					name: `${entry.item.name} (x${entry.quantity})`,
+					value: entry.item.id.toString()
+				}));
 		}
 
 		return this.some(choices);

@@ -1,7 +1,7 @@
 import { Currency } from '../enums/Currency';
 import { Item, Shop } from '../models/Shop.interface';
 import { ApiClient } from './apiClient.service';
-import { ApiResponse } from '../models/ApiResponse.interface';
+import { ApiResponse, ValidationResponse } from '../models/ApiResponse.interface';
 
 export class ShopService {
 	constructor(private api: ApiClient) {}
@@ -15,13 +15,8 @@ export class ShopService {
 		return response;
 	}
 
-	async buyArticle(discordId: string, itemId: number): Promise<ApiResponse> {
-		try {
-			return await this.api.post<ApiResponse>(`/shop/buy`, { discordId, itemId });
-		} catch (err) {
-			console.error(`[ShopService] error in buyArticle method :`, err);
-			return { error: "Une erreur est survenue lors de l'achat de votre article." };
-		}
+	async buyArticle(discordId: string, itemId: number): Promise<ApiResponse<ValidationResponse>> {
+		return await this.api.post<ValidationResponse>(`/shop/buy`, { discordId, itemId });
 	}
 
 	async getDetail(itemId: number): Promise<ApiResponse<Item>> {

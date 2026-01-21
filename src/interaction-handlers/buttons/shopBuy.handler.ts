@@ -1,8 +1,9 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes, container } from '@sapphire/framework';
 import { GuildMember, MessageFlags, type ButtonInteraction } from 'discord.js';
-import * as Embeds from '../../utils/embeds';
 import { Currency } from '../../enums/Currency';
+import { ShopMessageBuilder } from '../../builders/ShopMessage.builder';
+import * as Embeds from '../../utils/embeds';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.Button
@@ -38,7 +39,7 @@ export class ShopPaginationHandler extends InteractionHandler {
 		const response = await container.shopService.buyArticle(interaction.user.id, itemId);
 
 		// Affichage de l'erreur si il y en as une
-		if (response.error) {
+		if (!response.success) {
 			return interaction.reply({
 				embeds: [Embeds.errorEmbed({ message: response.error, member: member, title: 'Pas pour cette fois...' })],
 				flags: MessageFlags.Ephemeral
@@ -57,14 +58,25 @@ export class ShopPaginationHandler extends InteractionHandler {
 			}
 		}
 
-		// await interaction.deferUpdate();
+		const res = await container.shopService.getArticles(currency, page);
 
-		const { components } = await container.shopService.buildShopView(currency, page);
-		await interaction.update({ components: components, flags: MessageFlags.IsComponentsV2 });
+		if (!res.success) {
+			return interaction.reply({
+				embeds: [Embeds.errorEmbed({ message: res.error })],
+				flags: [MessageFlags.Ephemeral]
+			});
+		}
 
-		// Message finalde confirmation
+		const messageOptions = ShopMessageBuilder.build(currency, page, res.data);
+
+		await interaction.reply({
+			...messageOptions,
+			flags: [MessageFlags.IsComponentsV2]
+		});
+
+		// Message final de confirmation
 		return interaction.followUp({
-			embeds: [Embeds.successEmbed({ message: response.message!, member: member, title: 'Merci pour votre achat' })]
+			embeds: [Embeds.successEmbed({ message: response.data.message, member: member, title: 'Merci pour votre achat' })]
 		});
 	}
 }

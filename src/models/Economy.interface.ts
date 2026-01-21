@@ -31,6 +31,11 @@ export interface TransactionHistory {
 	};
 }
 
+export interface CasinoUpdate {
+	previous: number;
+	current: number;
+}
+
 export type EconomyAction = 'add' | 'remove' | 'set' | 'give';
 
 export type EconomyEmbedOptions = {
@@ -40,9 +45,3 @@ export type EconomyEmbedOptions = {
 	amount: number;
 	update: BalanceUpdate;
 };
-
-export interface CasinoResponse {
-	old?: number;
-	rubies?: number;
-	error?: string;
-}

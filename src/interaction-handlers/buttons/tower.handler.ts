@@ -37,15 +37,18 @@ export class TowerHandler extends InteractionHandler {
 			}
 
 			// 1. Vérifier si le joueur a assez de Rubis via l'API
-			const response = await container.economyService.view(ownerId);
-			if (response.error) {
+			const response = await container.economyService.view(interaction.user.id);
+
+			if (!response.success) {
 				await interaction.reply({
 					embeds: [Embeds.errorEmbed({ member: interaction.member as GuildMember, message: response.error })],
 					flags: MessageFlags.Ephemeral
 				});
 				return;
 			}
-			const userBalance = response.balance!;
+
+			const userBalance = response.data;
+
 			if (userBalance.rubies < bet) {
 				return interaction.reply({
 					embeds: [
@@ -61,7 +64,8 @@ export class TowerHandler extends InteractionHandler {
 
 			// 2. Déduire la mise immédiatement (important pour éviter les glitchs)
 			const reponseCasino = await container.casinoService.transaction(ownerId, bet, 'remove');
-			if (reponseCasino.error) {
+
+			if (!reponseCasino.success) {
 				return interaction.reply({
 					embeds: [Embeds.errorEmbed({ member: interaction.member as GuildMember, message: reponseCasino.error })],
 					flags: MessageFlags.Ephemeral
