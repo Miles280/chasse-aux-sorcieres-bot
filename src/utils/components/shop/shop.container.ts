@@ -1,9 +1,10 @@
 import { ContainerBuilder, SeparatorBuilder, SeparatorSpacingSize, TextDisplayBuilder } from 'discord.js';
 import { emojis } from '../../emojis';
+import { colors } from '../../customColors';
 
 export function buildShopContainer(isEmpty: boolean) {
 	const container = new ContainerBuilder()
-		.setAccentColor(0x360a5c)
+		.setAccentColor(colors.purpleWitch)
 		.addTextDisplayComponents(new TextDisplayBuilder().setContent(`### ${emojis.purplecheck} __Boutique de Nistrium__`))
 		.addTextDisplayComponents(new TextDisplayBuilder().setContent('Venez profiter de tous nos articles de qualité rien que pour vous !'));
 

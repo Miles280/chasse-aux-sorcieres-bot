@@ -7,6 +7,11 @@ export interface UserBalance {
 	transactions?: Transaction[];
 }
 
+export interface BalanceUpdate {
+	previous: UserBalance;
+	current: UserBalance;
+}
+
 export interface Transaction {
 	id: number;
 	type: TransactionType;
@@ -17,9 +22,13 @@ export interface Transaction {
 	createdAt: number; // timestamp Unix (secondes)
 }
 
-export interface BalanceUpdate {
-	previous: UserBalance;
-	current: UserBalance;
+export interface TransactionHistory {
+	items: Transaction[];
+	pagination: {
+		currentPage: number;
+		totalPages: number;
+		totalItems: number;
+	};
 }
 
 export type EconomyAction = 'add' | 'remove' | 'set' | 'give';
@@ -36,20 +45,4 @@ export interface CasinoResponse {
 	old?: number;
 	rubies?: number;
 	error?: string;
-}
-
-export interface TransactionResponse {
-	currency?: Currency;
-	old?: number;
-	balance?: UserBalance;
-	error?: string;
-}
-
-export interface TransactionHistory {
-	items: Transaction[];
-	pagination: {
-		currentPage: number;
-		totalPages: number;
-		totalItems: number;
-	};
 }
