@@ -14,8 +14,6 @@ export class HistoryMessageBuilder {
 		};
 	}
 
-	// Dans HistoryMessage.builder.ts
-
 	public static disableComponents(messageOptions: any) {
 		if (!messageOptions.components) return [];
 
