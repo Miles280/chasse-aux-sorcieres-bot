@@ -155,7 +155,7 @@ export class TowerMessageBuilder {
 			const replayRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
 				new ButtonBuilder()
 					.setCustomId(`tower_playAgain_${game.userId}_${game.bet}`)
-					.setLabel(`Rejouer avec ${game.bet} Rubis`)
+					.setLabel(`Rejouer la mise`)
 					.setStyle(ButtonStyle.Primary)
 			);
 			rows.push(replayRow);
