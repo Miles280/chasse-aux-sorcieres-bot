@@ -13,8 +13,8 @@ export function bourseEmbed(member: GuildMember, gems: number, rubies: number, t
 		})
 		.setTitle(`${emojis.purplecheck} __Bourse de ${member.displayName}__`)
 		.addFields(
-			{ name: 'Contenu :', value: `> \`${gems}\` ${emojis.gems}`, inline: true },
-			{ name: '\u200B', value: `> \`${rubies}\` ${emojis.rubies}`, inline: true }
+			{ name: 'Contenu :', value: `> \`${gems.toLocaleString('fr-FR')}\` ${emojis.gems}`, inline: true },
+			{ name: '\u200B', value: `> \`${rubies.toLocaleString('fr-FR')}\` ${emojis.rubies}`, inline: true }
 		)
 		.addFields({
 			name: '\nDernières transactions :',
@@ -61,8 +61,8 @@ export function economyActionEmbed(opts: EconomyEmbedOptions) {
 	const newValue = isGems ? update.current.gems : update.current.rubies;
 
 	// 3. Formatage propre des nombres (ex: 1 000 au lieu de 1000)
-	const oldFmt = oldValue.toLocaleString();
-	const newFmt = newValue.toLocaleString();
+	const oldFmt = oldValue.toLocaleString('fr-FR');
+	const newFmt = newValue.toLocaleString('fr-FR');
 
 	// 4. Création de l'embed
 	return new EmbedBuilder()
