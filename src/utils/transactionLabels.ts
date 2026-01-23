@@ -1,6 +1,8 @@
 import { TransactionType } from '../enums/TransactionType';
 
 export const TRANSACTION_LABELS: Record<string, string> = {
+	[TransactionType.CASINO]: 'Casino',
+	[TransactionType.CONVERSION]: 'Conversion',
 	[TransactionType.GAIN]: 'Gain',
 	[TransactionType.LOSE]: 'Perte',
 	[TransactionType.DONATION]: 'Donation',
@@ -9,8 +11,7 @@ export const TRANSACTION_LABELS: Record<string, string> = {
 	[TransactionType.SELL]: 'Vente',
 	[TransactionType.ADD]: 'Ajout',
 	[TransactionType.REMOVE]: 'Retrait',
-	[TransactionType.SET]: 'Solde défini',
-	[TransactionType.CONVERSION]: 'Conversion'
+	[TransactionType.SET]: 'Solde défini'
 };
 
 /**

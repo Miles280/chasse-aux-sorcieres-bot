@@ -8,5 +8,6 @@ export enum TransactionType {
 	PURCHASE = 'purchase',
 	SELL = 'sell',
 	SET = 'set',
-	CONVERSION = 'conversion'
+	CONVERSION = 'conversion',
+	CASINO = 'casino'
 }

@@ -2,9 +2,9 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { Subcommand } from '@sapphire/plugin-subcommands';
 import { ActionRowBuilder, ButtonBuilder, ComponentType, GuildMember, InteractionContextType, MessageFlags } from 'discord.js';
 import { container } from '@sapphire/framework';
-import { Currency } from '../enums/Currency';
-import * as Embeds from '../utils/embeds';
-import * as Components from '../utils/components';
+import { Currency } from '../../enums/Currency';
+import * as Embeds from '../../utils/embeds';
+import * as Components from '../../utils/components';
 
 @ApplyOptions<Subcommand.Options>({
 	name: 'item',
@@ -73,18 +73,21 @@ export class itemCommand extends Subcommand {
 
 		// Demande à l'API les informations de l'inventaire du membre
 		const response = await container.shopService.getDetail(itemId);
-		if (response.error) {
-			await interaction.reply({
-				embeds: [Embeds.errorEmbed({ member: interaction.member as GuildMember, message: response.error })],
-				flags: MessageFlags.Ephemeral
+
+		// Gestion d'erreur AVANT le builder
+		if (!response.success) {
+			return interaction.reply({
+				embeds: [Embeds.errorEmbed({ message: response.error })],
+				flags: [MessageFlags.Ephemeral]
 			});
-			return;
 		}
 
-		// Création et envoie de l'embed final
-		const embed = Embeds.itemInfoEmbed(response.item!);
+		const item = response.data;
 
-		await interaction.reply({
+		// Création et envoie de l'embed final
+		const embed = Embeds.itemInfoEmbed(item);
+
+		return interaction.reply({
 			embeds: [embed]
 		});
 	}
@@ -111,14 +114,15 @@ export class itemCommand extends Subcommand {
 
 		const response = await container.shopService.getDetail(itemId);
 
-		if (response.error || !response.item) {
+		// Gestion d'erreur AVANT le builder
+		if (!response.success) {
 			return interaction.reply({
-				embeds: [Embeds.errorEmbed({ member: seller, title: 'Vente annulée', message: response.error ?? 'Impossible de trouver cet item.' })],
-				flags: MessageFlags.Ephemeral
+				embeds: [Embeds.errorEmbed({ message: response.error })],
+				flags: [MessageFlags.Ephemeral]
 			});
 		}
 
-		const item = response.item;
+		const item = response.data;
 
 		const embed = Embeds.sellProposalEmbed({ seller, buyer, item, currency, price });
 

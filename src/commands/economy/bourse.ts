@@ -1,10 +1,10 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { container } from '@sapphire/framework';
 import { GuildMember, InteractionContextType, MessageFlags } from 'discord.js';
-import { formatTransactions } from '../utils/formatTransactions';
+import { formatTransactions } from '../../utils/formatTransactions';
 import { Subcommand } from '@sapphire/plugin-subcommands';
-import { Currency } from '../enums/Currency';
-import * as Embeds from '../utils/embeds';
+import { Currency } from '../../enums/Currency';
+import * as Embeds from '../../utils/embeds';
 
 @ApplyOptions<Subcommand.Options>({
 	name: 'bourse',
@@ -144,31 +144,32 @@ export class BourseCommand extends Subcommand {
 
 			// Demande à l'API les informations de la bourse du membre en question via son ID discord
 			const response = await container.economyService.view(discordIdToFetch);
-			if (response.error) {
+			if (!response.success) {
 				await interaction.reply({
 					embeds: [Embeds.errorEmbed({ member: interaction.member as GuildMember, message: response.error })],
 					flags: MessageFlags.Ephemeral
 				});
 				return;
 			}
-			const userBalance = response.balance!;
+
+			const userBalance = response.data;
+
+			if (!userBalance) {
+				throw new Error('Aucune donnée reçue pour ce membre.');
+			}
 
 			// Vérification que le membre est sur le serveur (pour pouvoir afficher l'utilisateur dans l'embed)
 			const member = await container.discordService.fetchMemberOrReply(interaction.guild, discordIdToFetch, interaction);
 			if (!member) return;
 
 			// Création et envoie de l'embed final
-			const embed = Embeds.bourseEmbed({
-				member,
-				gems: userBalance.gems,
-				rubies: userBalance.rubies,
-				transactionsText: formatTransactions(userBalance.transactions ?? [])
-			});
+			const embed = Embeds.bourseEmbed(member, userBalance.gems, userBalance.rubies, formatTransactions(userBalance.transactions ?? []));
+
 			await interaction.reply({ embeds: [embed] });
-		} catch (error) {
+		} catch (error: any) {
 			console.error(error);
 			await interaction.reply({
-				embeds: [Embeds.errorEmbed({ message: 'Erreur dans [chatInputView].' })],
+				embeds: [Embeds.errorEmbed({ message: error.message || 'Erreur interne.' })],
 				flags: MessageFlags.Ephemeral
 			});
 		}
@@ -183,7 +184,7 @@ export class BourseCommand extends Subcommand {
 
 			// Envoie à l'API toutes les informations pour qu'elle fasse le nécessaire
 			const response = await container.economyService.give(senderId, receiverId, currency, amount);
-			if (response.error) {
+			if (!response.success) {
 				await interaction.reply({
 					embeds: [Embeds.errorEmbed({ member: interaction.member as GuildMember, title: 'Transaction échouée', message: response.error })],
 					flags: MessageFlags.Ephemeral
@@ -191,24 +192,22 @@ export class BourseCommand extends Subcommand {
 				return;
 			}
 
-			// Vérification que le membre est sur le serveur (pour pouvoir afficher l'utilisateur dans l'embed)
-			const member = await container.discordService.fetchMemberOrReply(interaction.guild, receiverId, interaction);
-			if (!member) return;
+			const { previous, current } = response.data;
+
+			if (!previous || !current) {
+				throw new Error('Données de transaction incomplètes.');
+			}
 
 			// Réponse affiché sur discord
-			await interaction.reply({
-				embeds: [
-					Embeds.economyActionEmbed({
-						member: interaction.member as GuildMember,
-						action: 'give',
-						targetId: receiverId,
-						currency,
-						amount,
-						old: response.old!,
-						balance: response.balance!
-					})
-				]
+			const embed = Embeds.economyActionEmbed({
+				action: 'give',
+				targetId: receiverId,
+				currency: currency,
+				amount: amount,
+				update: response.data
 			});
+
+			await interaction.reply({ embeds: [embed] });
 		} catch (error) {
 			console.error(error);
 			await interaction.reply({
@@ -237,28 +236,30 @@ export class BourseCommand extends Subcommand {
 
 			// Envoie à l'API toutes les informations pour qu'elle fasse le nécessaire
 			const response = await container.economyService.add(targetId, currency, amount);
-			if (response.error) {
+			if (!response.success) {
 				await interaction.reply({
-					embeds: [Embeds.errorEmbed({ member: staffMember as GuildMember, title: 'Transaction échouée', message: response.error })],
+					embeds: [Embeds.errorEmbed({ member: interaction.member as GuildMember, title: 'Transaction échouée', message: response.error })],
 					flags: MessageFlags.Ephemeral
 				});
 				return;
 			}
 
+			const { previous, current } = response.data;
+
+			if (!previous || !current) {
+				throw new Error('Données de transaction incomplètes.');
+			}
+
 			// Réponse affiché sur discord
-			await interaction.reply({
-				embeds: [
-					Embeds.economyActionEmbed({
-						member: interaction.member as GuildMember,
-						action: 'add',
-						targetId,
-						currency,
-						amount,
-						old: response.old!,
-						balance: response.balance!
-					})
-				]
+			const embed = Embeds.economyActionEmbed({
+				action: 'add',
+				targetId: targetId,
+				currency: currency,
+				amount: amount,
+				update: response.data
 			});
+
+			await interaction.reply({ embeds: [embed] });
 		} catch (error) {
 			console.error(error);
 			await interaction.reply({
@@ -287,28 +288,30 @@ export class BourseCommand extends Subcommand {
 
 			// Envoie à l'API toutes les informations pour qu'elle fasse le nécessaire
 			const response = await container.economyService.remove(targetId, currency, amount);
-			if (response.error) {
+			if (!response.success) {
 				await interaction.reply({
-					embeds: [Embeds.errorEmbed({ member: staffMember as GuildMember, title: 'Transaction échouée', message: response.error })],
+					embeds: [Embeds.errorEmbed({ member: interaction.member as GuildMember, title: 'Transaction échouée', message: response.error })],
 					flags: MessageFlags.Ephemeral
 				});
 				return;
 			}
 
+			const { previous, current } = response.data;
+
+			if (!previous || !current) {
+				throw new Error('Données de transaction incomplètes.');
+			}
+
 			// Réponse affiché sur discord
-			await interaction.reply({
-				embeds: [
-					Embeds.economyActionEmbed({
-						member: interaction.member as GuildMember,
-						action: 'remove',
-						targetId,
-						currency,
-						amount,
-						old: response.old!,
-						balance: response.balance!
-					})
-				]
+			const embed = Embeds.economyActionEmbed({
+				action: 'remove',
+				targetId: targetId,
+				currency: currency,
+				amount: amount,
+				update: response.data
 			});
+
+			await interaction.reply({ embeds: [embed] });
 		} catch (error) {
 			console.error(error);
 			await interaction.reply({
@@ -337,28 +340,30 @@ export class BourseCommand extends Subcommand {
 
 			// Envoie à l'API toutes les informations pour qu'elle fasse le nécessaire
 			const response = await container.economyService.set(targetId, currency, amount);
-			if (response.error) {
+			if (!response.success) {
 				await interaction.reply({
-					embeds: [Embeds.errorEmbed({ member: staffMember as GuildMember, title: 'Transaction échouée', message: response.error })],
+					embeds: [Embeds.errorEmbed({ member: interaction.member as GuildMember, title: 'Transaction échouée', message: response.error })],
 					flags: MessageFlags.Ephemeral
 				});
 				return;
 			}
 
+			const { previous, current } = response.data;
+
+			if (!previous || !current) {
+				throw new Error('Données de transaction incomplètes.');
+			}
+
 			// Réponse affiché sur discord
-			await interaction.reply({
-				embeds: [
-					Embeds.economyActionEmbed({
-						member: interaction.member as GuildMember,
-						action: 'set',
-						targetId,
-						currency,
-						amount,
-						old: response.old!,
-						balance: response.balance!
-					})
-				]
+			const embed = Embeds.economyActionEmbed({
+				action: 'set',
+				targetId: targetId,
+				currency: currency,
+				amount: amount,
+				update: response.data
 			});
+
+			await interaction.reply({ embeds: [embed] });
 		} catch (error) {
 			console.error(error);
 			await interaction.reply({

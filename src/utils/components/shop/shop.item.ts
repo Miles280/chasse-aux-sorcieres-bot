@@ -37,13 +37,18 @@ export function buildShopItem(item: Item, currency: string, page: number) {
 		section.addTextDisplayComponents(new TextDisplayBuilder().setContent(requirementBlock));
 	}
 
-	section.setButtonAccessory((btn) =>
-		btn
-			.setCustomId(`buy_${item.id}_${item.requiredRoleId}_${item.discordRoleId}_${item.currency}_${page}`)
+	section.setButtonAccessory((btn) => {
+		btn.setCustomId(`buy_${item.id}_${item.requiredRoleId}_${item.discordRoleId}_${item.currency}_${page}`)
 			.setLabel(`${item.price}`)
 			.setEmoji(currency === 'gems' ? emojisV2.gems : emojisV2.rubies)
-			.setStyle(ButtonStyle.Success)
-	);
+			.setStyle(ButtonStyle.Success);
+
+		if (item.quantity === 0) {
+			btn.setDisabled(true);
+		}
+
+		return btn;
+	});
 
 	return { separator, section };
 }

@@ -1,8 +1,8 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { Command } from '@sapphire/framework';
 import { container } from '@sapphire/framework';
-import { GuildMember, InteractionContextType, MessageFlags } from 'discord.js';
-import * as Embeds from '../utils/embeds';
+import { InteractionContextType, MessageFlags } from 'discord.js';
+import * as Embeds from '../../utils/embeds';
 
 @ApplyOptions<Command.Options>({
 	name: 'inventaire',
@@ -17,13 +17,14 @@ export class InventaireCommand extends Command {
 
 	public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
 		// Demande à l'API les informations de l'inventaire du membre
-		const response = await container.inventoryService.getInventory(interaction.user.id);
-		if (response.error) {
-			await interaction.reply({
-				embeds: [Embeds.errorEmbed({ member: interaction.member as GuildMember, message: response.error })],
-				flags: MessageFlags.Ephemeral
+		const response = await container.inventoryService.getUserInventory(interaction.user.id);
+
+		// Gestion d'erreur AVANT le builder
+		if (!response.success) {
+			return interaction.reply({
+				embeds: [Embeds.errorEmbed({ message: response.error })],
+				flags: [MessageFlags.Ephemeral]
 			});
-			return;
 		}
 
 		// Vérification que le membre est sur le serveur (pour pouvoir afficher l'utilisateur dans l'embed)
@@ -31,17 +32,14 @@ export class InventaireCommand extends Command {
 		if (!member) return;
 
 		// Création et envoie de l'embed final
-		const inventoryEntries = response.items;
+		const inventory = response.data;
 
 		const embed = Embeds.inventoryEmbed({
 			member,
-			items: inventoryEntries.map((entry) => ({
-				...entry.item,
-				quantity: entry.quantity
-			}))
+			inventory: inventory
 		});
 
-		await interaction.reply({
+		return interaction.reply({
 			embeds: [embed]
 		});
 	}

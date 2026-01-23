@@ -1,9 +1,10 @@
 import { SeparatorBuilder, SeparatorSpacingSize, TextDisplayBuilder } from 'discord.js';
-import { ShopResponse } from '../../../models/Shop.interface';
 
-export function buildShopFooter(shopView: ShopResponse) {
+export function buildShopFooter(pagination: { currentPage: number; totalPages: number; totalItems: number }) {
 	const separator = new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Large);
 
-	const footer = new TextDisplayBuilder().setContent(`-# Page ${shopView.page}/${shopView.pages}  •  Articles total : ${shopView.total}`);
+	const footer = new TextDisplayBuilder().setContent(
+		`-# Page ${pagination.currentPage}/${pagination.totalPages}  •  Articles total : ${pagination.totalItems}`
+	);
 	return { separator, footer };
 }

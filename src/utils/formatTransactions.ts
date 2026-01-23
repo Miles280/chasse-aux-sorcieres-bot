@@ -1,6 +1,6 @@
-import { Transaction } from '../models/Transaction.interface';
 import { emojis } from './emojis';
 import { TransactionType } from '../enums/TransactionType';
+import { Transaction } from '../models/Economy.interface';
 
 export function formatTransactions(transactions: Transaction[]): string {
 	if (!transactions.length) return 'Aucune transaction récente.';
@@ -46,6 +46,12 @@ export function formatTransactions(transactions: Transaction[]): string {
 						tx.amount > 0
 							? `Vous avez reçu **+${tx.amount} ${currencyEmoji}** lors d'une conversion.`
 							: `Vous avez converti **-${Math.abs(tx.amount)} ${currencyEmoji}**.`;
+					break;
+				case TransactionType.CASINO:
+					description =
+						tx.amount >= 0
+							? `Vous avez gagné **+${tx.amount} ${currencyEmoji}** au casino.`
+							: `Vous avez perdu **${tx.amount} ${currencyEmoji}** au casino...`;
 					break;
 				default:
 					description = `❔ Transaction inconnue : **${tx.amount} ${currencyEmoji}**.`;
