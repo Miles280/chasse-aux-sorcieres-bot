@@ -150,10 +150,12 @@ export class TowerMessageBuilder {
 	public static buildComponents(game: TowerGame, finished: boolean): ActionRowBuilder<ButtonBuilder>[] {
 		const rows: ActionRowBuilder<ButtonBuilder>[] = [];
 
+		const ownerId = game.userId;
+
 		if (finished) {
 			// --- CAS : PARTIE TERMINÉE (Rejouer) ---
 			const replayRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-				new ButtonBuilder().setCustomId(`tower_playAgain_${game.userId}_${game.bet}`).setLabel(`Rejouer`).setStyle(ButtonStyle.Primary)
+				new ButtonBuilder().setCustomId(`tower:playAgain:${ownerId}:${game.bet}`).setLabel(`Rejouer`).setStyle(ButtonStyle.Primary)
 			);
 			rows.push(replayRow);
 		} else {
@@ -166,7 +168,7 @@ export class TowerMessageBuilder {
 					new ButtonBuilder()
 						// Attention : J'ai gardé ton format `tower_play_${i}`
 						// Assure-toi que le Handler parse bien "tower", "play", "0"
-						.setCustomId(`tower_play_${i}`)
+						.setCustomId(`tower:play:${ownerId}:${i}`)
 						.setLabel('❓')
 						.setStyle(ButtonStyle.Secondary)
 				);
@@ -176,7 +178,7 @@ export class TowerMessageBuilder {
 			// 2. Le bouton "Encaisser" (Uniquement si on a passé au moins l'étage 0)
 			if (game.currentFloor > 0) {
 				const stopRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-					new ButtonBuilder().setCustomId(`tower_stop`).setLabel('💰 Encaisser').setStyle(ButtonStyle.Success)
+					new ButtonBuilder().setCustomId(`tower:stop:${ownerId}`).setLabel('💰 Encaisser').setStyle(ButtonStyle.Success)
 				);
 				rows.push(stopRow);
 			}

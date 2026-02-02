@@ -10,20 +10,21 @@ import { TOWER_CONFIG } from '../../utils/constants';
 })
 export class TowerHandler extends InteractionHandler {
 	public override parse(interaction: ButtonInteraction) {
-		if (!interaction.customId.startsWith('tower_')) return this.none();
+		if (!interaction.customId.startsWith('tower:')) return this.none();
 		return this.some();
 	}
 
 	public async run(interaction: ButtonInteraction) {
-		// On split le customId : tower_action_param1_param2
-		const [, action, ...params] = interaction.customId.split('_');
+		// On split le customId : tower:<action>:<ownerId>:<value?>
+		const [, action, ...params] = interaction.customId.split(':');
+
+		const userId = interaction.user.id;
 
 		// Gérer le "Rejouer"
 		if (action === 'playAgain') {
-			// 1. Récupération des données depuis les params du bouton
 			const [ownerId, betStr] = params;
+			// 1. Récupération des données depuis les params du bouton
 			const bet = parseInt(betStr);
-			const userId = interaction.user.id;
 
 			// 2. Sécurité : Seul celui qui a lancé le jeu peut cliquer sur Rejouer
 			if (userId !== ownerId) {
@@ -78,6 +79,7 @@ export class TowerHandler extends InteractionHandler {
 			// Note : On fait un reply() et non un update() car on veut créer un NOUVEAU message
 			// pour que l'utilisateur puisse voir son historique de jeu dans le salon.
 			const newMessage = await interaction.followUp({
+				content: `<@${userId}>`,
 				embeds: [embed],
 				components: components
 			});
@@ -89,7 +91,7 @@ export class TowerHandler extends InteractionHandler {
 		// Déterminer le choix
 		let choice: number | 'stop';
 		if (action === 'stop') choice = 'stop';
-		else choice = parseInt(params[0]);
+		else choice = parseInt(params[1]);
 
 		// 1. Appeler le Service
 		const result = await container.towerService.playTurn(interaction.message.id, interaction.user.id, choice);
@@ -119,6 +121,7 @@ export class TowerHandler extends InteractionHandler {
 
 		// 5. Mise à jour du message
 		await interaction.update({
+			content: `<@${userId}>`,
 			embeds: [embed],
 			components: components
 		});

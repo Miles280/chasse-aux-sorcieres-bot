@@ -64,22 +64,22 @@ export class TowerService {
 	}
 
 	// 4. Fin de partie (Interne)
-	private async processEndGame(game: TowerGame, reason: 'win' | 'lose' | 'cashout', badChoice?: number): Promise<TowerTurnResult> {
+	private async processEndGame(game: TowerGame, stop_reason: 'win' | 'lose' | 'cashout', badChoice?: number): Promise<TowerTurnResult> {
 		this.games.delete(game.messageId);
 
 		let payout = 0;
-		if (reason !== 'lose') {
+		if (stop_reason !== 'lose') {
 			// Si cashout, on paie l'étage D'AVANT. Si Win, l'étage 9.
-			const floorIndex = reason === 'cashout' ? game.currentFloor - 1 : 9;
+			const floorIndex = stop_reason === 'cashout' ? game.currentFloor - 1 : 9;
 			const multiplier = TOWER_CONFIG.MULTIPLIERS[floorIndex] || 1;
 			payout = Math.ceil(game.bet * multiplier);
 
 			await container.casinoService.transaction(game.userId, payout, 'add');
 		}
 
-		container.casinoService.logGame(game.userId, 'tower', game.bet, payout, { floor: game.currentFloor, reason });
+		container.casinoService.logGame(game.userId, 'tower', game.bet, payout, { floor: game.currentFloor + 1, stop_reason });
 
-		return { status: reason, game, payout, badChoice };
+		return { status: stop_reason, game, payout, badChoice };
 	}
 
 	// 5. Timer
