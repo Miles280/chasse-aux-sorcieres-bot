@@ -60,7 +60,7 @@ export class TowerCommand extends Command {
 
 		// 4. Envoyer le message
 		const response = await interaction.reply({
-			content: `<@${userId}>`,
+			content: `**__Joueur__** : <@${userId}>`,
 			embeds: [embed],
 			components: components,
 			withResponse: true

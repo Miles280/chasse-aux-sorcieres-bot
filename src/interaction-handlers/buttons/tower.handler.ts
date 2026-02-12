@@ -79,7 +79,7 @@ export class TowerHandler extends InteractionHandler {
 			// Note : On fait un reply() et non un update() car on veut créer un NOUVEAU message
 			// pour que l'utilisateur puisse voir son historique de jeu dans le salon.
 			const newMessage = await interaction.followUp({
-				content: `<@${userId}>`,
+				content: `**__Joueur__** : <@${userId}>`,
 				embeds: [embed],
 				components: components
 			});
@@ -121,7 +121,7 @@ export class TowerHandler extends InteractionHandler {
 
 		// 5. Mise à jour du message
 		await interaction.update({
-			content: `<@${userId}>`,
+			content: `**__Joueur__** : <@${userId}>`,
 			embeds: [embed],
 			components: components
 		});

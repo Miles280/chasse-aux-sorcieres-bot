@@ -63,11 +63,10 @@ export class TowerMessageBuilder {
 			.setColor(colors.goldCasino)
 			.setTitle(`${emojis.yellowcheck} La Tour de la Fortune`)
 			.addFields(
-				{ name: 'Mise', value: `${game.bet} ${emojis.rubies}`, inline: true },
-				{ name: 'Gain actuel', value: `${currentGain} ${emojis.rubies}`, inline: true },
-				{ name: 'Prochain gain', value: `${nextGain} ${emojis.rubies}`, inline: true }
+				{ name: 'Gain actuel :', value: `> \`${currentGain}\` ${emojis.rubies}`, inline: true },
+				{ name: 'Prochain gain :', value: `> \`${nextGain}\` ${emojis.rubies}`, inline: true }
 			)
-			.setDescription(`**__Joueur__** : <@${game.userId}>\n\`\`\`\n${towerVisual}\`\`\``);
+			.setDescription(`__Mise de départ__ : \`${game.bet}\` ${emojis.rubies}\n\`\`\`\n${towerVisual}\`\`\``);
 	}
 
 	/**
@@ -117,15 +116,12 @@ export class TowerMessageBuilder {
 		const color = reason === 'lose' ? colors.fail : colors.success;
 		const title = reason === 'lose' ? `${emojis.redcheck} La Tour de la Fortune` : `${emojis.greencheck} La Tour de la Fortune`;
 
-		const desc =
-			reason === 'lose'
-				? `Vous perdez votre mise de **${game.bet} ${emojis.rubies}**.`
-				: `Vous repartez avec **${winAmount} ${emojis.rubies}** !`;
+		const desc = reason === 'lose' ? `> Vous repartez les mains vides.` : `> Vous repartez avec \`${winAmount}\` ${emojis.rubies} !`;
 
 		return new EmbedBuilder()
 			.setColor(color)
 			.setTitle(title)
-			.setDescription(`**__Joueur__** : <@${game.userId}>\n\`\`\`\n${towerVisual}\`\`\`\n${desc}`);
+			.setDescription(`__Mise de départ__ : \`${game.bet}\` ${emojis.rubies}\n\`\`\`\n${towerVisual}\`\`\`\n${desc}`);
 	}
 
 	/**
