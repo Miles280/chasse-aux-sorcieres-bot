@@ -1,10 +1,10 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { Subcommand } from '@sapphire/plugin-subcommands';
-import { ActionRowBuilder, ButtonBuilder, ComponentType, GuildMember, InteractionContextType, MessageFlags } from 'discord.js';
+import { ComponentType, GuildMember, InteractionContextType, MessageFlags } from 'discord.js';
 import { container } from '@sapphire/framework';
 import { Currency } from '../../enums/Currency';
 import * as Embeds from '../../utils/embeds';
-import * as Components from '../../utils/components';
+import { SellMessageBuilder } from '../../builders/SellMessageBuilder';
 
 @ApplyOptions<Subcommand.Options>({
 	name: 'item',
@@ -124,12 +124,10 @@ export class itemCommand extends Subcommand {
 
 		const item = response.data;
 
-		const embed = Embeds.sellProposalEmbed({ seller, buyer, item, currency, price });
+		const messageOptions = SellMessageBuilder.build({ seller, buyer, item, itemId, currency, price });
 
 		const messageRaw = await interaction.reply({
-			content: `<@${buyer.id}> Une opportunité s'offre à toi.`,
-			embeds: [embed],
-			components: [Components.buildSellButtons({ sellerId: seller.id, buyerId: buyer.id, itemId, currency, price })],
+			...messageOptions,
 			withResponse: true
 		});
 
@@ -137,29 +135,17 @@ export class itemCommand extends Subcommand {
 
 		const collector = message.createMessageComponentCollector({
 			componentType: ComponentType.Button,
-			time: 60_000 * 1,
+			time: 60_000,
 			filter: (i) => i.user.id === buyer.id
 		});
 
-		collector.on('collect', () => {
-			collector.stop('clicked');
-		});
+		collector.on('collect', () => collector.stop('clicked'));
 
 		collector.on('end', async (_collected, reason) => {
-			const row = Components.buildSellButtons({
-				sellerId: seller.id,
-				buyerId: buyer.id,
-				itemId,
-				currency,
-				price
-			});
+			// On utilise la méthode de désactivation du builder
+			const disabledComponents = SellMessageBuilder.disableComponents(messageOptions.components);
 
-			// Désactiver chaque bouton
-			const disabledRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-				row.components.map((button) => ButtonBuilder.from(button).setDisabled(true))
-			);
-
-			await message.edit({ components: [disabledRow] });
+			await message.edit({ components: disabledComponents });
 
 			if (reason === 'time') {
 				await interaction.followUp({
