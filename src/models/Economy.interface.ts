@@ -45,3 +45,28 @@ export type EconomyEmbedOptions = {
 	amount: number;
 	update: BalanceUpdate;
 };
+
+export interface ConversionData {
+	roleId: string;
+	rate: number;
+	converted: number;
+	rubiesEarned: number;
+	previous: {
+		gems: number;
+		rubies: number;
+	};
+	current: {
+		gems: number;
+		rubies: number;
+	};
+}
+
+export interface ConversionRates {
+	currentRoleId: string | null;
+	currentRate: number;
+	rates: {
+		roleId: string;
+		rate: number;
+		isCurrent: boolean;
+	}[];
+}

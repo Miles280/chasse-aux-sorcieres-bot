@@ -98,7 +98,7 @@ export class ShopMessageBuilder {
 			const priceEmoji = currency === Currency.GEMS ? emojisV2.gems : emojisV2.rubies;
 
 			return btn
-				.setCustomId(`buy_${item.id}_${item.requiredRoleId ?? 'none'}_${item.discordRoleId ?? 'none'}_${currency}_${page}`)
+				.setCustomId(`buy_${item.id}_${item.requiredRoleId ?? ''}_${item.discordRoleId ?? ''}_${currency}_${page}`)
 				.setLabel(`${item.price}`)
 				.setEmoji(priceEmoji)
 				.setStyle(ButtonStyle.Success)

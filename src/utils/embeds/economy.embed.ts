@@ -2,7 +2,7 @@ import { EmbedBuilder, GuildMember } from 'discord.js';
 import { emojis } from '../emojis';
 import { formatTransactions } from '../formatTransactions';
 import { formatTransactionLabel } from '../transactionLabels';
-import { EconomyAction, EconomyEmbedOptions, TransactionHistory } from '../../models/Economy.interface';
+import { ConversionData, ConversionRates, EconomyAction, EconomyEmbedOptions, TransactionHistory } from '../../models/Economy.interface';
 import { colors } from '../customColors';
 
 export function bourseEmbed(member: GuildMember, gems: number, rubies: number, transactionsText: string): EmbedBuilder {
@@ -109,4 +109,71 @@ export function buildHistoryEmbed(
 			})
 			.setColor(colors.purpleWitch)
 	);
+}
+
+export function conversionEmbed(member: GuildMember, data: ConversionData): EmbedBuilder {
+	const { roleId, rate, converted, rubiesEarned, previous, current } = data;
+
+	const prevGems = previous.gems.toLocaleString();
+	const newGems = current.gems.toLocaleString();
+
+	const prevRubies = previous.rubies.toLocaleString();
+	const newRubies = current.rubies.toLocaleString();
+
+	const rankDisplay = roleId ? `<@&${roleId}>` : '**Aucun**';
+
+	return new EmbedBuilder()
+		.setAuthor({
+			name: member.displayName,
+			iconURL: member.user.displayAvatarURL()
+		})
+		.setTitle(`${emojis.purplecheck} Conversion effectuée`)
+		.setDescription(
+			`Chaque gemme vaut \`${rate.toLocaleString()}\` ${emojis.rubies} pour votre rang : ${rankDisplay}.\nConversion effectuée : **${converted.toLocaleString()} ${emojis.gems}** → **${rubiesEarned.toLocaleString()} ${emojis.rubies}**.`
+		)
+		.addFields(
+			{
+				name: `${emojis.gems} Gemmes :`,
+				value: `\`${prevGems}\` ${emojis.gems} **→** \`${newGems}\` ${emojis.gems}`,
+				inline: true
+			},
+			{
+				name: `${emojis.rubies} Rubis :`,
+				value: `\`${prevRubies}\` ${emojis.rubies} **→** \`${newRubies}\` ${emojis.rubies}`,
+				inline: true
+			}
+		)
+		.setColor(colors.purpleWitch)
+		.setFooter({ text: 'Ne laissez pas vos rubis dormir… le casino les réclame !' });
+}
+
+export function conversionRateEmbed(member: GuildMember, data: ConversionRates): EmbedBuilder {
+	const { currentRoleId, currentRate, rates } = data;
+
+	const headerText = currentRoleId ? `Vous êtes actuellement au rang de <@&${currentRoleId}>.` : `Vous n'avez encore acheté aucun rang social.`;
+
+	const subHeaderText = `Chacune de vos gemmes vaut actuellement **${currentRate.toLocaleString()} ${emojis.rubies}**.`;
+
+	const ratesList = rates
+		.map((r) => {
+			const roleMention = r.roleId ? `<@&${r.roleId}>` : '**Rôle inconnu**';
+
+			const rateText = `> \`1\` ${emojis.gems} = \`${r.rate.toLocaleString()}\` ${emojis.rubies} ⟶ ${roleMention}`;
+
+			if (r.isCurrent) {
+				return `${rateText} *(votre rang actuel)*`;
+			}
+
+			return `${rateText}`;
+		})
+		.join('\n');
+
+	return new EmbedBuilder()
+		.setAuthor({
+			name: member.displayName,
+			iconURL: member.user.displayAvatarURL()
+		})
+		.setTitle(`${emojis.purplecheck} Taux de conversion`)
+		.setDescription(`${headerText}\n${subHeaderText}\n\n${ratesList}`)
+		.setColor(colors.purpleWitch);
 }

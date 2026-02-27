@@ -1,6 +1,6 @@
 import { ApiClient } from './apiClient.service';
 import { Currency } from '../enums/Currency';
-import { BalanceUpdate, TransactionHistory, UserBalance } from '../models/Economy.interface';
+import { BalanceUpdate, ConversionData, ConversionRates, TransactionHistory, UserBalance } from '../models/Economy.interface';
 import { ApiResponse } from '../models/ApiResponse.interface';
 
 export class EconomyService {
@@ -26,11 +26,19 @@ export class EconomyService {
 		return await this.api.post<BalanceUpdate>('/economy/set', { discordId, currency, amount });
 	}
 
+	async convert(discordId: string, amount: number): Promise<ApiResponse<ConversionData>> {
+		return await this.api.post<ConversionData>('/economy/convert', { discordId, amount });
+	}
+
 	async getTransactions(discordId: string, page: number = 1, types: string[] = []): Promise<ApiResponse<TransactionHistory>> {
 		const queryParams = new URLSearchParams({
 			page: String(page),
 			types: types.join(',')
 		});
 		return await this.api.get<TransactionHistory>(`/economy/transactions/${discordId}?${queryParams.toString()}`);
+	}
+
+	async getConversionRate(discordId: string): Promise<ApiResponse<ConversionRates>> {
+		return await this.api.get<ConversionRates>(`/economy/rates/${discordId}`);
 	}
 }

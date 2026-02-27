@@ -41,7 +41,7 @@ export function formatTransactions(transactions: Transaction[]): string {
 				case TransactionType.SET:
 					description = `Solde défini à **${tx.amount} ${currencyEmoji}**.`;
 					break;
-				case TransactionType.CONVERSION:
+				case TransactionType.CONVERT:
 					description =
 						tx.amount > 0
 							? `Vous avez reçu **+${tx.amount} ${currencyEmoji}** lors d'une conversion.`
