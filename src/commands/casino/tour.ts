@@ -7,7 +7,7 @@ import { TowerMessageBuilder } from '../../builders/TowerMessage.builder';
 
 @ApplyOptions<Command.Options>({
 	name: 'tour',
-	description: 'Jouez à la Tour de la Fortune !'
+	description: 'Joue à la Tour de la Fortune !'
 })
 export class TowerCommand extends Command {
 	public override registerApplicationCommands(registry: Command.Registry) {
