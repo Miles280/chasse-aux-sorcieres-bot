@@ -35,6 +35,42 @@ export const BET_OPTIONS = {
 		multiplier: 2,
 		isWin: (n: number) => n >= 19 && n <= 36
 	},
+	first: {
+		label: '1ère colonne',
+		description: 'Miser sur la première colonne (x3)',
+		multiplier: 3,
+		isWin: (n: number) => n % 3 === 1
+	},
+	second: {
+		label: '2ème colonne',
+		description: 'Miser sur la deuxième colonne (x3)',
+		multiplier: 3,
+		isWin: (n: number) => n % 3 === 2
+	},
+	third: {
+		label: '3ème colonne',
+		description: 'Miser sur la troisième colonne (x3)',
+		multiplier: 3,
+		isWin: (n: number) => n % 3 === 0
+	},
+	firstDozen: {
+		label: '1-12',
+		description: 'Miser sur les numéros de 1 à 12 (x3)',
+		multiplier: 3,
+		isWin: (n: number) => n >= 1 && n <= 12
+	},
+	secondDozen: {
+		label: '13-24',
+		description: 'Miser sur les numéros de 13 à 24 (x3)',
+		multiplier: 3,
+		isWin: (n: number) => n >= 13 && n <= 24
+	},
+	thirdDozen: {
+		label: '25-36',
+		description: 'Miser sur les numéros de 25 à 36 (x3)',
+		multiplier: 3,
+		isWin: (n: number) => n >= 25 && n <= 36
+	},
 	number: {
 		label: 'Numéro précis',
 		description: 'Miser sur un seul numéro précis (x36)',
