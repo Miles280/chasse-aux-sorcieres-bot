@@ -45,12 +45,14 @@ export class RouletteCommand extends Command {
 		const embed = RouletteMessageBuilder.buildGameEmbed(initialGame);
 		const components = RouletteMessageBuilder.buildLobbyComponents();
 
-		const message = await interaction.reply({
+		const response = await interaction.reply({
 			embeds: [embed],
 			components: components,
-			fetchReply: true
+			withResponse: true
 		});
 
-		return container.rouletteService.createLobby(message.id, channelId, endsAt, now);
+		const messageId = response.resource!.message!.id;
+
+		return container.rouletteService.createLobby(messageId, channelId, endsAt, now);
 	}
 }
