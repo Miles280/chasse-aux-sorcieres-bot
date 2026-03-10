@@ -17,12 +17,7 @@ export class TowerCommand extends Command {
 				.setDescription(this.description)
 				.setContexts([InteractionContextType.Guild])
 				.addIntegerOption((opt) =>
-					opt //
-						.setName('mise')
-						.setDescription('Montant de Rubis a miser')
-						.setRequired(true)
-						.setMinValue(10)
-						.setMaxValue(200)
+					opt.setName('mise').setDescription('Montant de Rubis a miser').setRequired(true).setMinValue(10).setMaxValue(200)
 				)
 		);
 	}
@@ -31,7 +26,7 @@ export class TowerCommand extends Command {
 		const bet = interaction.options.getInteger('mise', true);
 		const userId = interaction.user.id;
 
-		// 1. Verif Argent (Comme avant)
+		// 1. Vérifie que le joueur a assez de rubis
 		const check = await container.economyService.view(userId);
 		if (!check.success || check.data.rubies < bet) {
 			return interaction.reply({
@@ -40,7 +35,7 @@ export class TowerCommand extends Command {
 			});
 		}
 
-		// 2. Débit (Comme avant)
+		// 2. Débite la mise
 		const transaction = await container.casinoService.transaction(userId, bet, 'remove');
 		if (!transaction.success) {
 			return interaction.reply({
@@ -49,11 +44,10 @@ export class TowerCommand extends Command {
 			});
 		}
 
-		// 3. Préparer la partie (SANS l'enregistrer tout de suite)
-		// On demande juste la grille pour pouvoir l'afficher
+		// 3. Génère la grille de la partie
 		const grid = container.towerService.generateGrid();
 
-		// On crée un objet "Faux" juste pour l'affichage initial (Floor 0, pas d'historique)
+		// 4. Objet temporaire utilisé juste pour l'affichage initial
 		const initialGameDisplay: any = {
 			userId,
 			bet,
@@ -62,10 +56,11 @@ export class TowerCommand extends Command {
 			history: []
 		};
 
+		// 5. Construction du message de jeu
 		const embed = TowerMessageBuilder.buildGameEmbed(initialGameDisplay);
 		const components = TowerMessageBuilder.buildComponents(initialGameDisplay, false);
 
-		// 4. Envoyer le message
+		// 6. Envoi du message (avec récupération de la réponse)
 		const response = await interaction.reply({
 			content: `**__Joueur__** : <@${userId}>`,
 			embeds: [embed],
@@ -73,8 +68,10 @@ export class TowerCommand extends Command {
 			withResponse: true
 		});
 
-		// 5. MAINTENANT on a l'ID du message, on démarre le moteur dans le service
+		// 7. Récupère l'ID du message pour enregistrer la partie
 		const messageId = response.resource!.message!.id;
+
+		// 8. Enregistre la partie dans le service
 		return container.towerService.registerGame(messageId, interaction.channelId, userId, bet, grid);
 	}
 }

@@ -1,6 +1,6 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes, container } from '@sapphire/framework';
-import { ButtonInteraction, EmbedBuilder, GuildMember, MessageFlags } from 'discord.js';
+import { ButtonInteraction, MessageFlags, EmbedBuilder, GuildMember } from 'discord.js';
 import { TowerMessageBuilder } from '../../builders/TowerMessage.builder';
 import { TOWER_CONFIG } from '../../utils/constants';
 import * as Embeds from '../../utils/embeds';
@@ -15,32 +15,29 @@ export class TowerHandler extends InteractionHandler {
 	}
 
 	public async run(interaction: ButtonInteraction) {
-		// On split le customId : tower:<action>:<ownerId>:<value?>
 		const [, action, ...params] = interaction.customId.split(':');
-
 		const userId = interaction.user.id;
 
-		// Gérer le "Rejouer"
+		// 1. Cas Rejouer
 		if (action === 'playAgain') {
 			const [ownerId, betStr] = params;
-			// 1. Récupération des données depuis les params du bouton
 			const bet = parseInt(betStr);
 
-			// 2. Sécurité : Seul celui qui a lancé le jeu peut cliquer sur Rejouer
+			// 1.1 Vérifie que c'est le joueur d'origine
 			if (userId !== ownerId) {
 				return interaction.reply({
 					embeds: [
 						Embeds.errorEmbed({
 							member: interaction.member as GuildMember,
-							title: 'Petit voleur vas !',
-							message: "Il n'est pas pour toi ce bouton, si tu veux jouer fait le comme un grand avec /tour."
+							title: 'Petit voleur !',
+							message: "Ce bouton n'est pas pour toi. Lance une nouvelle partie avec /tour."
 						})
 					],
 					flags: MessageFlags.Ephemeral
 				});
 			}
 
-			// 3. Vérification de l'argent (via EconomyService)
+			// 1.2 Vérifie que le joueur a assez de rubis
 			const check = await container.economyService.view(userId);
 			if (!check.success || check.data.rubies < bet) {
 				return interaction.reply({
@@ -49,7 +46,7 @@ export class TowerHandler extends InteractionHandler {
 				});
 			}
 
-			// 4. Débit de la mise (via CasinoService)
+			// 1.3 Débiter la mise
 			const transaction = await container.casinoService.transaction(userId, bet, 'remove');
 			if (!transaction.success) {
 				return interaction.reply({
@@ -58,91 +55,64 @@ export class TowerHandler extends InteractionHandler {
 				});
 			}
 
-			await interaction.update({ components: [] });
-
-			// 5. Préparation de la nouvelle partie
+			// 1.4 Générer une nouvelle grille et initialiser la partie
 			const grid = container.towerService.generateGrid();
+			const gameData: any = { userId, bet, currentFloor: 0, grid, history: [] };
 
-			// On utilise notre Builder avec un objet temporaire
-			const initialGameData: any = {
-				userId,
-				bet,
-				currentFloor: 0,
-				grid,
-				history: []
-			};
+			// 1.5 Construire l'embed et les boutons
+			const embed = TowerMessageBuilder.buildGameEmbed(gameData);
+			const components = TowerMessageBuilder.buildComponents(gameData, false);
 
-			const embed = TowerMessageBuilder.buildGameEmbed(initialGameData);
-			const components = TowerMessageBuilder.buildComponents(initialGameData, false);
-
-			// 6. Envoi de la nouvelle partie
-			// Note : On fait un reply() et non un update() car on veut créer un NOUVEAU message
-			// pour que l'utilisateur puisse voir son historique de jeu dans le salon.
+			// 1.6 Envoyer un nouveau message pour la partie
 			const newMessage = await interaction.followUp({
-				content: `**__Joueur__** : <@${userId}>`,
+				content: `**Joueur :** <@${userId}>`,
 				embeds: [embed],
-				components: components
+				components
 			});
 
-			// 7. Enregistrement dans le Service
+			// 1.7 Enregistrer la partie dans le service
 			return container.towerService.registerGame(newMessage.id, interaction.channelId, userId, bet, grid);
 		}
 
-		// Déterminer le choix
-		let choice: number | 'stop';
-		if (action === 'stop') choice = 'stop';
-		else choice = parseInt(params[1]);
+		// 2. Déterminer le choix du joueur
+		const choice: number | 'stop' = action === 'stop' ? 'stop' : parseInt(params[1]);
 
-		// 1. Appeler le Service
-		const result = await container.towerService.playTurn(interaction.message.id, interaction.user.id, choice);
+		// 3. Jouer le tour via le service
+		const result = await container.towerService.playTurn(interaction.message.id, userId, choice);
 
-		// 2. Gestion d'erreur (Partie non trouvée, mauvais utilisateur, etc.)
+		// 4. Gérer les erreurs
 		if (result.status === 'error') {
 			return interaction.reply({ content: result.message, flags: MessageFlags.Ephemeral });
 		}
 
-		// 3. Si tout va bien, on utilise le Builder pour mettre à jour l'image
+		// 5. Sélectionner l'embed selon le résultat
 		const game = result.game!;
-		let embed: EmbedBuilder;
-		let isFinished = false;
+		const isFinished = result.status !== 'continue';
+		const embed: EmbedBuilder = isFinished
+			? TowerMessageBuilder.buildEndEmbed(game, result.status as 'win' | 'lose' | 'cashout', result.payout ?? 0, result.badChoice)
+			: TowerMessageBuilder.buildGameEmbed(game);
 
-		// 3. Sélection de l'Embed en fonction du résultat
-		if (result.status === 'continue') {
-			// La partie continue : Embed de jeu classique
-			embed = TowerMessageBuilder.buildGameEmbed(game);
-		} else {
-			// La partie est finie (win, lose, ou cashout)
-			isFinished = true;
-			embed = TowerMessageBuilder.buildEndEmbed(game, result.status as 'win' | 'lose' | 'cashout', result.payout ?? 0, result.badChoice);
-		}
-
-		// 4. Génération des boutons (le builder gère déjà le switch interne via isFinished)
+		// 6. Générer les boutons
 		const components = TowerMessageBuilder.buildComponents(game, isFinished);
 
-		// 5. Mise à jour du message
+		// 7. Mettre à jour le message
 		await interaction.update({
-			content: `**__Joueur__** : <@${userId}>`,
+			content: `**Joueur :** <@${userId}>`,
 			embeds: [embed],
-			components: components
+			components
 		});
 
-		// --- LOGIQUE DE DÉSACTIVATION AUTOMATIQUE (1 MINUTE) ---
+		// 8. Timeout automatique si la partie est terminée
 		if (isFinished) {
-			// On récupère la réponse qu'on vient de mettre à jour
 			const reply = await interaction.fetchReply();
-
-			// On crée un collecteur qui attend 60 secondes
-			const collector = reply.createMessageComponentCollector({
-				time: TOWER_CONFIG.TIMEOUT_MS,
-				max: 1
-			});
+			const collector = reply.createMessageComponentCollector({ time: TOWER_CONFIG.TIMEOUT_MS, max: 1 });
 
 			collector.on('end', async (_collected, reason) => {
 				if (reason === 'time') {
 					try {
 						await interaction.editReply({ components: [] });
-					} catch (err) {
-						// On ignore si le message a été supprimé entre temps
+					} catch {
+						// Message supprimé, on ignore
 					}
 				}
 			});

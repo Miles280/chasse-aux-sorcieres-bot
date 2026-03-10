@@ -5,15 +5,19 @@ import { TowerMessageBuilder } from '../builders/TowerMessage.builder';
 import { TOWER_CONFIG } from '../utils/constants';
 
 export class TowerService {
-	// Stockage RAM
+	// Stockage en mémoire des parties
 	private games = new Collection<string, TowerGame>();
 
-	// 1. Générer la grille (Ta logique)
+	/**
+	 * Génère une grille aléatoire pour la partie (0 à 2 sur chaque étage)
+	 */
 	public generateGrid(): number[] {
 		return Array.from({ length: 10 }, () => Math.floor(Math.random() * 3));
 	}
 
-	// 2. Enregistrer la partie (Appelé par la commande APRES l'envoi du message)
+	/**
+	 * Enregistre une partie après l'envoi du message initial
+	 */
 	public registerGame(messageId: string, channelId: string, userId: string, bet: number, grid: number[]) {
 		const game: TowerGame = {
 			userId,
@@ -25,51 +29,57 @@ export class TowerService {
 			history: [],
 			timer: this.startTimer(messageId)
 		};
+
 		this.games.set(messageId, game);
 	}
 
-	// 3. Jouer un coup (Appelé par le Handler)
+	/**
+	 * Joue un tour : choix du joueur ou cashout
+	 */
 	public async playTurn(messageId: string, userId: string, choiceIndex: number | 'stop'): Promise<TowerTurnResult> {
 		const game = this.games.get(messageId);
 
 		if (!game) return { status: 'error', message: 'Partie expirée.' };
 		if (game.userId !== userId) return { status: 'error', message: "Ce n'est pas votre partie !" };
 
-		clearTimeout(game.timer); // Reset timer
+		clearTimeout(game.timer); // reset timer
 
-		// --- CAS : CASHOUT ---
+		// 1. Cashout
 		if (choiceIndex === 'stop') {
 			return this.processEndGame(game, 'cashout');
 		}
 
 		const bombPosition = game.grid[game.currentFloor];
 
-		// --- CAS : PERDU ---
+		// 2. Mauvais choix → perdu
 		if (choiceIndex === bombPosition) {
 			return this.processEndGame(game, 'lose', choiceIndex);
 		}
 
-		// --- CAS : GAGNÉ (Etage suivant) ---
+		// 3. Bon choix → passer à l'étage suivant
 		game.history.push(choiceIndex);
 		game.currentFloor++;
 
-		// Victoire totale (Etage 10 atteint)
+		// 4. Victoire totale (10 étages atteints)
 		if (game.currentFloor >= 10) {
 			return this.processEndGame(game, 'win');
 		}
 
-		// Partie continue
+		// 5. Partie continue, restart timer
 		game.timer = this.startTimer(messageId);
 		return { status: 'continue', game };
 	}
 
-	// 4. Fin de partie (Interne)
+	/**
+	 * Termine la partie et calcule les gains
+	 */
 	private async processEndGame(game: TowerGame, stop_reason: 'win' | 'lose' | 'cashout', badChoice?: number): Promise<TowerTurnResult> {
 		this.games.delete(game.messageId);
 
 		let payout = 0;
+
+		// 1. Calcul des gains si pas perdu
 		if (stop_reason !== 'lose') {
-			// Si cashout, on paie l'étage D'AVANT. Si Win, l'étage 9.
 			const floorIndex = stop_reason === 'cashout' ? game.currentFloor - 1 : 9;
 			const multiplier = TOWER_CONFIG.MULTIPLIERS[floorIndex] || 1;
 			payout = Math.ceil(game.bet * multiplier);
@@ -77,29 +87,36 @@ export class TowerService {
 			await container.casinoService.transaction(game.userId, payout, 'add');
 		}
 
+		// 2. Log de la partie
 		container.casinoService.logGame(game.userId, 'tower', game.bet, payout, { floor: game.currentFloor + 1, stop_reason });
 
 		return { status: stop_reason, game, payout, badChoice };
 	}
 
-	// 5. Timer
+	/**
+	 * Lance le timer pour la partie
+	 */
 	private startTimer(messageId: string): NodeJS.Timeout {
 		return setTimeout(() => {
 			this.handleTimeout(messageId);
 		}, 60_000);
 	}
 
-	// Gestion du timeout (C'est la seule fois où le Service parle un peu à Discord via le client)
+	/**
+	 * Gère le timeout (modifie l'embed pour indiquer la fin automatique)
+	 */
 	private async handleTimeout(messageId: string) {
 		const game = this.games.get(messageId);
 		if (!game) return;
+
 		this.games.delete(messageId);
 
 		try {
 			const channel = await container.client.channels.fetch(game.channelId);
 			if (channel?.isTextBased()) {
 				const message = await channel.messages.fetch(messageId);
-				// On utilise le Builder ici pour l'embed de timeout
+
+				// 1. Éditer le message pour indiquer le timeout
 				if (message) await message.edit({ embeds: [TowerMessageBuilder.buildTimeoutEmbed()], components: [] });
 			}
 		} catch (e) {
