@@ -9,12 +9,12 @@ import { HistoryMessageBuilder } from '../../builders/HistoryMessage.builder';
 })
 export class HistoryFilterHandler extends InteractionHandler {
 	public override parse(interaction: StringSelectMenuInteraction) {
-		return interaction.customId.startsWith('history_filter_') ? this.some() : this.none();
+		return interaction.customId.startsWith('history:filter:') ? this.some() : this.none();
 	}
 
 	public override async run(interaction: StringSelectMenuInteraction) {
 		// customId = history_filter_{discordId}_{page}
-		const [, , discordId] = interaction.customId.split('_');
+		const [, , discordId] = interaction.customId.split(':');
 		// Extraction des types sélectionnés (on filtre "ALL")
 		const types = interaction.values.includes('ALL') ? [] : interaction.values;
 

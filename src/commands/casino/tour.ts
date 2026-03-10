@@ -16,7 +16,14 @@ export class TowerCommand extends Command {
 				.setName(this.name)
 				.setDescription(this.description)
 				.setContexts([InteractionContextType.Guild])
-				.addIntegerOption((opt) => opt.setName('mise').setDescription('Montant de Rubis a miser').setRequired(true).setMinValue(10))
+				.addIntegerOption((opt) =>
+					opt //
+						.setName('mise')
+						.setDescription('Montant de Rubis a miser')
+						.setRequired(true)
+						.setMinValue(10)
+						.setMaxValue(200)
+				)
 		);
 	}
 

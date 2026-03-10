@@ -1,11 +1,12 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, GuildMember } from 'discord.js';
 import { Currency } from '../enums/Currency';
 import * as Embeds from '../utils/embeds';
+import { Item } from '../models/Shop.interface';
 
 interface SellOptions {
 	seller: GuildMember;
 	buyer: GuildMember;
-	item: any; // Remplace par ton interface Item si nécessaire
+	item: Item;
 	itemId: number;
 	price: number;
 	currency: Currency;

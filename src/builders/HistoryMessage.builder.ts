@@ -23,12 +23,12 @@ export class HistoryMessageBuilder {
 	private static buildButtons(discordId: string, page: number, maxPage: number, types: string[]) {
 		return new ActionRowBuilder<ButtonBuilder>().addComponents(
 			new ButtonBuilder()
-				.setCustomId(`history_prev_${discordId}_${page}_${types.join(',')}`)
+				.setCustomId(`history:button:prev:${discordId}:${page}:${types.join(',')}`)
 				.setLabel('◀️ Précédent')
 				.setStyle(ButtonStyle.Secondary)
 				.setDisabled(page <= 1),
 			new ButtonBuilder()
-				.setCustomId(`history_next_${discordId}_${page}_${types.join(',')}`)
+				.setCustomId(`history:button:next:${discordId}:${page}:${types.join(',')}`)
 				.setLabel('Suivant ▶️')
 				.setStyle(ButtonStyle.Secondary)
 				.setDisabled(page >= maxPage)
@@ -41,7 +41,7 @@ export class HistoryMessageBuilder {
 	private static buildSelect(discordId: string, page: number) {
 		return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
 			new StringSelectMenuBuilder()
-				.setCustomId(`history_filter_${discordId}_${page}`)
+				.setCustomId(`history:filter:${discordId}:${page}`)
 				.setPlaceholder('Filtrer par type...')
 				.setMinValues(0)
 				.setMaxValues(5)

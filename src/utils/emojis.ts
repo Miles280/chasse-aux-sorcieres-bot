@@ -10,7 +10,8 @@ export const emojis = {
 	redcheck: `<a:redcheck:${process.env.EMOJI_REDCHECK_ID}>`,
 	pinkcheck: `<a:pinkcheck:${process.env.EMOJI_PINKCHECK_ID}>`,
 	purplecheck: `<a:purplecheck:${process.env.EMOJI_PURPLECHECK_ID}>`,
-	deny: `<:deny:${process.env.EMOJI_DENY_ID}>`
+	deny: `<:deny:${process.env.EMOJI_DENY_ID}>`,
+	crown: `<:crown:${process.env.EMOJI_CROWN_ID}>`
 };
 
 export const emojisV2 = {

@@ -148,25 +148,30 @@ export function conversionEmbed(member: GuildMember, data: ConversionData): Embe
 }
 
 export function conversionRateEmbed(member: GuildMember, data: ConversionRates): EmbedBuilder {
-	const { currentRoleId, currentRate, rates } = data;
+	// 1. On blinde la déstructuration avec des valeurs par défaut
+	// On suppose un taux de base (ex: 1.0) si currentRate est absent
+	const { currentRoleId, currentRate = 0, rates = [] } = data;
 
+	// 2. Gestion du texte de header
 	const headerText = currentRoleId ? `Vous êtes actuellement au rang de <@&${currentRoleId}>.` : `Vous n'avez encore acheté aucun rang social.`;
 
-	const subHeaderText = `Chacune de vos gemmes vaut actuellement **${currentRate.toLocaleString()} ${emojis.rubies}**.`;
+	// 3. Sécurité sur le toLocaleString()
+	const formattedRate = (currentRate ?? 5).toLocaleString();
+	const subHeaderText = `Chacune de vos gemmes vaut **${formattedRate} ${emojis.rubies}**.`;
 
-	const ratesList = rates
-		.map((r) => {
-			const roleMention = r.roleId ? `<@&${r.roleId}>` : '**Rôle inconnu**';
+	// 4. On s'assure que rates est bien un tableau avant le .map()
+	const ratesList =
+		(rates ?? [])
+			.map((r) => {
+				const roleMention = r.roleId ? `<@&${r.roleId}>` : '**Rôle inconnu**';
+				// Sécurité sur r.rate également
+				const rRate = (r.rate ?? 0).toLocaleString();
 
-			const rateText = `> \`1\` ${emojis.gems} = \`${r.rate.toLocaleString()}\` ${emojis.rubies} ⟶ ${roleMention}`;
+				const rateText = `> \`1\` ${emojis.gems} = \`${rRate}\` ${emojis.rubies} ⟶ ${roleMention}`;
 
-			if (r.isCurrent) {
-				return `${rateText} *(votre rang actuel)*`;
-			}
-
-			return `${rateText}`;
-		})
-		.join('\n');
+				return r.isCurrent ? `${rateText} *(votre rang actuel)*` : rateText;
+			})
+			.join('\n') || '> *Aucun taux configuré.*'; // Fallback si la liste est vide
 
 	return new EmbedBuilder()
 		.setAuthor({

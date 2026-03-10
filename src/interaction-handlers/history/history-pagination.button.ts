@@ -9,12 +9,12 @@ import * as Embeds from '../../utils/embeds';
 })
 export class HistoryPaginationHandler extends InteractionHandler {
 	public override parse(interaction: ButtonInteraction) {
-		return interaction.customId.startsWith('history_') ? this.some() : this.none();
+		return interaction.customId.startsWith('history:button:') ? this.some() : this.none();
 	}
 
 	public override async run(interaction: ButtonInteraction) {
 		// 1. Extraction des données du customId
-		const [, direction, discordId, currentPage, typesEncoded] = interaction.customId.split('_');
+		const [, , direction, discordId, currentPage, typesEncoded] = interaction.customId.split(':');
 		const types = decodeURIComponent(typesEncoded || '')
 			.split(',')
 			.filter(Boolean);
