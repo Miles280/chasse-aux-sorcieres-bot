@@ -21,13 +21,20 @@ export class RouletteCommand extends Command {
 	public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
 		const channelId = interaction.channelId;
 
-		if (container.rouletteService.hasGameInChannel(channelId)) {
+		const game = container.rouletteService.getGameInChannel(channelId);
+
+		if (game) {
+			const messageLink = `https://discord.com/channels/${interaction.guildId}/${channelId}/${game.messageId}`;
 			return interaction.reply({
-				embeds: [Embeds.errorEmbed({ message: 'Une roulette est déjà en cours de préparation dans ce salon !' })],
+				embeds: [
+					Embeds.errorEmbed({
+						title: 'Partie en cours...',
+						message: `Une roulette est déjà en cours de préparation dans ce salon !\n> [Voir la roulette](${messageLink})`
+					})
+				],
 				flags: MessageFlags.Ephemeral
 			});
 		}
-
 		const now = Date.now();
 		const timeout = Number(ROULETTE_CONFIG.INITIAL_TIMER);
 		const endsAt = now + timeout;

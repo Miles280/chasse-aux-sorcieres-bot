@@ -21,6 +21,11 @@ export class RouletteService {
 		return !!game && game.status !== 'finished';
 	}
 
+	public getGameInChannel(channelId: string) {
+		const game = this.games.get(channelId);
+		return game && game.status !== 'finished' ? game : null;
+	}
+
 	/**
 	 * Crée un nouveau lobby de roulette et démarre le timer initial.
 	 */
