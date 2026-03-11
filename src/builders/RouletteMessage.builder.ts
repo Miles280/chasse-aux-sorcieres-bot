@@ -1,4 +1,4 @@
-import { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } from 'discord.js';
+import { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { RouletteGame, RouletteBet } from '../models/RouletteGame.interface';
 import { emojis } from '../utils/emojis';
 import { colors } from '../utils/customColors';
@@ -53,12 +53,13 @@ export class RouletteMessageBuilder {
 	}
 
 	/**
-	 * Construit les composants interactifs du lobby (sélecteur de type de mise)
-	 * à partir de BET_OPTIONS pour générer dynamiquement les labels et descriptions.
+	 * Construit les composants interactifs du lobby.
+	 * Génère un menu de sélection dynamique basé sur les types de mises disponibles
+	 * et ajoute un bouton d'aide.
 	 */
-	public static buildLobbyComponents(): ActionRowBuilder<StringSelectMenuBuilder>[] {
+	public static buildLobbyComponents(): ActionRowBuilder<StringSelectMenuBuilder | ButtonBuilder>[] {
 		const selectMenu = new StringSelectMenuBuilder()
-			.setCustomId('roulette:select_bet')
+			.setCustomId('roulette:select:bet')
 			.setPlaceholder('Choisissez ce sur quoi vous voulez miser...')
 			.addOptions(
 				Object.entries(BET_OPTIONS).map(([value, option]) => ({
@@ -68,7 +69,22 @@ export class RouletteMessageBuilder {
 				}))
 			);
 
-		return [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu)];
+		const helpButton = new ButtonBuilder().setCustomId('roulette:help').setLabel('❔ Help').setStyle(ButtonStyle.Secondary);
+
+		return [
+			new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu),
+			new ActionRowBuilder<ButtonBuilder>().addComponents(helpButton)
+		];
+	}
+
+	/**
+	 * Construit les composants de fin de partie.
+	 * Affiche un bouton "Rejouer" pour permettre de relancer rapidement un lobby.
+	 */
+	public static buildFinishedComponents(): ActionRowBuilder<ButtonBuilder>[] {
+		const replayButton = new ButtonBuilder().setCustomId('roulette:button:playAgain').setLabel('Rejouer').setStyle(ButtonStyle.Primary);
+
+		return [new ActionRowBuilder<ButtonBuilder>().addComponents(replayButton)];
 	}
 
 	/**

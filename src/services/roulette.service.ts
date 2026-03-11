@@ -130,43 +130,34 @@ export class RouletteService {
 	}
 
 	/**
-	 * Calcule les gains des joueurs et distribue les récompenses.
+	 * Calcule les gains des joueurs, distribue les récompenses et clôture la partie.
+	 * Gère également la suppression automatique du bouton "Rejouer" après 1 minute.
 	 */
 	private async resolveGame(channelId: string, winningNumber: number) {
 		const game = this.games.get(channelId);
 		if (!game) return;
 
 		const playerSummaries = new Map<string, { payout: number; totalBet: number }>();
-
 		const winningColor = ROULETTE_CONFIG.getColor(winningNumber);
 
-		// 1. Calculer les gains de chaque joueur
+		// 1. Calcul des gains de chaque joueur en fonction des multiplicateurs.
 		for (const bet of game.bets) {
-			const current = playerSummaries.get(bet.userId) ?? {
-				payout: 0,
-				totalBet: 0
-			};
+			const current = playerSummaries.get(bet.userId) ?? { payout: 0, totalBet: 0 };
 
 			let win = false;
 			let multiplier = 0;
 
-			// Vérifie si la mise gagne
 			if (typeof bet.type === 'number') {
 				const option = BET_OPTIONS.number;
-
 				win = option.isWin(winningNumber, winningColor, bet.type);
 				multiplier = option.multiplier;
 			} else {
 				const option = BET_OPTIONS[bet.type];
-
 				win = option.isWin(winningNumber, winningColor);
 				multiplier = option.multiplier;
 			}
 
-			if (win) {
-				current.payout += Math.ceil(bet.amount * multiplier);
-			}
-
+			if (win) current.payout += Math.ceil(bet.amount * multiplier);
 			current.totalBet += bet.amount;
 
 			playerSummaries.set(bet.userId, current);
@@ -174,34 +165,49 @@ export class RouletteService {
 
 		const winners: { userId: string; payout: number }[] = [];
 
-		// 2. Distribuer les gains
+		// 2. Distribution des rubis et journalisation des logs.
 		for (const [userId, data] of playerSummaries) {
 			if (data.payout > 0) {
-				winners.push({
-					userId,
-					payout: data.payout
-				});
-
+				winners.push({ userId, payout: data.payout });
 				await container.casinoService.transaction(userId, data.payout, 'add');
 			}
-
-			// Log de la partie
 			container.casinoService.logGame(userId, 'roulette', data.totalBet, data.payout, { winningNumber });
 		}
 
 		game.status = 'finished';
-
 		const channel = await container.client.channels.fetch(game.channelId);
 
-		// 3. Mettre à jour le message avec le résultat final
+		// 3. Mise à jour du message final avec affichage du bouton "Rejouer".
 		if (channel?.isTextBased() && game.spinMessageId) {
 			const resultMessage = await channel.messages.fetch(game.spinMessageId);
 
 			const finalEmbed = RouletteMessageBuilder.buildGameEmbed(game, winningNumber, winners);
+			const finalComponents = RouletteMessageBuilder.buildFinishedComponents();
 
-			await resultMessage.edit({ embeds: [finalEmbed] });
+			const lastMessage = await resultMessage.edit({
+				embeds: [finalEmbed],
+				components: finalComponents
+			});
+
+			// On crée un collecteur pour supprimer le bouton s'il n'est pas utilisé.
+			const collector = lastMessage.createMessageComponentCollector({
+				time: 60_000,
+				max: 1
+			});
+
+			collector.on('end', async (_collected, reason) => {
+				// Si le délai expire sans clic, on nettoie les composants du message.
+				if (reason === 'time') {
+					try {
+						await lastMessage.edit({ components: [] });
+					} catch (err) {
+						// On ignore l'erreur si le message a été supprimé.
+					}
+				}
+			});
 		}
 
+		// 4. Nettoyage de la mémoire.
 		this.games.delete(channelId);
 	}
 
@@ -218,7 +224,12 @@ export class RouletteService {
 			const embed = RouletteMessageBuilder.buildGameEmbed(game, result, winners);
 
 			// 2. Afficher les boutons seulement pendant la phase de mise
-			const components = game.status === 'betting' ? RouletteMessageBuilder.buildLobbyComponents() : [];
+			const components =
+				game.status === 'betting'
+					? RouletteMessageBuilder.buildLobbyComponents()
+					: game.status === 'finished'
+						? RouletteMessageBuilder.buildFinishedComponents()
+						: [];
 
 			await message.edit({
 				embeds: [embed],

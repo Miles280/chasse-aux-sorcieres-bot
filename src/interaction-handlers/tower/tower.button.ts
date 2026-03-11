@@ -8,7 +8,7 @@ import * as Embeds from '../../utils/embeds';
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.Button
 })
-export class TowerHandler extends InteractionHandler {
+export class TowerButtonHandler extends InteractionHandler {
 	public override parse(interaction: ButtonInteraction) {
 		if (!interaction.customId.startsWith('tower:')) return this.none();
 		return this.some();
@@ -56,6 +56,8 @@ export class TowerHandler extends InteractionHandler {
 			}
 
 			// 1.4 Générer une nouvelle grille et initialiser la partie
+			await interaction.update({ components: [] }); // Suppression du bouton pour rejouer avant de lancer la nouvelle partie
+
 			const grid = container.towerService.generateGrid();
 			const gameData: any = { userId, bet, currentFloor: 0, grid, history: [] };
 

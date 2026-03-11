@@ -8,7 +8,7 @@ import { ROULETTE_CONFIG } from '../../utils/constants';
 })
 export class RouletteSelectMenuHandler extends InteractionHandler {
 	public override parse(interaction: StringSelectMenuInteraction) {
-		if (interaction.customId !== 'roulette:select_bet') return this.none();
+		if (interaction.customId !== 'roulette:select:bet') return this.none();
 		return this.some();
 	}
 
