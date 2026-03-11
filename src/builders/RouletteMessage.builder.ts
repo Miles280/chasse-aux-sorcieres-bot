@@ -53,24 +53,34 @@ export class RouletteMessageBuilder {
 	}
 
 	/**
-	 * Construit les composants interactifs du lobby.
-	 * Génère un menu de sélection dynamique basé sur les types de mises disponibles
-	 * et ajoute un bouton d'aide.
+	 * Construit les composants interactifs du lobby de la roulette.
+	 * Génère un menu de sélection dynamique et un bouton d'aide.
 	 */
 	public static buildLobbyComponents(): ActionRowBuilder<StringSelectMenuBuilder | ButtonBuilder>[] {
+		// 1. Préparation des options (Typage explicite pour autoriser le bouton de reset)
+		const options: { label: string; value: string; description: string }[] = Object.entries(BET_OPTIONS).map(([value, option]) => ({
+			label: option.label,
+			value,
+			description: option.description
+		}));
+
+		// 2. Ajout de l'option de secours au début pour débloquer le sélecteur Discord
+		options.unshift({
+			label: 'Rafraîchir la sélection',
+			value: 'reset',
+			description: 'Réinitialise le menu si vous êtes bloqué sur un choix.'
+		});
+
+		// 3. Création du menu de sélection
 		const selectMenu = new StringSelectMenuBuilder()
 			.setCustomId('roulette:select:bet')
 			.setPlaceholder('Choisissez ce sur quoi vous voulez miser...')
-			.addOptions(
-				Object.entries(BET_OPTIONS).map(([value, option]) => ({
-					label: option.label,
-					value,
-					description: option.description
-				}))
-			);
+			.addOptions(options);
 
+		// 4. Création du bouton d'aide
 		const helpButton = new ButtonBuilder().setCustomId('roulette:help').setLabel('❔ Help').setStyle(ButtonStyle.Secondary);
 
+		// 5. Retourne les composants organisés en lignes (ActionRows)
 		return [
 			new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu),
 			new ActionRowBuilder<ButtonBuilder>().addComponents(helpButton)

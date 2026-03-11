@@ -2,6 +2,7 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes } from '@sapphire/framework';
 import { StringSelectMenuInteraction, ModalBuilder, TextInputBuilder, TextInputStyle, LabelBuilder } from 'discord.js';
 import { ROULETTE_CONFIG } from '../../utils/constants';
+import { RouletteMessageBuilder } from '../../builders/RouletteMessage.builder';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.SelectMenu
@@ -15,10 +16,17 @@ export class RouletteSelectMenuHandler extends InteractionHandler {
 	public async run(interaction: StringSelectMenuInteraction) {
 		const selectedBet = interaction.values[0];
 
-		// 1. Création de la modal
+		// 1. Gestion du rafraîchissement du menu (pour débloquer la sélection Discord)
+		if (selectedBet === 'reset') {
+			const components = RouletteMessageBuilder.buildLobbyComponents();
+			await interaction.update({ components });
+			return; // On arrête l'exécution ici
+		}
+
+		// 2. Création de la modal principale
 		const modal = new ModalBuilder().setCustomId(`roulette:modal:${selectedBet}`).setTitle('🎰 Placer une mise');
 
-		// 2. Champ pour entrer le montant de la mise
+		// 3. Configuration du champ pour le montant de la mise
 		const amountInput = new TextInputBuilder()
 			.setCustomId('amount')
 			.setPlaceholder(`Min: ${ROULETTE_CONFIG.MIN_BET} & Max: ${ROULETTE_CONFIG.MAX_BET}`)
@@ -29,7 +37,7 @@ export class RouletteSelectMenuHandler extends InteractionHandler {
 
 		const amountLabel = new LabelBuilder().setLabel('Combien voulez-vous miser ?').setTextInputComponent(amountInput);
 
-		// 3. Si la mise est sur un numéro précis, on ajoute un champ supplémentaire
+		// 4. Ajout d'un champ spécifique si la mise concerne un numéro précis
 		if (selectedBet === 'number') {
 			const numberInput = new TextInputBuilder()
 				.setCustomId('number_choice')
@@ -41,14 +49,14 @@ export class RouletteSelectMenuHandler extends InteractionHandler {
 
 			const numberLabel = new LabelBuilder().setLabel('Sur quel numéro précis voulez-vous miser ?').setTextInputComponent(numberInput);
 
-			// Ajoute les deux champs au modal
+			// Ajout des deux champs (numéro + montant)
 			modal.addLabelComponents(numberLabel, amountLabel);
 		} else {
-			// Sinon uniquement le champ du montant
+			// Ajout du champ montant uniquement
 			modal.addLabelComponents(amountLabel);
 		}
 
-		// 4. Affiche la modal au joueur
+		// 5. Affichage de la modal au joueur
 		await interaction.showModal(modal);
 	}
 }
