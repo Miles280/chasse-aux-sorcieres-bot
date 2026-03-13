@@ -84,7 +84,16 @@ export class TowerButtonHandler extends InteractionHandler {
 
 		// 4. Gérer les erreurs
 		if (result.status === 'error') {
-			return interaction.reply({ content: result.message, flags: MessageFlags.Ephemeral });
+			return interaction.reply({
+				embeds: [
+					Embeds.errorEmbed({
+						member: interaction.member as GuildMember,
+						title: 'Petit voleur !',
+						message: `${result.message}`
+					})
+				],
+				flags: MessageFlags.Ephemeral
+			});
 		}
 
 		// 5. Sélectionner l'embed selon le résultat
