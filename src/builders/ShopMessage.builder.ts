@@ -117,13 +117,13 @@ export class ShopMessageBuilder {
 		return new ActionRowBuilder<ButtonBuilder>().addComponents(
 			new ButtonBuilder()
 				.setCustomId(`shop_prev_${currency}_${page}`)
-				.setLabel('◀️ Précédent')
+				.setLabel('◀ Précédent')
 				.setStyle(ButtonStyle.Secondary)
 				.setDisabled(page <= 1),
 
 			new ButtonBuilder()
 				.setCustomId(`shop_next_${currency}_${page}`)
-				.setLabel('Suivant ▶️')
+				.setLabel('Suivant ▶')
 				.setStyle(ButtonStyle.Secondary)
 				.setDisabled(page >= maxPage),
 

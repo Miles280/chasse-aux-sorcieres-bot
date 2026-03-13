@@ -1,5 +1,6 @@
 import { Currency } from '../enums/Currency';
 import { ShopType } from '../enums/ShopType';
+import { PaginationData } from './ApiResponse.interface';
 
 export interface Item {
 	id: number;
@@ -24,9 +25,5 @@ export interface Inventory {
 
 export interface Shop {
 	items: Item[];
-	pagination: {
-		currentPage: number;
-		totalPages: number;
-		totalItems: number;
-	};
+	pagination: PaginationData;
 }

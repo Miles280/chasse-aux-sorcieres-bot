@@ -1,5 +1,6 @@
 import { Currency } from '../enums/Currency';
 import { TransactionType } from '../enums/TransactionType';
+import { PaginationData } from './ApiResponse.interface';
 
 export interface UserBalance {
 	gems: number;
@@ -24,11 +25,7 @@ export interface Transaction {
 
 export interface TransactionHistory {
 	items: Transaction[];
-	pagination: {
-		currentPage: number;
-		totalPages: number;
-		totalItems: number;
-	};
+	pagination: PaginationData;
 }
 
 export interface CasinoUpdate {
@@ -69,4 +66,15 @@ export interface ConversionRates {
 		rate: number;
 		isCurrent: boolean;
 	}[];
+}
+
+export interface LeaderboardUser {
+	discordId: string;
+	gems: number;
+	rubies: number;
+}
+
+export interface LeaderboardData {
+	users: LeaderboardUser[];
+	pagination: PaginationData;
 }

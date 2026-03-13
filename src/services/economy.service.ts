@@ -41,4 +41,13 @@ export class EconomyService {
 	async getConversionRate(discordId: string): Promise<ApiResponse<ConversionRates>> {
 		return await this.api.get<ConversionRates>(`/economy/rates/${discordId}`);
 	}
+
+	async getLeaderboard(currency: Currency, page: number = 1): Promise<ApiResponse<any>> {
+		// Idéalement, remplace "any" par une interface "LeaderboardData"
+		const queryParams = new URLSearchParams({
+			currency: currency,
+			page: String(page)
+		});
+		return await this.api.get<any>(`/economy/leaderboard?${queryParams.toString()}`);
+	}
 }
