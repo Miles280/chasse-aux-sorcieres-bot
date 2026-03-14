@@ -11,13 +11,25 @@ import * as Embeds from '../../utils/embeds';
 export class InventaireCommand extends Command {
 	public override registerApplicationCommands(registry: Command.Registry) {
 		registry.registerChatInputCommand((builder) =>
-			builder.setName(this.name).setDescription(this.description).setContexts([InteractionContextType.Guild])
+			builder
+				.setName(this.name)
+				.setDescription(this.description)
+				.setContexts([InteractionContextType.Guild])
+				.addUserOption((opt) =>
+					opt //
+						.setName('membre')
+						.setDescription('Le membre concerné par cette action.')
+				)
 		);
 	}
 
 	public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
+		// Récupération du membre spécifié ou du membre ayant effectué la commande si aucun spécifié
+		const requestedUser = interaction.options.getUser('membre');
+		const discordId = requestedUser?.id ?? interaction.user.id;
+
 		// Demande à l'API les informations de l'inventaire du membre
-		const response = await container.inventoryService.getUserInventory(interaction.user.id);
+		const response = await container.inventoryService.getUserInventory(discordId);
 
 		// Gestion d'erreur AVANT le builder
 		if (!response.success) {
@@ -28,7 +40,7 @@ export class InventaireCommand extends Command {
 		}
 
 		// Vérification que le membre est sur le serveur (pour pouvoir afficher l'utilisateur dans l'embed)
-		const member = await container.discordService.fetchMemberOrReply(interaction.guild, interaction.user.id, interaction);
+		const member = await container.discordService.fetchMemberOrReply(interaction.guild, discordId, interaction);
 		if (!member) return;
 
 		// Création et envoie de l'embed final

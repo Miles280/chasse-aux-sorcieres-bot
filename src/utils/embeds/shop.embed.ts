@@ -68,9 +68,9 @@ export function inventoryEmbed({ member, inventory }: { member: GuildMember; inv
 		inventory.items.length > 0
 			? inventory.items
 					// On déstructure "item" (les infos de l'objet) et "quantity" (le nombre possédé)
-					.map(({ item, quantity }) => `> - ${item.name}  x\`${quantity}\``)
+					.map(({ item, quantity }) => `> - ${item.name}  \`x${quantity}\``)
 					.join('\n')
-			: '> Aucun item dans votre inventaire.';
+			: "> Aucun item dans l'inventaire.";
 
 	return new EmbedBuilder()
 		.setAuthor({
@@ -80,7 +80,7 @@ export function inventoryEmbed({ member, inventory }: { member: GuildMember; inv
 		.setTitle(`${emojis.purplecheck} __Inventaire de ${member.displayName}__`)
 		.setDescription(formattedItems)
 		.setColor(colors.purpleWitch)
-		.setFooter({ text: 'Vendez un de vos items à un joueur avec /item sell !' });
+		.setFooter({ text: 'Vendez un de vos items à un joueur avec /sell !' });
 }
 
 export function sellProposalEmbed({

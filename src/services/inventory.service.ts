@@ -13,4 +13,8 @@ export class InventoryService {
 	async tradeItem(sellerId: string, buyerId: string, itemId: number, currency: Currency, price: number): Promise<ApiResponse<ValidationResponse>> {
 		return await this.api.post<ValidationResponse>(`/inventory/sell`, { sellerId, buyerId, itemId, currency, price });
 	}
+
+	async manageItem(discordId: string, itemId: number, action: 'add' | 'remove'): Promise<ApiResponse<ValidationResponse>> {
+		return await this.api.post<ValidationResponse>(`/inventory/manage`, { discordId, itemId, action });
+	}
 }
