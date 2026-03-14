@@ -16,13 +16,13 @@ export class InventoryAdminAutocomplete extends InteractionHandler {
 
 		const search = focused.value.toLowerCase();
 
-		/*
-		ADD
-		*/
 		if (sub === 'add') {
 			const response = await container.shopService.getAllArticles();
 			if (!response.success) return this.none();
 
+			// 1. Filtrer uniquement les items
+			// 2. Appliquer la recherche utilisateur
+			// 3. Limiter à 25 résultats (limite Discord)
 			const choices = response.data
 				.filter((i) => i.type === 'item')
 				.filter((i) => i.name.toLowerCase().includes(search))
@@ -35,9 +35,6 @@ export class InventoryAdminAutocomplete extends InteractionHandler {
 			return this.some(choices);
 		}
 
-		/*
-		REMOVE
-		*/
 		if (sub === 'remove') {
 			const targetOption = interaction.options.get('membre');
 			if (!targetOption) return this.none();
@@ -47,13 +44,13 @@ export class InventoryAdminAutocomplete extends InteractionHandler {
 			const response = await container.inventoryService.getUserInventory(targetId);
 			if (!response.success) return this.none();
 
-			// ICI : On accède à la liste d'items à l'intérieur de l'objet inventory
-			// Remplace '.items' par le nom exact de la propriété dans ton type Inventory
+			// 1. Récupération de la liste d'items dans l'inventaire
 			const inventoryItems = response.data.items;
 
-			// On vérifie que c'est bien un tableau pour éviter d'autres bugs
+			// 2. Vérification de sécurité
 			if (!Array.isArray(inventoryItems)) return this.none();
 
+			// 3. Filtrage + limitation Discord
 			const choices = inventoryItems
 				.filter((i) => i.item.name.toLowerCase().includes(search))
 				.slice(0, 25)

@@ -24,14 +24,14 @@ export class InventaireCommand extends Command {
 	}
 
 	public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
-		// Récupération du membre spécifié ou du membre ayant effectué la commande si aucun spécifié
+		// 1. Déterminer quel utilisateur consulter
 		const requestedUser = interaction.options.getUser('membre');
 		const discordId = requestedUser?.id ?? interaction.user.id;
 
-		// Demande à l'API les informations de l'inventaire du membre
+		// 2. Récupération de l'inventaire via l'API
 		const response = await container.inventoryService.getUserInventory(discordId);
 
-		// Gestion d'erreur AVANT le builder
+		// 3. Gestion des erreurs API
 		if (!response.success) {
 			return interaction.reply({
 				embeds: [Embeds.errorEmbed({ message: response.error })],
@@ -39,11 +39,11 @@ export class InventaireCommand extends Command {
 			});
 		}
 
-		// Vérification que le membre est sur le serveur (pour pouvoir afficher l'utilisateur dans l'embed)
+		// 4. Vérifier que le membre est présent sur le serveur
 		const member = await container.discordService.fetchMemberOrReply(interaction.guild, discordId, interaction);
 		if (!member) return;
 
-		// Création et envoie de l'embed final
+		// 5. Génération de l'embed d'inventaire
 		const inventory = response.data;
 
 		const embed = Embeds.inventoryEmbed({
