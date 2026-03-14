@@ -1,6 +1,6 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { Subcommand } from '@sapphire/plugin-subcommands';
-import { InteractionContextType, MessageFlags } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, InteractionContextType, MessageFlags } from 'discord.js';
 import { container } from '@sapphire/framework';
 import * as Embeds from '../utils/embeds';
 
@@ -9,7 +9,8 @@ import * as Embeds from '../utils/embeds';
 	description: 'Consulter différentes informations.',
 	subcommands: [
 		{ name: 'item', chatInputRun: 'chatInputItem' },
-		{ name: 'conversion', chatInputRun: 'chatInputConversion' }
+		{ name: 'conversion', chatInputRun: 'chatInputConversion' },
+		{ name: 'site', chatInputRun: 'chatInputSite' }
 	]
 })
 export class InfoCommand extends Subcommand {
@@ -29,6 +30,11 @@ export class InfoCommand extends Subcommand {
 					sub // CONVERSION
 						.setName('conversion')
 						.setDescription('Consulte ton taux de conversion actuel.')
+				)
+				.addSubcommand((sub) =>
+					sub // SITE
+						.setName('site')
+						.setDescription('Découvre le site officiel du projet.')
 				)
 		);
 	}
@@ -68,6 +74,19 @@ export class InfoCommand extends Subcommand {
 
 		return interaction.reply({
 			embeds: [Embeds.conversionRateEmbed(member, response.data)]
+		});
+	}
+
+	public async chatInputSite(interaction: Subcommand.ChatInputCommandInteraction) {
+		const embed = Embeds.siteInfoEmbed();
+
+		const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+			new ButtonBuilder().setLabel('Visiter le site').setStyle(ButtonStyle.Link).setURL('https://chasse-aux-sorcieres.fr')
+		);
+
+		return interaction.reply({
+			embeds: [embed],
+			components: [row]
 		});
 	}
 }

@@ -32,3 +32,25 @@ export function successEmbed({ message, member, title }: { message: string; memb
 	}
 	return embed;
 }
+
+export function siteInfoEmbed(): EmbedBuilder {
+	return new EmbedBuilder()
+		.setTitle(`${emojis.purplecheck} Site Officiel`)
+		.setDescription(
+			`Un site officiel existe pour présenter la **Chasse aux Sorcières de Nistrium**.
+
+Sur le site, vous pourrez notamment :
+- Découvrir les **rôles**
+- Lire les **règles**
+- Explorer le **lore**
+
+> D'autres fonctionnalités arriveront plus tard !
+
+Rappel : Le jeu __ne se joue pas sur le site__, mais uniquement ici sur Discord.
+`
+		)
+		.setColor(colors.purpleWitch)
+		.setFooter({
+			text: 'Utilisez le bouton ci-dessous pour visiter le site.'
+		});
+}
