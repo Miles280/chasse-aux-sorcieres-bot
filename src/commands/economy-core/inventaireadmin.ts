@@ -73,7 +73,9 @@ export class InventaireAdminCommand extends Subcommand {
 			});
 		}
 
-		return interaction.reply(response.data.message);
+		return interaction.reply({
+			embeds: [Embeds.successEmbed({ title: 'Changement effectué', message: response.data.message })]
+		});
 	}
 
 	public async chatInputRemove(interaction: Subcommand.ChatInputCommandInteraction) {
@@ -89,6 +91,8 @@ export class InventaireAdminCommand extends Subcommand {
 			});
 		}
 
-		return interaction.reply(response.data.message);
+		return interaction.reply({
+			embeds: [Embeds.successEmbed({ title: 'Changement effectué', message: response.data.message })]
+		});
 	}
 }
