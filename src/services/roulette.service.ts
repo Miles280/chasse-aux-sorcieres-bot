@@ -120,8 +120,8 @@ export class RouletteService {
 		});
 
 		// 4. Envoyer le message d'animation du spin
-		const spinEmbed = RouletteMessageBuilder.buildGameEmbed(game, winningNumber);
-		const spinMessage = await message.reply({ embeds: [spinEmbed] });
+		const spinPayload = RouletteMessageBuilder.buildGameMessage(game, winningNumber);
+		const spinMessage = await message.reply(spinPayload);
 
 		game.spinMessageId = spinMessage.id;
 
@@ -181,13 +181,9 @@ export class RouletteService {
 		if (channel?.isTextBased() && game.spinMessageId) {
 			const resultMessage = await channel.messages.fetch(game.spinMessageId);
 
-			const finalEmbed = RouletteMessageBuilder.buildGameEmbed(game, winningNumber, winners);
-			const finalComponents = RouletteMessageBuilder.buildFinishedComponents();
+			const messagePayload = RouletteMessageBuilder.buildGameMessage(game, winningNumber, winners);
 
-			const lastMessage = await resultMessage.edit({
-				embeds: [finalEmbed],
-				components: finalComponents
-			});
+			const lastMessage = await resultMessage.edit(messagePayload);
 
 			// On crée un collecteur pour supprimer le bouton s'il n'est pas utilisé.
 			const collector = lastMessage.createMessageComponentCollector({
@@ -199,10 +195,9 @@ export class RouletteService {
 				// Si le délai expire sans clic, on nettoie les composants du message.
 				if (reason === 'time') {
 					try {
-						await lastMessage.edit({ components: [] });
-					} catch (err) {
-						// On ignore l'erreur si le message a été supprimé.
-					}
+						const payloadSansButton = RouletteMessageBuilder.buildGameMessage(game, winningNumber, winners, false);
+						await lastMessage.edit(payloadSansButton);
+					} catch (err) {}
 				}
 			});
 		}
@@ -212,7 +207,7 @@ export class RouletteService {
 	}
 
 	/**
-	 * Met à jour l'embed du lobby (mises, timer, résultat...).
+	 * Met à jour l'affichage de la partie.
 	 */
 	private async updateDisplay(game: RouletteGame, result?: number, winners: any[] = []) {
 		const channel = await container.client.channels.fetch(game.channelId);
@@ -220,21 +215,9 @@ export class RouletteService {
 		if (channel?.isTextBased() && game.messageId) {
 			const message = await channel.messages.fetch(game.messageId);
 
-			// 1. Générer l'embed
-			const embed = RouletteMessageBuilder.buildGameEmbed(game, result, winners);
+			const messagePayload = RouletteMessageBuilder.buildGameMessage(game, result, winners);
 
-			// 2. Afficher les boutons seulement pendant la phase de mise
-			const components =
-				game.status === 'betting'
-					? RouletteMessageBuilder.buildLobbyComponents()
-					: game.status === 'finished'
-						? RouletteMessageBuilder.buildFinishedComponents()
-						: [];
-
-			await message.edit({
-				embeds: [embed],
-				components
-			});
+			await message.edit(messagePayload);
 		}
 	}
 }

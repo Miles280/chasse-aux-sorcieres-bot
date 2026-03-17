@@ -49,12 +49,11 @@ export class RouletteCommand extends Command {
 			createdAt: now
 		};
 
-		const embed = RouletteMessageBuilder.buildGameEmbed(initialGame);
-		const components = RouletteMessageBuilder.buildLobbyComponents();
+		// On récupère le payload complet (qui contient déjà embeds et components)
+		const payload = RouletteMessageBuilder.buildGameMessage(initialGame);
 
 		const response = await interaction.reply({
-			embeds: [embed],
-			components: components,
+			...payload,
 			withResponse: true
 		});
 

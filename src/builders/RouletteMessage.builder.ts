@@ -1,4 +1,15 @@
-import { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import {
+	EmbedBuilder,
+	ActionRowBuilder,
+	StringSelectMenuBuilder,
+	ButtonBuilder,
+	ButtonStyle,
+	ContainerBuilder,
+	TextDisplayBuilder,
+	MessageFlags,
+	MediaGalleryBuilder,
+	MediaGalleryItemBuilder
+} from 'discord.js';
 import { RouletteGame, RouletteBet } from '../models/RouletteGame.interface';
 import { emojis } from '../utils/emojis';
 import { colors } from '../utils/customColors';
@@ -6,39 +17,77 @@ import { BET_OPTIONS, BetType } from '../utils/betLabels';
 
 export class RouletteMessageBuilder {
 	/**
-	 * Construit l'embed principal de la partie de roulette en fonction du statut de la partie.
-	 * Affiche les mises si la partie est en attente, le GIF si elle tourne, ou le résultat final.
+	 * Builder principal : retourne le payload COMPLET du message
+	 * en fonction de l'état de la partie.
 	 */
-	public static buildGameEmbed(game: RouletteGame, result?: number, winners: any[] = []): EmbedBuilder {
-		const embed = new EmbedBuilder().setTitle(`${emojis.yellowcheck} La Roulette`);
+	public static buildGameMessage(game: RouletteGame, result?: number, winners: any[] = [], showReplay: boolean = true): any {
 		const gif = `${process.env.BASE_URL}/assets/casino/roulette/`;
 
 		// --- PHASE 1 : ATTENTE DES MISES (LOBBY) ---
 		if (game.status === 'betting') {
 			const discordTimestamp = Math.floor(game.endsAt / 1000);
-
 			const timeText = `Le tirage commence <t:${discordTimestamp}:R>`;
 
-			embed.setColor(colors.goldCasino).setDescription(`**Faites vos jeux !**\n${timeText}\n\n${this.formatBets(game.bets)}`);
+			const embed = new EmbedBuilder()
+				.setTitle(`${emojis.yellowcheck} La Roulette`)
+				.setColor(colors.goldCasino)
+				.setDescription(`**Faites vos jeux !**\n${timeText}\n\n${this.formatBets(game.bets)}`);
+
+			return {
+				embeds: [embed],
+				components: this.buildLobbyComponents()
+			};
 		}
 
 		// --- PHASE 2 : ANIMATION (GIF) ---
 		else if (game.status === 'spinning' && result !== undefined) {
-			embed.setColor(colors.goldCasino).setDescription(`*La roue tourne...*\n\n`).setImage(`${gif}${result}.gif`);
+			const embed = new EmbedBuilder()
+				.setTitle(`${emojis.yellowcheck} La Roulette`)
+				.setColor(colors.goldCasino)
+				.setDescription(`*La roue tourne...*\n\n`)
+				.setImage(`${gif}${result}.gif`);
+
+			return {
+				embeds: [embed],
+				components: []
+			};
 		}
 
-		// --- PHASE 3 : RÉSULTAT FINAL ---
+		// --- PHASE 3 : RÉSULTAT FINAL (COMPONENTS V2) ---
 		else if (game.status === 'finished' && result !== undefined) {
 			const finalColor = winners.length > 0 ? colors.success : colors.fail;
+			const titleIcon = winners.length === 0 ? emojis.redcheck : emojis.greencheck;
 
-			embed
-				.setColor(finalColor)
-				.setImage(`${gif}${result}_still.png`)
-				.setTitle(`${winners.length === 0 ? emojis.redcheck : emojis.greencheck} La Roulette`)
-				.setDescription(`__Résultat__ : \`${result}\`\n\n` + this.formatWinners(winners));
+			const descriptionText = `### ${titleIcon} La Roulette\n__Résultat__ : \`${result}\`\n\n${this.formatWinners(winners)}`;
+
+			const container = new ContainerBuilder().setAccentColor(finalColor);
+
+			// Texte principal
+			const textDisplay = new TextDisplayBuilder().setContent(descriptionText);
+			container.addTextDisplayComponents(textDisplay);
+
+			// Image résultat
+			const media = new MediaGalleryBuilder().addItems(new MediaGalleryItemBuilder().setURL(`${gif}${result}_still.png`));
+			container.addMediaGalleryComponents(media);
+
+			const components: any[] = [container.toJSON()];
+
+			// On ajoute le bouton que si showReplay est true
+			if (showReplay) {
+				const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+					new ButtonBuilder().setCustomId('roulette:button:playAgain').setLabel('Rejouer').setStyle(ButtonStyle.Primary)
+				);
+				components.push(row.toJSON());
+			}
+
+			return {
+				flags: MessageFlags.IsComponentsV2,
+				components,
+				embeds: []
+			};
 		}
 
-		return embed;
+		return { embeds: [] };
 	}
 
 	/**
@@ -91,10 +140,8 @@ export class RouletteMessageBuilder {
 	 * Construit les composants de fin de partie.
 	 * Affiche un bouton "Rejouer" pour permettre de relancer rapidement un lobby.
 	 */
-	public static buildFinishedComponents(): ActionRowBuilder<ButtonBuilder>[] {
-		const replayButton = new ButtonBuilder().setCustomId('roulette:button:playAgain').setLabel('Rejouer').setStyle(ButtonStyle.Primary);
-
-		return [new ActionRowBuilder<ButtonBuilder>().addComponents(replayButton)];
+	public static buildFinishedComponents(): ButtonBuilder[] {
+		return [new ButtonBuilder().setCustomId('roulette:button:playAgain').setLabel('Rejouer').setStyle(ButtonStyle.Primary)];
 	}
 
 	/**
