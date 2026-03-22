@@ -5,6 +5,7 @@ import * as Embeds from '../../utils/embeds';
 import { MoreOrLessMessageBuilder } from '../../builders/MoreOrLessMessage.builder';
 import { MoreOrLessGame } from '../../models/MoreOrLessGame.interface';
 import { colors } from '../../utils/customColors';
+import { emojis } from '../../utils/emojis';
 
 @ApplyOptions<Command.Options>({
 	name: 'plusoumoins',
@@ -40,9 +41,12 @@ export class MoreOrLessCommand extends Command {
 	}
 
 	public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
+		const response = await interaction.deferReply({ withResponse: true });
+		const messageId = response.resource!.message!.id;
+
 		const bet = interaction.options.getInteger('mise', true);
 		const opponent = interaction.options.getUser('adversaire');
-		let lives = interaction.options.getInteger('vies') as number;
+		let lives = interaction.options.getInteger('vies') ?? 3;
 		const userId = interaction.user.id;
 
 		if (!lives) {
@@ -62,13 +66,18 @@ export class MoreOrLessCommand extends Command {
 		if (opponent) {
 			if (opponent.bot) {
 				return interaction.reply({
-					embeds: [Embeds.errorEmbed({ message: "Utilise la commande sans option 'adversaire' pour jouer contre moi." })],
+					embeds: [
+						Embeds.errorEmbed({
+							title: 'message: Mauvais adversaire !',
+							message: "Utilise la commande sans option 'adversaire' pour jouer contre moi."
+						})
+					],
 					flags: MessageFlags.Ephemeral
 				});
 			}
 			if (opponent.id === userId) {
 				return interaction.reply({
-					embeds: [Embeds.errorEmbed({ message: 'Tu ne peux pas te défier toi-même !' })],
+					embeds: [Embeds.errorEmbed({ title: 'message: Mauvais adversaire !', message: 'Tu ne peux pas te défier toi-même !' })],
 					flags: MessageFlags.Ephemeral
 				});
 			}
@@ -114,34 +123,37 @@ export class MoreOrLessCommand extends Command {
 			// Note : Comme on n'a pas encore l'ID du message, on passe un ID temporaire
 			const initialPayload = MoreOrLessMessageBuilder.buildChallengeMessage(challengeData);
 
-			await interaction.reply({
-				...initialPayload,
-				fetchReply: true
-			});
-
-			// 2. On récupère le message PHYSIQUE pour avoir l'ID
-			const response = await interaction.fetchReply();
+			await interaction.editReply({ ...initialPayload });
 
 			// 3. Maintenant .id existe !
-			challengeData.messageId = response.id;
-			challengeData.challengeMessageId = response.id;
+			challengeData.messageId = messageId;
+			challengeData.challengeMessageId = messageId;
 
 			// Enregistrer
 			await container.moreOrLessService.registerChallenge(challengeData as MoreOrLessGame);
 
 			// Update les boutons
-			const finalComponents = MoreOrLessMessageBuilder.buildChallengeComponents(response.id);
-			await interaction.editReply({ components: finalComponents });
+			const updatedPayload = MoreOrLessMessageBuilder.buildChallengeMessage(challengeData);
+			await interaction.editReply(updatedPayload);
 
 			// Timer d'expiration du défi
 			setTimeout(async () => {
-				const challenge = container.moreOrLessService.getChallenge(response.id);
+				const challenge = container.moreOrLessService.getChallenge(messageId);
 				if (challenge && challenge.status === 'pending') {
-					await container.moreOrLessService.cancelChallenge(response.id);
+					await container.moreOrLessService.cancelChallenge(messageId);
+
+					// OBLIGATOIRE : Créer un container pour afficher le texte
+					const expiredContainer = new ContainerBuilder()
+						.setAccentColor(colors.fail)
+						.addTextDisplayComponents(
+							new TextDisplayBuilder().setContent(
+								`### ${emojis.redcheck} Proposition expirée\n<@${opponent.id}> n'a pas accepté défi dans le temps imparti...\nPeut-être une prochaine fois?`
+							)
+						);
+
 					await interaction.editReply({
-						content: '❌ Défi expiré.',
-						components: []
-						// On peut mettre un TextDisplayBuilder pour dire que c'est expiré
+						flags: MessageFlags.IsComponentsV2,
+						components: [expiredContainer.toJSON()]
 					});
 				}
 			}, 60000);
@@ -154,13 +166,6 @@ export class MoreOrLessCommand extends Command {
 		if (!transaction.success) {
 			return interaction.reply({ content: 'Erreur de transaction.', flags: MessageFlags.Ephemeral });
 		}
-
-		// CORRECT : On envoie un message V2 dès le début
-		const response = await interaction.deferReply({
-			withResponse: true
-		});
-
-		const messageId = response.resource!.message!.id;
 
 		const initData = await container.moreOrLessService.initDeckAndDraw();
 		if (!initData) {

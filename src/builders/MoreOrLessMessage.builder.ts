@@ -97,8 +97,8 @@ export class MoreOrLessMessageBuilder {
 		const container = new ContainerBuilder().setAccentColor(finalColor);
 
 		let resultText = `### ${titleIcon} Partie Terminée !\n`;
-		resultText += `${emojis.crown} **Vainqueur :** ${winnerName} (\`+${game.bet * 2}\` ${emojis.rubies})\n`;
-		resultText += `${emojis.dead} **Perdant :** ${loserName}\n\n`;
+		resultText += `${emojis.crown} **Vainqueur :** ${winnerName} (\`+${game.bet}\` ${emojis.rubies})\n`;
+		resultText += `${emojis.dead} **Perdant :** ${loserName} (\`-${game.bet}\` ${emojis.rubies})\n\n`;
 
 		const playedCards = game.totalCards! - game.remainingCards!;
 
@@ -115,19 +115,23 @@ export class MoreOrLessMessageBuilder {
 	}
 
 	/**
-	 * Message de DÉFI (V2)
+	 * Message de DÉFI (V2) - Version Stable (sans SectionBuilder capricieux)
 	 */
 	public static buildChallengeMessage(game: MoreOrLessGame): any {
 		const container = new ContainerBuilder().setAccentColor(colors.goldCasino);
 
-		// On met le ping ici
-		const description =
-			`🔔 <@${game.player2.id}>\n` +
-			`### 🎯 Défi Plus ou Moins\n` +
-			`<@${game.player1.id}> te défie !\n\n` +
-			`💰 **Mise :** \`${game.bet}\` ${emojis.rubies}\n` +
-			`⏳ expire <t:${Math.floor((Date.now() + 60000) / 1000)}:R>`;
+		// Construction du texte stylisé (On garde la même DA)
+		let description = `### ${emojis.yellowcheck} Nouveau Défi !\n`;
+		description += `**<@${game.player1.id}>** cherche un adversaire...\n\n`;
 
+		description += `> **Mise en jeu :** \`${game.bet}\` ${emojis.rubies}\n`;
+		description += `> **Vies par joueur :** \`${game.totalLives}\` ${emojis.alive}\n\n`;
+
+		description += `<@${game.player2.id}>, acceptes-tu le duel ?\n`;
+		// Note: On utilise une valeur fixe si possible pour éviter le décalage à l'edit
+		description += `-# expire <t:${Math.floor((Date.now() + 60000) / 1000)}:R>`;
+
+		// On ajoute le texte DIRECTEMENT au container (plus stable que la Section)
 		container.addTextDisplayComponents(new TextDisplayBuilder().setContent(description));
 
 		return {
