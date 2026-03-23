@@ -1,80 +1,98 @@
 import axios from 'axios';
 import { Collection } from 'discord.js';
-import { MoreOrLessGame, Card, TurnResult, DeckApiResponse, DrawApiResponse } from '../models/MoreOrLessGame.interface';
+import { MoreOrLessGame, TurnResult, DeckApiResponse, DrawApiResponse } from '../models/MoreOrLessGame.interface';
 import { container } from '@sapphire/framework';
 import { MoreOrLessMessageBuilder } from '../builders/MoreOrLessMessage.builder';
 
 export class MoreOrLessService {
 	private games = new Collection<string, MoreOrLessGame>();
-	private challenges = new Collection<string, MoreOrLessGame>(); // Défis en attente (key = challengeMessageId)
+	private challenges = new Collection<string, MoreOrLessGame>();
 
 	private deckApi = axios.create({
 		baseURL: 'https://deckofcardsapi.com/api/deck',
 		timeout: 5000
 	});
 
-	private readonly TURN_TIME_LIMIT = 30000; // 30 secondes
+	private readonly TURN_TIME_LIMIT = 30000;
+
+	// =========================================================
+	// UTILITAIRES
+	// =========================================================
 
 	/**
-	 * Convertit les noms de cartes en valeurs numériques (As = 14)
+	 * Convertit une valeur de carte API en nombre
 	 */
-	private parseCardValue(valueStr: string): number {
-		const values: Record<string, number> = {
+	private parseCardValue(value: string): number {
+		const map: Record<string, number> = {
 			ACE: 14,
 			KING: 13,
 			QUEEN: 12,
 			JACK: 11
 		};
-		return values[valueStr] || parseInt(valueStr, 10);
+		return map[value] ?? parseInt(value, 10);
 	}
 
-	public async initDeckAndDraw(): Promise<{ deckId: string; card: Card; totalCards: number; remainingCards: number } | null> {
-		try {
-			const deckRes = await this.deckApi.get<DeckApiResponse>('/new/shuffle/?deck_count=1');
-			const drawRes = await this.deckApi.get<DrawApiResponse>(`/${deckRes.data.deck_id}/draw/?count=1`);
+	// =========================================================
+	// DECK
+	// =========================================================
 
-			const rawCard = drawRes.data.cards[0];
+	/**
+	 * Initialise un deck + tire la première carte
+	 */
+	public async initDeckAndDraw() {
+		try {
+			const deck = await this.deckApi.get<DeckApiResponse>('/new/shuffle/?deck_count=1');
+			const draw = await this.deckApi.get<DrawApiResponse>(`/${deck.data.deck_id}/draw/?count=1`);
+
+			const raw = draw.data.cards[0];
 
 			return {
-				deckId: deckRes.data.deck_id,
-				totalCards: deckRes.data.remaining,
-				remainingCards: drawRes.data.remaining,
+				deckId: deck.data.deck_id,
+				totalCards: deck.data.remaining,
+				remainingCards: draw.data.remaining,
 				card: {
-					code: rawCard.code,
-					image: rawCard.image,
-					value: this.parseCardValue(rawCard.value)
+					code: raw.code,
+					image: raw.image,
+					value: this.parseCardValue(raw.value)
 				}
 			};
-		} catch (error) {
-			console.error('Erreur API DeckOfCards:', error);
+		} catch (err) {
+			console.error('Deck API error:', err);
 			return null;
 		}
 	}
 
-	public async drawCard(deckId: string): Promise<{ card: Card; remaining: number } | null> {
+	/**
+	 * Tire une carte
+	 */
+	public async drawCard(deckId: string) {
 		try {
 			const res = await this.deckApi.get<DrawApiResponse>(`/${deckId}/draw/?count=1`);
-
 			if (res.data.remaining === 0) return null;
 
-			const rawCard = res.data.cards[0];
+			const raw = res.data.cards[0];
 
 			return {
 				card: {
-					code: rawCard.code,
-					image: rawCard.image,
-					value: this.parseCardValue(rawCard.value)
+					code: raw.code,
+					image: raw.image,
+					value: this.parseCardValue(raw.value)
 				},
 				remaining: res.data.remaining
 			};
-		} catch (error) {
-			console.error('Erreur lors de la pioche:', error);
+		} catch (err) {
+			console.error('Draw error:', err);
 			return null;
 		}
 	}
 
+	// =========================================================
+	// GESTION PARTIES
+	// =========================================================
+
 	public registerGame(game: MoreOrLessGame) {
-		game.expiresAt = Date.now() + this.TURN_TIME_LIMIT; // On fixe l'expiration
+		game.expiresAt = Date.now() + this.TURN_TIME_LIMIT;
+
 		this.games.set(game.messageId, game);
 		this.startTurnTimer(game.messageId);
 	}
@@ -83,127 +101,135 @@ export class MoreOrLessService {
 		return this.games.get(messageId);
 	}
 
+	// =========================================================
+	// DÉFIS PvP
+	// =========================================================
+
 	public registerChallenge(game: MoreOrLessGame) {
 		if (game.challengeMessageId) {
 			this.challenges.set(game.challengeMessageId, game);
 		}
 	}
 
-	public getChallenge(challengeMessageId: string) {
-		return this.challenges.get(challengeMessageId);
+	public getChallenge(id: string) {
+		return this.challenges.get(id);
 	}
 
-	public deleteChallenge(challengeMessageId: string) {
-		this.challenges.delete(challengeMessageId);
+	public deleteChallenge(id: string) {
+		this.challenges.delete(id);
 	}
 
 	/**
-	 * Démarre le timer pour un tour
+	 * Accepte un défi
 	 */
-	private startTurnTimer(messageId: string) {
-		const game = this.games.get(messageId);
-		if (!game || game.currentTurnId === 'bot') return;
+	public async acceptChallenge(id: string, userId: string) {
+		const challenge = this.challenges.get(id);
+		if (!challenge) return { success: false, error: 'Défi introuvable.' };
 
-		this.clearTimers(game);
+		if (challenge.player2.id !== userId) {
+			return { success: false, error: "Ce défi n'est pas pour toi !" };
+		}
 
-		// Ces lignes ne feront plus d'erreur
-		game.turnStartTime = Date.now();
-		game.turnTimeLimit = this.TURN_TIME_LIMIT;
-		game.expiresAt = Date.now() + this.TURN_TIME_LIMIT;
+		const check = await container.economyService.view(userId);
+		if (!check.success || check.data.rubies < challenge.bet) {
+			return { success: false, error: 'Pas assez de rubis !' };
+		}
 
-		// Timer de fin de tour
-		game.timer = setTimeout(async () => {
-			await this.handleTimeout(messageId);
-		}, this.TURN_TIME_LIMIT);
+		const transaction = await container.casinoService.transaction(userId, challenge.bet, 'remove');
+		if (!transaction.success) {
+			return { success: false, error: 'Erreur de transaction.' };
+		}
+
+		challenge.status = 'playing';
+		this.challenges.delete(id);
+
+		return { success: true, game: challenge };
 	}
 
 	/**
-	 * Gère le timeout d'un tour
+	 * Refuse un défi
 	 */
-	private async handleTimeout(messageId: string) {
-		const game = this.games.get(messageId);
-		if (!game || game.status !== 'playing') return;
+	public async declineChallenge(id: string, userId: string) {
+		const challenge = this.challenges.get(id);
+		if (!challenge) return { success: false, error: 'Défi introuvable.' };
 
-		if (game.expiresAt && Date.now() < game.expiresAt) return;
-
-		const loserId = game.currentTurnId;
-		const result = await this.processEndGame(game, loserId);
-
-		try {
-			const channel = await container.client.channels.fetch(game.channelId);
-			if (channel?.isTextBased()) {
-				const message = await channel.messages.fetch(messageId);
-
-				// On utilise la méthode de fin qui gère l'embed dynamique (rouge/vert) et les boutons
-				const endMessage = MoreOrLessMessageBuilder.buildEndMessage(result.game!, result.winnerId!, result.loserId!);
-				await message.edit(endMessage);
-			}
-		} catch (err) {
-			console.error('Erreur gestion timeout:', err);
+		if (challenge.player2.id !== userId) {
+			return { success: false, error: "Ce défi n'est pas pour toi !" };
 		}
+
+		await container.casinoService.transaction(challenge.player1.id, challenge.bet, 'add');
+
+		challenge.status = 'cancelled';
+		this.challenges.delete(id);
+
+		return { success: true, game: challenge };
 	}
 
 	/**
-	 * Nettoie les timers d'une partie
+	 * Annule un défi (timeout)
 	 */
-	public clearTimers(game: MoreOrLessGame) {
-		if (game.timer) {
-			clearTimeout(game.timer);
-			game.timer = undefined;
-		}
-		if (game.timerWarning) {
-			clearTimeout(game.timerWarning);
-			game.timerWarning = undefined;
-		}
+	public async cancelChallenge(id: string) {
+		const challenge = this.challenges.get(id);
+		if (!challenge) return;
+
+		await container.casinoService.transaction(challenge.player1.id, challenge.bet, 'add');
+
+		challenge.status = 'cancelled';
+		this.challenges.delete(id);
 	}
 
+	// =========================================================
+	// JEU
+	// =========================================================
+
 	/**
-	 * Gère la logique d'un tour de jeu
+	 * Lance un tour de jeu
 	 */
 	public async playTurn(messageId: string, userId: string, choice: 'more' | 'less'): Promise<TurnResult> {
 		const game = this.games.get(messageId);
+
 		if (!game) return { status: 'error', message: 'Partie introuvable.' };
 		if (game.currentTurnId !== userId) return { status: 'error', message: "Ce n'est pas ton tour." };
 
-		const previousCardValue = game.currentCard.value;
+		const previous = game.currentCard.value;
 
-		const drawResult = await this.drawCard(game.deckId);
-		if (!drawResult) return { status: 'error', message: 'Plus de cartes disponibles !' };
+		const draw = await this.drawCard(game.deckId);
+		if (!draw) return { status: 'error', message: 'Plus de cartes.' };
 
-		const newCard = drawResult.card;
-		game.remainingCards = drawResult.remaining; // 👈 MAJ ici
-
-		const newCardValue = newCard.value;
+		const newCard = draw.card;
+		game.remainingCards = draw.remaining;
 		game.currentCard = newCard;
 
-		const isCorrect = (choice === 'more' && newCardValue > previousCardValue) || (choice === 'less' && newCardValue < previousCardValue);
+		const isCorrect = (choice === 'more' && newCard.value > previous) || (choice === 'less' && newCard.value < previous);
 
 		game.lastTurnHistory = {
 			playerId: userId,
 			choice,
-			previousValue: previousCardValue,
-			newValue: newCardValue,
+			previousValue: previous,
+			newValue: newCard.value,
 			success: isCorrect,
 			timestamp: Date.now()
 		};
 
+		// Mauvaise réponse → perte de vie
 		if (!isCorrect) {
-			const currentPlayer = game.player1.id === userId ? game.player1 : game.player2;
-			currentPlayer.lives--;
+			const player = game.player1.id === userId ? game.player1 : game.player2;
+			player.lives--;
 
-			if (currentPlayer.lives <= 0) {
-				const endResult = await this.processEndGame(game, userId);
-				return { ...endResult, drawnCard: newCard, choice };
+			if (player.lives <= 0) {
+				const end = await this.processEndGame(game, userId);
+				return { ...end, drawnCard: newCard, choice };
 			}
 		}
 
+		// Changement de joueur
 		game.currentTurnId = game.player1.id === userId ? game.player2.id : game.player1.id;
 
 		return { status: 'continue', game, drawnCard: newCard, choice };
 	}
 
 	/**
-	 * Termine la partie et gère les récompenses
+	 * Termine une partie
 	 */
 	private async processEndGame(game: MoreOrLessGame, loserId: string): Promise<TurnResult> {
 		game.status = 'finished';
@@ -218,136 +244,109 @@ export class MoreOrLessService {
 		return { status: 'win', game, winnerId, loserId };
 	}
 
-	/**
-	 * Exécute le tour du bot avec une IA basée sur les probabilités + REVEAL
-	 */
+	// =========================================================
+	// TIMERS
+	// =========================================================
+
+	private startTurnTimer(messageId: string) {
+		const game = this.games.get(messageId);
+		if (!game || game.currentTurnId === 'bot') return;
+
+		this.clearTimers(game);
+
+		game.turnStartTime = Date.now();
+		game.turnTimeLimit = this.TURN_TIME_LIMIT;
+		game.expiresAt = Date.now() + this.TURN_TIME_LIMIT;
+
+		game.timer = setTimeout(() => this.handleTimeout(messageId), this.TURN_TIME_LIMIT);
+	}
+
+	public clearTimers(game: MoreOrLessGame) {
+		if (game.timer) clearTimeout(game.timer);
+		if (game.timerWarning) clearTimeout(game.timerWarning);
+
+		game.timer = undefined;
+		game.timerWarning = undefined;
+	}
+
+	private async handleTimeout(messageId: string) {
+		const game = this.games.get(messageId);
+		if (!game || game.status !== 'playing') return;
+
+		if (game.expiresAt && Date.now() < game.expiresAt) return;
+
+		const result = await this.processEndGame(game, game.currentTurnId);
+
+		try {
+			const channel = await container.client.channels.fetch(game.channelId);
+			if (!channel?.isTextBased()) return;
+
+			const message = await channel.messages.fetch(messageId);
+
+			await message.edit(MoreOrLessMessageBuilder.buildEndMessage(result.game!, result.winnerId!, result.loserId!));
+		} catch (err) {
+			console.error('Timeout error:', err);
+		}
+	}
+
+	// =========================================================
+	// BOT
+	// =========================================================
+
 	public async handleBotTurn(messageId: string) {
 		const game = this.games.get(messageId);
 		if (!game || game.currentTurnId !== 'bot') return;
 
 		this.clearTimers(game);
 
-		game.status = 'playing';
-		const currentValue = game.currentCard.value;
-		let botChoice: 'more' | 'less';
+		const value = game.currentCard.value;
+		let choice: 'more' | 'less';
 
-		const median = 8;
-		if (currentValue < median) {
-			botChoice = Math.random() > 0.1 ? 'more' : 'less';
-		} else if (currentValue > median) {
-			botChoice = Math.random() > 0.1 ? 'less' : 'more';
-		} else {
-			botChoice = Math.random() > 0.5 ? 'more' : 'less';
+		// 1. CAS EXTRÊMES (jamais d'erreur)
+		if (value <= 4) {
+			choice = 'more';
+		} else if (value >= 12) {
+			choice = 'less';
 		}
 
-		const result = await this.playTurn(messageId, 'bot', botChoice);
+		// 2. CAS CLASSIQUES (légère erreur humaine)
+		else if (value < 8) {
+			choice = Math.random() > 0.1 ? 'more' : 'less';
+		} else if (value > 8) {
+			choice = Math.random() > 0.1 ? 'less' : 'more';
+		}
+
+		// 3. CAS ÉQUILIBRÉ (pile ou face)
+		else {
+			choice = Math.random() > 0.5 ? 'more' : 'less';
+		}
+
+		const result = await this.playTurn(messageId, 'bot', choice);
 		if (result.status === 'error') return;
 
-		const channel = await container.client.channels.fetch(game.channelId);
-		if (channel?.isTextBased()) {
-			try {
-				const message = await channel.messages.fetch(messageId);
-				const success = result.game!.lastTurnHistory!.success;
+		try {
+			const channel = await container.client.channels.fetch(game.channelId);
+			if (!channel?.isTextBased()) return;
 
-				// 1. Phase de Reveal
-				const revealMessage = MoreOrLessMessageBuilder.buildRevealMessage('bot', botChoice, result.drawnCard!, success);
-				await message.edit(revealMessage);
+			const message = await channel.messages.fetch(messageId);
 
-				// 2. Suspense (2.5 secondes)
-				await new Promise((r) => setTimeout(r, 2500));
+			// 1. Reveal
+			await message.edit(MoreOrLessMessageBuilder.buildRevealMessage('bot', choice, result.drawnCard!, result.game!.lastTurnHistory!.success));
 
-				const isFinished = result.status === 'win';
+			// 2. Suspense
+			await new Promise((r) => setTimeout(r, 2500));
 
-				// 3. Résultat du tour
-				if (!isFinished) {
-					this.registerGame(result.game!);
-				}
+			const finished = result.status === 'win';
 
-				const finalMessage = isFinished
+			if (!finished) this.registerGame(result.game!);
+
+			await message.edit(
+				finished
 					? MoreOrLessMessageBuilder.buildEndMessage(result.game!, result.winnerId!, result.loserId!)
-					: MoreOrLessMessageBuilder.buildGameMessage(result.game!);
-
-				await message.edit(finalMessage);
-			} catch (err) {
-				console.error("Impossible d'éditer le message du bot:", err);
-			}
+					: MoreOrLessMessageBuilder.buildGameMessage(result.game!)
+			);
+		} catch (err) {
+			console.error('Bot turn error:', err);
 		}
-	}
-
-	/**
-	 * Accepte un défi PvP
-	 */
-	public async acceptChallenge(
-		challengeMessageId: string,
-		accepterId: string
-	): Promise<{ success: boolean; game?: MoreOrLessGame; error?: string }> {
-		const challenge = this.challenges.get(challengeMessageId);
-		if (!challenge) return { success: false, error: 'Défi introuvable.' };
-
-		// Vérifier que c'est bien le joueur défié
-		if (challenge.player2.id !== accepterId) {
-			return { success: false, error: "Ce défi n'est pas pour toi !" };
-		}
-
-		// Vérifier l'économie du joueur 2
-		const check = await container.economyService.view(accepterId);
-		if (!check.success || check.data.rubies < challenge.bet) {
-			return { success: false, error: "Le joueur défié n'a pas assez de rubis !" };
-		}
-
-		// Débiter le joueur 2
-		const transaction = await container.casinoService.transaction(accepterId, challenge.bet, 'remove');
-		if (!transaction.success) {
-			return { success: false, error: 'Erreur de transaction pour le joueur défié.' };
-		}
-
-		// Passer la partie en mode "playing"
-		challenge.status = 'playing';
-
-		// Nettoyer le défi
-		this.challenges.delete(challengeMessageId);
-
-		return { success: true, game: challenge };
-	}
-
-	/**
-	 * Refuse un défi PvP
-	 */
-	public async declineChallenge(
-		challengeMessageId: string,
-		declinerId: string
-	): Promise<{ success: boolean; game?: MoreOrLessGame; error?: string }> {
-		const challenge = this.challenges.get(challengeMessageId);
-		if (!challenge) return { success: false, error: 'Défi introuvable.' };
-
-		if (challenge.player2.id !== declinerId) {
-			return { success: false, error: "Ce défi n'est pas pour toi !" };
-		}
-
-		// Rembourser le joueur 1
-		if (challenge.player1.id !== 'bot') {
-			await container.casinoService.transaction(challenge.player1.id, challenge.bet, 'add');
-		}
-
-		challenge.status = 'cancelled';
-		this.challenges.delete(challengeMessageId);
-
-		return { success: true, game: challenge };
-	}
-
-	/**
-	 * Annule un défi (timeout ou annulation manuelle)
-	 */
-	public async cancelChallenge(challengeMessageId: string): Promise<void> {
-		const challenge = this.challenges.get(challengeMessageId);
-		if (!challenge) return;
-
-		// Rembourser le joueur 1
-		if (challenge.player1.id !== 'bot') {
-			await container.casinoService.transaction(challenge.player1.id, challenge.bet, 'add');
-		}
-
-		challenge.status = 'cancelled';
-		this.challenges.delete(challengeMessageId);
 	}
 }

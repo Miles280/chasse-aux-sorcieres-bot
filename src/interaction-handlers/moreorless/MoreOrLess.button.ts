@@ -20,7 +20,7 @@ export class MoreOrLessButtonHandler extends InteractionHandler {
 		const userId = interaction.user.id;
 
 		// =========================================================
-		// 1. LOGIQUE DE DÉFI (Accepter / Refuser)
+		// 1. GESTION DES DÉFIS (accept / decline)
 		// =========================================================
 		if (action === 'accept' || action === 'decline') {
 			if (action === 'accept') {
@@ -33,20 +33,18 @@ export class MoreOrLessButtonHandler extends InteractionHandler {
 					});
 				}
 
-				const gameData = result.game!;
+				const game = result.game!;
 
-				// On remplace le message du défi par l'affichage de la première carte (Initial Draw)
-				const initialDraw = MoreOrLessMessageBuilder.buildInitialDrawMessage(gameData);
-				await interaction.update(initialDraw); // update permet de valider l'interaction immédiatement
+				// 1.1 Affichage tirage initial
+				await interaction.update(MoreOrLessMessageBuilder.buildInitialDrawMessage(game));
 
-				// Petite pause de suspense pour laisser les joueurs voir la carte
+				// 1.2 Pause (suspense)
 				await new Promise((r) => setTimeout(r, 4000));
 
-				// On enregistre la partie (ce qui lance le timer) et on affiche le plateau
-				container.moreOrLessService.registerGame(gameData);
-				const gameMessage = MoreOrLessMessageBuilder.buildGameMessage(gameData);
+				// 1.3 Lancement partie
+				container.moreOrLessService.registerGame(game);
+				await interaction.message.edit(MoreOrLessMessageBuilder.buildGameMessage(game));
 
-				await interaction.message.edit(gameMessage);
 				return;
 			}
 
@@ -55,31 +53,36 @@ export class MoreOrLessButtonHandler extends InteractionHandler {
 
 				if (!result.success) {
 					return interaction.reply({
-						embeds: [Embeds.errorEmbed({ title: 'T ki toi ?', message: result.error! })],
+						embeds: [Embeds.errorEmbed({ message: result.error! })],
 						flags: MessageFlags.Ephemeral
 					});
 				}
 
-				const refusedContainer = new ContainerBuilder()
+				const refused = new ContainerBuilder()
 					.setAccentColor(colors.fail)
 					.addTextDisplayComponents(
-						new TextDisplayBuilder().setContent(
-							`### ${emojis.redcheck} Proposition refusée\n<@${userId}> n'a pas accepté le défi...\nPeut-être une prochaine fois?`
-						)
+						new TextDisplayBuilder().setContent(`### ${emojis.redcheck} Proposition refusée\n<@${userId}> a refusé le défi.`)
 					);
 
 				return interaction.update({
-					components: [refusedContainer.toJSON()]
+					components: [refused.toJSON()]
 				});
 			}
 		}
 
 		// =========================================================
-		// 2. LOGIQUE DE JEU EN COURS (Plus / Moins)
+		// 2. JEU EN COURS (plus / moins)
 		// =========================================================
 		const game = container.moreOrLessService.getGame(messageId);
-		if (!game) return interaction.reply({ content: 'Partie introuvable.', flags: MessageFlags.Ephemeral });
 
+		if (!game) {
+			return interaction.reply({
+				content: 'Partie introuvable.',
+				flags: MessageFlags.Ephemeral
+			});
+		}
+
+		// 2.1 Vérification du tour
 		if (game.currentTurnId !== userId) {
 			return interaction.reply({
 				embeds: [
@@ -91,46 +94,53 @@ export class MoreOrLessButtonHandler extends InteractionHandler {
 			});
 		}
 
-		const choice = action === 'more' ? 'more' : 'less';
+		const choice: 'more' | 'less' = action === 'more' ? 'more' : 'less';
+
+		// 2.2 Jouer le tour
 		const result = await container.moreOrLessService.playTurn(messageId, userId, choice);
 
 		if (result.status === 'error') {
-			return interaction.reply({ content: result.message, flags: MessageFlags.Ephemeral });
+			return interaction.reply({
+				content: result.message,
+				flags: MessageFlags.Ephemeral
+			});
 		}
 
-		if (game) {
-			container.moreOrLessService.clearTimers(game); // 🔥 STOP le timer
-		}
+		// Stop timer actuel
+		container.moreOrLessService.clearTimers(game);
 
 		const success = result.game!.lastTurnHistory!.success;
 
-		// --- 1. PHASE DE REVEAL ---
-		const revealMessage = MoreOrLessMessageBuilder.buildRevealMessage(userId, choice, result.drawnCard!, success);
-		await interaction.update(revealMessage);
+		// =========================================================
+		// 3. PHASE REVEAL
+		// =========================================================
+		await interaction.update(MoreOrLessMessageBuilder.buildRevealMessage(userId, choice, result.drawnCard!, success));
 
-		// --- 2. SUSPENSE ---
-		await new Promise((resolve) => setTimeout(resolve, 2500));
-		container.moreOrLessService.clearTimers(game);
+		// Suspense
+		await new Promise((r) => setTimeout(r, 2500));
 
-		// --- 3. REPRISE ---
-		const isFinished = result.game!.status === 'finished';
+		// =========================================================
+		// 4. RÉSOLUTION DU TOUR
+		// =========================================================
+		const updatedGame = result.game!;
+		const isFinished = updatedGame.status === 'finished';
 
-		// Si ce n'est pas fini, on relance le timer AVANT de build le message
 		if (!isFinished) {
-			container.moreOrLessService.registerGame(result.game!);
+			container.moreOrLessService.registerGame(updatedGame);
 		}
 
 		const finalMessage = isFinished
-			? MoreOrLessMessageBuilder.buildEndMessage(result.game!, result.winnerId!, result.loserId!)
-			: MoreOrLessMessageBuilder.buildGameMessage(result.game!);
+			? MoreOrLessMessageBuilder.buildEndMessage(updatedGame, result.winnerId!, result.loserId!)
+			: MoreOrLessMessageBuilder.buildGameMessage(updatedGame);
 
 		await interaction.message.edit(finalMessage);
 
-		// Si le jeu continue et que c'est au bot...
-		if (!isFinished && result.game!.currentTurnId === 'bot') {
-			// Le timer est déjà relancé par le registerGame au-dessus
-			setTimeout(async () => {
-				await container.moreOrLessService.handleBotTurn(messageId);
+		// =========================================================
+		// 5. TOUR DU BOT
+		// =========================================================
+		if (!isFinished && updatedGame.currentTurnId === 'bot') {
+			setTimeout(() => {
+				container.moreOrLessService.handleBotTurn(messageId);
 			}, 2000);
 		}
 

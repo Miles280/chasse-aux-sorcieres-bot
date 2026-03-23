@@ -15,203 +15,197 @@ import { emojis } from '../utils/emojis';
 import { colors } from '../utils/customColors';
 
 export class MoreOrLessMessageBuilder {
-	/**
-	 * Phase de JEU : Container V2 avec Ping en content
-	 */
+	// =========================================================
+	// GAME
+	// =========================================================
+
 	public static buildGameMessage(game: MoreOrLessGame): any {
-		const p1Name = this.getPlayerName(game.player1.id);
-		const p2Name = this.getPlayerName(game.player2.id);
+		const container = this.createContainer(colors.goldCasino);
 
-		const container = new ContainerBuilder().setAccentColor(colors.goldCasino);
-
-		// 1. On crée la Section (qui remplace notre usage direct du Container pour le contenu)
 		const section = new SectionBuilder();
 
-		// 2. On ajoute le texte
-		let description = `### ${emojis.yellowcheck} Plus ou Moins\n`;
+		let content = `### ${emojis.yellowcheck} Plus ou Moins\n`;
 
 		if (game.lastTurnHistory) {
-			description += `${this.renderLastTurn(game)}\n\n`;
+			content += `${this.renderLastTurn(game)}\n\n`;
 		}
 
-		description += game.currentTurnId === 'bot' ? `**C'est à mon tour...**\n` : `**C'est à ton tour <@${game.currentTurnId}> !**\n`;
-		description += `-# ${this.getTimeRemaining(game)}\n`;
-		description += `\n> **Valeur actuelle :** \`${game.currentCard.value}\`\n\n`;
-		description += `**${p1Name}** ${this.renderLives(game.player1.lives, game.totalLives)}    VS    **${p2Name}** ${this.renderLives(game.player2.lives, game.totalLives)}`;
+		content += game.currentTurnId === 'bot' ? `**C'est à mon tour...**\n` : `**C'est à ton tour <@${game.currentTurnId}> !**\n`;
 
-		section.addTextDisplayComponents(new TextDisplayBuilder().setContent(description));
+		content += `-# ${this.getTimeRemaining(game)}\n`;
+		content += `\n> **Valeur actuelle :** \`${game.currentCard.value}\`\n\n`;
 
-		// 3. On ajoute le Thumbnail en tant qu'Accessory de la Section
-		section.setThumbnailAccessory(
-			new ThumbnailBuilder().setURL(game.currentCard.image).setDescription(`Carte actuelle: ${game.currentCard.value}`)
-		);
+		content += `**${this.getPlayerName(game.player1.id)}** ${this.renderLives(game.player1.lives, game.totalLives)}    VS    `;
+		content += `**${this.getPlayerName(game.player2.id)}** ${this.renderLives(game.player2.lives, game.totalLives)}`;
+
+		section.addTextDisplayComponents(new TextDisplayBuilder().setContent(content));
+
+		section.setThumbnailAccessory(new ThumbnailBuilder().setURL(game.currentCard.image).setDescription(`Carte: ${game.currentCard.value}`));
 
 		container.addSectionComponents(section);
 
-		return {
-			flags: MessageFlags.IsComponentsV2,
-			components: [container.toJSON(), ...this.buildActionRows(game, false)],
-			embeds: []
-		};
+		return this.buildResponse(container, this.buildActionRows(game, false));
 	}
 
-	/**
-	 * Phase de REVEAL : Suspense avec image en grand
-	 */
-	public static buildRevealMessage(playerId: string, choice: 'more' | 'less', newCard: Card, success: boolean): any {
-		const playerName = this.getPlayerName(playerId);
-		const choiceText = choice === 'more' ? 'Plus ↑' : 'Moins ↓';
+	// =========================================================
+	// REVEAL
+	// =========================================================
 
+	public static buildRevealMessage(playerId: string, choice: 'more' | 'less', card: Card, success: boolean): any {
+		const container = this.createContainer(success ? colors.success : colors.fail);
+
+		const choiceText = choice === 'more' ? 'Plus ↑' : 'Moins ↓';
 		const resultText = success ? '**Bonne réponse !**' : '**Mauvaise réponse...**';
 
-		const container = new ContainerBuilder().setAccentColor(success ? colors.success : colors.fail);
+		const content =
+			`### ${success ? emojis.greencheck : emojis.redcheck} ${resultText}\n` +
+			`**${this.getPlayerName(playerId)}** a choisi **${choiceText}**\n` +
+			`La carte est...`;
 
-		const text = `### ${success ? emojis.greencheck : emojis.redcheck} ${resultText}\n**${playerName}** a choisi **${choiceText}**\nLa carte est...`;
-		container.addTextDisplayComponents(new TextDisplayBuilder().setContent(text));
+		container.addTextDisplayComponents(new TextDisplayBuilder().setContent(content));
 
-		const media = new MediaGalleryBuilder().addItems(new MediaGalleryItemBuilder().setURL(newCard.image));
-		container.addMediaGalleryComponents(media);
+		container.addMediaGalleryComponents(new MediaGalleryBuilder().addItems(new MediaGalleryItemBuilder().setURL(card.image)));
 
-		return {
-			flags: MessageFlags.IsComponentsV2,
-			components: [container.toJSON()],
-			embeds: []
-		};
+		return this.buildResponse(container);
 	}
 
-	/**
-	 * Phase de FIN : Container Rouge (si bot gagne) ou Vert
-	 */
+	// =========================================================
+	// END
+	// =========================================================
+
 	public static buildEndMessage(game: MoreOrLessGame, winnerId: string, loserId: string): any {
-		const winnerName = this.getPlayerName(winnerId);
-		const loserName = this.getPlayerName(loserId);
+		const container = this.createContainer(winnerId === 'bot' ? colors.fail : colors.success);
 
-		const isBotWinner = winnerId === 'bot';
-		const finalColor = isBotWinner ? colors.fail : colors.success;
-		const titleIcon = isBotWinner ? `${emojis.redcheck}` : `${emojis.greencheck}`;
+		const winner = this.getPlayerName(winnerId);
+		const loser = this.getPlayerName(loserId);
 
-		// Calcul des vies restantes du gagnant
 		const winnerData = game.player1.id === winnerId ? game.player1 : game.player2;
-		const winnerLives = winnerData.lives;
-
-		const container = new ContainerBuilder().setAccentColor(finalColor);
-
-		let resultText = `### ${titleIcon} Partie Terminée !\n`;
-		resultText += `${emojis.crown} **Vainqueur :** ${winnerName} (\`+${game.bet}\` ${emojis.rubies})\n`;
-		resultText += `${emojis.dead} **Perdant :** ${loserName} (\`-${game.bet}\` ${emojis.rubies})\n\n`;
+		const remainingLives = winnerData.lives;
 
 		const playedCards = game.totalCards! - game.remainingCards!;
 
-		resultText += `🃏 Vous avez tiré **${playedCards}** carte${playedCards > 1 ? 's' : ''}\n`;
-		resultText += `${emojis.alive} Il restait **${winnerLives}** ${winnerLives > 1 ? 'vies' : 'vie'} à ${winnerName}`;
+		let content = `### ${winnerId === 'bot' ? emojis.redcheck : emojis.greencheck} Partie terminée\n`;
+		content += `${emojis.crown} **Vainqueur :** ${winner} (\`+${game.bet}\` ${emojis.rubies})\n`;
+		content += `${emojis.dead} **Perdant :** ${loser} (\`-${game.bet}\` ${emojis.rubies})\n\n`;
 
-		container.addTextDisplayComponents(new TextDisplayBuilder().setContent(resultText));
+		content += `🃏 ${playedCards} carte${playedCards > 1 ? 's' : ''} jouée${playedCards > 1 ? 's' : ''}\n`;
+		content += `${emojis.alive} ${remainingLives} ${remainingLives > 1 ? 'vies' : 'vie'} restante${remainingLives > 1 ? 's' : ''}`;
 
-		return {
-			flags: MessageFlags.IsComponentsV2,
-			components: [container.toJSON()],
-			embeds: []
-		};
+		container.addTextDisplayComponents(new TextDisplayBuilder().setContent(content));
+
+		return this.buildResponse(container);
 	}
 
-	/**
-	 * Message de DÉFI (V2) - Version Stable (sans SectionBuilder capricieux)
-	 */
+	// =========================================================
+	// CHALLENGE
+	// =========================================================
+
 	public static buildChallengeMessage(game: MoreOrLessGame): any {
-		const container = new ContainerBuilder().setAccentColor(colors.goldCasino);
+		const container = this.createContainer(colors.goldCasino);
 
-		// Construction du texte stylisé (On garde la même DA)
-		let description = `### ${emojis.yellowcheck} Nouveau Défi !\n`;
-		description += `**<@${game.player1.id}>** cherche un adversaire...\n\n`;
+		const expire = Math.floor((Date.now() + 60000) / 1000);
 
-		description += `> **Mise en jeu :** \`${game.bet}\` ${emojis.rubies}\n`;
-		description += `> **Vies par joueur :** \`${game.totalLives}\` ${emojis.alive}\n\n`;
+		const content =
+			`### ${emojis.yellowcheck} Nouveau défi\n` +
+			`**<@${game.player1.id}>** cherche un adversaire\n\n` +
+			`> Mise : \`${game.bet}\` ${emojis.rubies}\n` +
+			`> Vies : \`${game.totalLives}\` ${emojis.alive}\n\n` +
+			`<@${game.player2.id}>, acceptes-tu ?\n` +
+			`-# expire <t:${expire}:R>`;
 
-		description += `<@${game.player2.id}>, acceptes-tu le duel ?\n`;
-		// Note: On utilise une valeur fixe si possible pour éviter le décalage à l'edit
-		description += `-# expire <t:${Math.floor((Date.now() + 60000) / 1000)}:R>`;
+		container.addTextDisplayComponents(new TextDisplayBuilder().setContent(content));
 
-		// On ajoute le texte DIRECTEMENT au container (plus stable que la Section)
-		container.addTextDisplayComponents(new TextDisplayBuilder().setContent(description));
-
-		return {
-			flags: MessageFlags.IsComponentsV2,
-			components: [container.toJSON(), ...this.buildChallengeComponents(game.messageId)],
-			embeds: []
-		};
+		return this.buildResponse(container, this.buildChallengeComponents(game.messageId));
 	}
 
-	/**
-	 * Phase de TIRAGE INITIAL : Affiche la toute première carte en grand
-	 */
+	// =========================================================
+	// INITIAL DRAW
+	// =========================================================
+
 	public static buildInitialDrawMessage(game: MoreOrLessGame): any {
-		const container = new ContainerBuilder().setAccentColor(colors.goldCasino);
+		const container = this.createContainer(colors.goldCasino);
 
-		const description =
-			`### ${emojis.yellowcheck} Début de la partie !\n` +
-			`La première carte a été tirée.\n` +
+		const content =
+			`### ${emojis.yellowcheck} Début de la partie\n` +
+			`Première carte tirée\n` +
 			`**Valeur :** \`${game.currentCard.value}\`\n\n` +
-			`*Préparation du plateau de jeu...*`;
+			`*Préparation du plateau...*`;
 
-		container.addTextDisplayComponents(new TextDisplayBuilder().setContent(description));
+		container.addTextDisplayComponents(new TextDisplayBuilder().setContent(content));
 
-		// On affiche la carte en grand pour le début
-		const media = new MediaGalleryBuilder().addItems(new MediaGalleryItemBuilder().setURL(game.currentCard.image));
-		container.addMediaGalleryComponents(media);
+		container.addMediaGalleryComponents(new MediaGalleryBuilder().addItems(new MediaGalleryItemBuilder().setURL(game.currentCard.image)));
 
+		return this.buildResponse(container);
+	}
+
+	// =========================================================
+	// COMPONENTS
+	// =========================================================
+
+	private static buildActionRows(game: MoreOrLessGame, disabled: boolean) {
+		return [
+			new ActionRowBuilder<ButtonBuilder>()
+				.addComponents(
+					new ButtonBuilder()
+						.setCustomId(`mol:more:${game.messageId}`)
+						.setLabel('↑ Plus')
+						.setStyle(ButtonStyle.Primary)
+						.setDisabled(disabled),
+					new ButtonBuilder()
+						.setCustomId(`mol:less:${game.messageId}`)
+						.setLabel('↓ Moins')
+						.setStyle(ButtonStyle.Primary)
+						.setDisabled(disabled)
+				)
+				.toJSON()
+		];
+	}
+
+	public static buildChallengeComponents(messageId: string) {
+		return [
+			new ActionRowBuilder<ButtonBuilder>()
+				.addComponents(
+					new ButtonBuilder().setCustomId(`mol:accept:${messageId}`).setLabel('Accepter').setStyle(ButtonStyle.Success),
+					new ButtonBuilder().setCustomId(`mol:decline:${messageId}`).setLabel('Refuser').setStyle(ButtonStyle.Danger)
+				)
+				.toJSON()
+		];
+	}
+
+	// =========================================================
+	// HELPERS
+	// =========================================================
+
+	private static createContainer(color: number) {
+		return new ContainerBuilder().setAccentColor(color);
+	}
+
+	private static buildResponse(container: ContainerBuilder, components: any[] = []) {
 		return {
 			flags: MessageFlags.IsComponentsV2,
-			components: [container.toJSON()],
+			components: [container.toJSON(), ...components],
 			embeds: []
 		};
 	}
 
-	/**
-	 * Helper pour les boutons (ActionRows)
-	 */
-	private static buildActionRows(game: MoreOrLessGame, disabled: boolean): any[] {
-		const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-			new ButtonBuilder().setCustomId(`mol:more:${game.messageId}`).setLabel('↑ Plus').setStyle(ButtonStyle.Primary).setDisabled(disabled),
-			new ButtonBuilder().setCustomId(`mol:less:${game.messageId}`).setLabel('↓ Moins').setStyle(ButtonStyle.Primary).setDisabled(disabled)
-		);
-		return [row.toJSON()];
+	private static getPlayerName(id: string) {
+		return id === 'bot' ? `<@${process.env.BOT_ID}>` : `<@${id}>`;
 	}
 
-	/**
-	 * Boutons du défi
-	 */
-	public static buildChallengeComponents(messageId: string): any[] {
-		const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-			new ButtonBuilder().setCustomId(`mol:accept:${messageId}`).setLabel('Accepter').setStyle(ButtonStyle.Success),
-			new ButtonBuilder().setCustomId(`mol:decline:${messageId}`).setLabel('Refuser').setStyle(ButtonStyle.Danger)
-		);
-		return [row.toJSON()];
+	private static renderLives(lives: number, total: number) {
+		return `${emojis.alive.repeat(lives)}${emojis.dead.repeat(total - lives)}`;
 	}
 
-	// --- HELPERS DE RENDU ---
+	private static renderLastTurn(game: MoreOrLessGame) {
+		const h = game.lastTurnHistory!;
+		const icon = h.success ? emojis.check : emojis.uncheck;
+		const choice = h.choice === 'more' ? 'Plus' : 'Moins';
 
-	private static getPlayerName(id: string): string {
-		if (id === 'bot') {
-			return `<@${process.env.BOT_ID}>`;
-		}
-		return `<@${id}>`;
+		return `${icon} **${this.getPlayerName(h.playerId)}** → ${choice} sur \`${h.previousValue}\` → \`${h.newValue}\``;
 	}
 
-	private static renderLives(lives: number, totalLives: number): string {
-		return `${emojis.alive.repeat(lives)}${emojis.dead.repeat(totalLives - lives)}`;
-	}
-
-	private static renderLastTurn(game: MoreOrLessGame): string {
-		const h = game.lastTurnHistory;
-		if (!h) return '';
-		const icon = h.success ? `${emojis.check}` : `${emojis.uncheck}`;
-		const choiceText = h.choice === 'more' ? 'Plus' : 'Moins';
-		return `${icon} **${this.getPlayerName(h.playerId)}** a dit __${choiceText}__ sur le \`${h.previousValue}\` et a pioché un \`${h.newValue}\``;
-	}
-
-	private static getTimeRemaining(game: MoreOrLessGame): string | null {
-		if (!game.expiresAt) return null;
-		const timestamp = Math.floor(game.expiresAt / 1000);
-		return `⏳ Fin du tour <t:${timestamp}:R>`;
+	private static getTimeRemaining(game: MoreOrLessGame) {
+		if (!game.expiresAt) return '';
+		return `⏳ <t:${Math.floor(game.expiresAt / 1000)}:R>`;
 	}
 }
