@@ -236,9 +236,31 @@ export class MoreOrLessService {
 		this.games.delete(game.messageId);
 
 		const winnerId = game.player1.id === loserId ? game.player2.id : game.player1.id;
+		const isPvP = game.player2.id !== 'bot';
 
+		// 1. Paiement du gagnant (si ce n'est pas le bot)
+		let payout = 0;
 		if (winnerId !== 'bot') {
-			await container.casinoService.transaction(winnerId, game.bet * 2, 'add');
+			payout = game.bet * 2; // Le gagnant remporte la mise totale (sa mise + celle de l'adversaire)
+			await container.casinoService.transaction(winnerId, payout, 'add');
+		}
+
+		// 2. LOGS POUR LE GAGNANT (S'il est humain)
+		if (winnerId !== 'bot') {
+			container.casinoService.logGame(winnerId, 'more_or_less', game.bet, payout, {
+				result: 'win',
+				mode: isPvP ? 'PvP' : 'PvE',
+				opponentId: loserId
+			});
+		}
+
+		// 3. LOGS POUR LE PERDANT (S'il est humain)
+		if (loserId !== 'bot') {
+			container.casinoService.logGame(loserId, 'more_or_less', game.bet, 0, {
+				result: 'lose',
+				mode: isPvP ? 'PvP' : 'PvE',
+				opponentId: winnerId
+			});
 		}
 
 		return { status: 'win', game, winnerId, loserId };

@@ -137,12 +137,12 @@ export class RouletteService {
 		const game = this.games.get(channelId);
 		if (!game) return;
 
-		const playerSummaries = new Map<string, { payout: number; totalBet: number }>();
+		const playerSummaries = new Map<string, { payout: number; totalBet: number; betDetails: string[] }>();
 		const winningColor = ROULETTE_CONFIG.getColor(winningNumber);
 
 		// 1. Calcul des gains de chaque joueur en fonction des multiplicateurs.
 		for (const bet of game.bets) {
-			const current = playerSummaries.get(bet.userId) ?? { payout: 0, totalBet: 0 };
+			const current = playerSummaries.get(bet.userId) ?? { payout: 0, totalBet: 0, betDetails: [] };
 
 			let win = false;
 			let multiplier = 0;
@@ -158,6 +158,7 @@ export class RouletteService {
 			}
 
 			if (win) current.payout += Math.ceil(bet.amount * multiplier);
+			current.betDetails.push(`${bet.type}:${bet.amount}`);
 			current.totalBet += bet.amount;
 
 			playerSummaries.set(bet.userId, current);
@@ -171,7 +172,11 @@ export class RouletteService {
 				winners.push({ userId, payout: data.payout });
 				await container.casinoService.transaction(userId, data.payout, 'add');
 			}
-			container.casinoService.logGame(userId, 'roulette', data.totalBet, data.payout, { winningNumber });
+			container.casinoService.logGame(userId, 'roulette', data.totalBet, data.payout, {
+				winningNumber,
+				winningColor, // C'est cool de l'avoir directement dans le log
+				betsPlaced: data.betDetails.join(', ') // Ex: "red:500, 15:200"
+			});
 		}
 
 		game.status = 'finished';
