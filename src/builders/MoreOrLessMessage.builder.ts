@@ -206,6 +206,6 @@ export class MoreOrLessMessageBuilder {
 
 	private static getTimeRemaining(game: MoreOrLessGame) {
 		if (!game.expiresAt) return '';
-		return `⏳ <t:${Math.floor(game.expiresAt / 1000)}:R>`;
+		return `Fin du tour <t:${Math.floor(game.expiresAt / 1000)}:R>`;
 	}
 }

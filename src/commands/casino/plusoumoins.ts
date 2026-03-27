@@ -18,9 +18,26 @@ export class MoreOrLessCommand extends Command {
 				.setName(this.name)
 				.setDescription(this.description)
 				.setContexts([InteractionContextType.Guild])
-				.addIntegerOption((opt) => opt.setName('mise').setDescription('Montant à miser').setRequired(true).setMinValue(10))
-				.addUserOption((opt) => opt.setName('adversaire').setDescription('Joueur à défier'))
-				.addIntegerOption((opt) => opt.setName('vies').setDescription('Nombre de vies').setMinValue(2).setMaxValue(5))
+				.addIntegerOption((opt) =>
+					opt //
+						.setName('mise')
+						.setDescription('Montant à miser')
+						.setMinValue(10)
+						.setMaxValue(500)
+						.setRequired(true)
+				)
+				.addUserOption((opt) =>
+					opt //
+						.setName('adversaire')
+						.setDescription('Joueur à défier')
+				)
+				.addIntegerOption((opt) =>
+					opt //
+						.setName('vies')
+						.setDescription('Nombre de vies')
+						.setMinValue(2)
+						.setMaxValue(5)
+				)
 		);
 	}
 
@@ -36,9 +53,8 @@ export class MoreOrLessCommand extends Command {
 		// 1. Vérification économique du joueur
 		const check = await container.economyService.view(userId);
 		if (!check.success || check.data.rubies < bet) {
-			return interaction.reply({
-				embeds: [Embeds.errorEmbed({ message: 'Pas assez de rubis !' })],
-				flags: MessageFlags.Ephemeral
+			return interaction.editReply({
+				embeds: [Embeds.errorEmbed({ message: 'Pas assez de rubis !' })]
 			});
 		}
 

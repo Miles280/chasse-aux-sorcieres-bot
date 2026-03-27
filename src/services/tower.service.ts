@@ -88,7 +88,7 @@ export class TowerService {
 		}
 
 		// 2. Log de la partie
-		container.casinoService.logGame(game.userId, 'tower', game.bet, payout, { floor: game.currentFloor + 1, stop_reason });
+		container.casinoService.logGame(game.userId, 'tower', game.bet, payout, { floor: game.currentFloor, stop_reason });
 
 		return { status: stop_reason, game, payout, badChoice };
 	}
