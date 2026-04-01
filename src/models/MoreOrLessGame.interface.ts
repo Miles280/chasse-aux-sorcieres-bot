@@ -32,8 +32,6 @@ export interface MoreOrLessGame {
 	totalCards?: number;
 	remainingCards?: number;
 	totalLives: number;
-
-	// --- Propriétés manquantes pour les Timers ---
 	expiresAt?: number; // Pour le timestamp Discord <t:X:R>
 	turnStartTime?: number; // Timestamp du début du tour
 	turnTimeLimit?: number; // Durée du tour (30000ms)

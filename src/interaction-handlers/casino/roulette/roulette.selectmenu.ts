@@ -1,8 +1,8 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes } from '@sapphire/framework';
 import { StringSelectMenuInteraction, ModalBuilder, TextInputBuilder, TextInputStyle, LabelBuilder } from 'discord.js';
-import { ROULETTE_CONFIG } from '../../utils/constants';
-import { RouletteMessageBuilder } from '../../builders/RouletteMessage.builder';
+import { ROULETTE_CONFIG } from '../../../utils/constants';
+import { RouletteMessageBuilder } from '../../../builders/RouletteMessage.builder';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.SelectMenu

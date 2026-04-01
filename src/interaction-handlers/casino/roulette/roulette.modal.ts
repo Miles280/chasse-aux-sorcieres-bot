@@ -1,10 +1,10 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes, container } from '@sapphire/framework';
 import { ModalSubmitInteraction, MessageFlags } from 'discord.js';
-import { RouletteBetType } from '../../models/RouletteGame.interface';
-import { ROULETTE_CONFIG } from '../../utils/constants';
-import { emojis } from '../../utils/emojis';
-import * as Embeds from '../../utils/embeds';
+import { RouletteBetType } from '../../../models/RouletteGame.interface';
+import { ROULETTE_CONFIG } from '../../../utils/constants';
+import { emojis } from '../../../utils/emojis';
+import * as Embeds from '../../../utils/embeds';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.ModalSubmit

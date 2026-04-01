@@ -1,10 +1,10 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes, container } from '@sapphire/framework';
 import { ButtonInteraction, ContainerBuilder, MessageFlags, TextDisplayBuilder } from 'discord.js';
-import { MoreOrLessMessageBuilder } from '../../builders/MoreOrLessMessage.builder';
-import * as Embeds from '../../utils/embeds';
-import { colors } from '../../utils/customColors';
-import { emojis } from '../../utils/emojis';
+import { MoreOrLessMessageBuilder } from '../../../builders/MoreOrLessMessage.builder';
+import * as Embeds from '../../../utils/embeds';
+import { colors } from '../../../utils/customColors';
+import { emojis } from '../../../utils/emojis';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.Button

@@ -1,9 +1,9 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes, container } from '@sapphire/framework';
 import { MessageFlags, type ButtonInteraction } from 'discord.js';
-import { Currency } from '../../enums/Currency';
-import * as Embeds from '../../utils/embeds';
-import { ShopMessageBuilder } from '../../builders/ShopMessage.builder';
+import { Currency } from '../../../enums/Currency';
+import * as Embeds from '../../../utils/embeds';
+import { ShopMessageBuilder } from '../../../builders/ShopMessage.builder';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.Button

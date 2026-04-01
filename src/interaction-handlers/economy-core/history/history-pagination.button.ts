@@ -1,8 +1,8 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes, container } from '@sapphire/framework';
 import { ButtonInteraction, MessageFlags } from 'discord.js';
-import { HistoryMessageBuilder } from '../../builders/HistoryMessage.builder';
-import * as Embeds from '../../utils/embeds';
+import { HistoryMessageBuilder } from '../../../builders/HistoryMessage.builder';
+import * as Embeds from '../../../utils/embeds';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.Button

@@ -10,7 +10,8 @@ import { InventoryService } from './services/inventory.service';
 import { TowerService } from './services/tower.service';
 import { CasinoService } from './services/casino.service';
 import { RouletteService } from './services/roulette.service';
-import { MoreOrLessService } from './services/MoreOrLess.service';
+import { BlackjackService } from './services/blackjack.service';
+import { MoreOrLessService } from './services/moreOrLess.service';
 
 const client = new SapphireClient({
 	defaultPrefix: ',',
@@ -31,6 +32,7 @@ container.casinoService = new CasinoService(container.apiClient);
 container.towerService = new TowerService();
 container.rouletteService = new RouletteService();
 container.moreOrLessService = new MoreOrLessService();
+container.blackjackService = new BlackjackService();
 
 const main = async () => {
 	try {

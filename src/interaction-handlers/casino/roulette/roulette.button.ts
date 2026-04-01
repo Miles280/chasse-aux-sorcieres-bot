@@ -1,10 +1,10 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { container, InteractionHandler, InteractionHandlerTypes } from '@sapphire/framework';
 import { ButtonInteraction, EmbedBuilder, MessageFlags } from 'discord.js';
-import { ROULETTE_CONFIG } from '../../utils/constants';
-import { RouletteGame } from '../../models/RouletteGame.interface';
-import { RouletteMessageBuilder } from '../../builders/RouletteMessage.builder';
-import * as Embeds from '../../utils/embeds';
+import { ROULETTE_CONFIG } from '../../../utils/constants';
+import { RouletteGame } from '../../../models/RouletteGame.interface';
+import { RouletteMessageBuilder } from '../../../builders/RouletteMessage.builder';
+import * as Embeds from '../../../utils/embeds';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.Button

@@ -1,8 +1,8 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { container, InteractionHandler, InteractionHandlerTypes } from '@sapphire/framework';
 import { MessageFlags, type ButtonInteraction } from 'discord.js';
-import { Currency } from '../../enums/Currency';
-import * as Embeds from '../../utils/embeds';
+import { Currency } from '../../../enums/Currency';
+import * as Embeds from '../../../utils/embeds';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.Button

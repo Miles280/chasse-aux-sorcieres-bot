@@ -1,9 +1,9 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes, container } from '@sapphire/framework';
 import { ButtonInteraction, MessageFlags, EmbedBuilder, GuildMember } from 'discord.js';
-import { TowerMessageBuilder } from '../../builders/TowerMessage.builder';
-import { TOWER_CONFIG } from '../../utils/constants';
-import * as Embeds from '../../utils/embeds';
+import { TowerMessageBuilder } from '../../../builders/TowerMessage.builder';
+import { TOWER_CONFIG } from '../../../utils/constants';
+import * as Embeds from '../../../utils/embeds';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.Button
