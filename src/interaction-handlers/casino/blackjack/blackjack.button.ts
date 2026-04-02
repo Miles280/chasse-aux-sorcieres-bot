@@ -53,7 +53,7 @@ export class BlackjackButtonHandler extends InteractionHandler {
 			const check = await container.economyService.view(userId);
 			if (!check.success || check.data.rubies < bet) {
 				return interaction.reply({
-					embeds: [Embeds.errorEmbed({ message: 'Pas assez de rubis pour rejouer !' })],
+					embeds: [Embeds.errorEmbed({ title: 'Sale pauvre...', message: 'Pas assez de rubis pour rejouer !' })],
 					flags: MessageFlags.Ephemeral
 				});
 			}
@@ -106,6 +106,19 @@ export class BlackjackButtonHandler extends InteractionHandler {
 			await interaction.editReply(response);
 
 			triggerReplayButtonTimeout(updatedGame!.status);
+		} else if (action === 'double') {
+			const updatedGame = await container.blackjackService.doubleDown(messageId);
+
+			if (!updatedGame) {
+				return interaction.followUp({
+					embeds: [Embeds.errorEmbed({ message: "Tu n'as pas assez de rubis pour doubler la mise !" })],
+					flags: MessageFlags.Ephemeral
+				});
+			}
+
+			const response = await BlackjackMessageBuilder.buildGameMessage(updatedGame);
+			await interaction.editReply(response);
+			triggerReplayButtonTimeout(updatedGame.status);
 		} else if (action === 'stand') {
 			const updatedGame = await container.blackjackService.stand(messageId);
 			const response = await BlackjackMessageBuilder.buildGameMessage(updatedGame);

@@ -20,7 +20,12 @@ export class BlackjackService {
 			game.result = 'timeout';
 
 			// Le joueur perd sa mise
-			await container.casinoService.logGame(game.userId, 'blackjack', game.bet, 0, { result: 'timeout' });
+			await container.casinoService.logGame(game.userId, 'blackjack', game.bet, 0, {
+				result: 'timeout',
+				playerScore: this.calculateScore(game.playerCards),
+				dealerScore: this.calculateScore(game.dealerCards), // On ne connaît que la 1ère carte
+				isDoubled: game.bet > game.initialBet
+			});
 
 			// On met à jour le message Discord depuis le service
 			try {
@@ -47,30 +52,43 @@ export class BlackjackService {
 
 	// Calcule le score à partir des URLs de l'API DeckOfCards
 	public calculateScore(cards: string[]): number {
+		// SÉCURITÉ : Si ce n'est pas un tableau, on retourne 0 pour éviter le score "338"
+		if (!Array.isArray(cards)) {
+			console.error("Erreur: calculateScore a reçu un objet qui n'est pas un tableau", cards);
+			return 0;
+		}
+
 		let score = 0;
 		let aces = 0;
 
 		for (const url of cards) {
+			if (typeof url !== 'string') continue;
+
+			// On récupère le nom du fichier (ex: KH, 8C, 0S)
 			const filename = url.split('/').pop()?.split('.')[0].toUpperCase() || '';
 			if (!filename) continue;
 
-			const firstChar = filename[0];
+			// Le premier caractère nous donne la valeur
+			const valueChar = filename[0];
 
-			if (firstChar === 'A') {
+			if (valueChar === 'A') {
 				score += 11;
 				aces++;
-			} else if (['K', 'Q', 'J', '0', '1'].includes(firstChar)) {
+			} else if (['K', 'Q', 'J', '0', '1'].includes(valueChar)) {
+				// K, Q, J et 10 (qui commence par 0 ou 1 selon l'API) valent 10
 				score += 10;
 			} else {
-				const val = parseInt(firstChar);
+				const val = parseInt(valueChar);
 				score += isNaN(val) ? 0 : val;
 			}
 		}
 
+		// Ajustement des As
 		while (score > 21 && aces > 0) {
 			score -= 10;
 			aces--;
 		}
+
 		return score;
 	}
 
@@ -87,6 +105,7 @@ export class BlackjackService {
 				userId,
 				deckId,
 				bet,
+				initialBet: bet,
 				playerCards: [cards[0].image, cards[1].image],
 				dealerCards: [cards[2].image, cards[3].image],
 				status: 'playing'
@@ -119,7 +138,13 @@ export class BlackjackService {
 			game.result = 'lose';
 			this.games.delete(messageId);
 			// Si le joueur dépasse 21, il perd sa mise immédiatement.
-			await container.casinoService.logGame(game.userId, 'blackjack', game.bet, 0, { result: 'lose' });
+			await container.casinoService.logGame(game.userId, 'blackjack', game.bet, 0, {
+				result: 'lose',
+				playerScore: this.calculateScore(game.playerCards),
+				dealerScore: this.calculateScore(game.dealerCards),
+				reason: 'bust',
+				isDoubled: false // On ne peut pas "hit" après un double
+			});
 		} else {
 			this.resetGameTimer(game);
 		}
@@ -138,17 +163,19 @@ export class BlackjackService {
 
 		game.status = 'dealer_turn';
 
+		const playerScore = this.calculateScore(game.playerCards);
 		let dealerScore = this.calculateScore(game.dealerCards);
 
 		// IA du Croupier : Pioche tant qu'il est en dessous de 17
-		while (dealerScore < 17) {
-			const draw = await axios.get(`https://deckofcardsapi.com/api/deck/${game.deckId}/draw/?count=1`);
-			game.dealerCards.push(draw.data.cards[0].image);
-			dealerScore = this.calculateScore(game.dealerCards);
+		if (playerScore <= 21) {
+			while (dealerScore < 17) {
+				const draw = await axios.get(`https://deckofcardsapi.com/api/deck/${game.deckId}/draw/?count=1`);
+				game.dealerCards.push(draw.data.cards[0].image);
+				dealerScore = this.calculateScore(game.dealerCards);
+			}
 		}
 
 		game.status = 'finished';
-		const playerScore = this.calculateScore(game.playerCards);
 
 		// --- DÉTERMINATION DU RÉSULTAT (Règles strictes) ---
 		const playerHasBJ = playerScore === 21 && game.playerCards.length === 2;
@@ -182,10 +209,39 @@ export class BlackjackService {
 		else if (game.result === 'draw') payout = game.bet;
 
 		if (payout > 0) await container.casinoService.transaction(game.userId, payout, 'add');
-		await container.casinoService.logGame(game.userId, 'blackjack', game.bet, payout, { result: game.result });
+		await container.casinoService.logGame(game.userId, 'blackjack', game.bet, payout, {
+			result: game.result,
+			playerScore: playerScore,
+			dealerScore: dealerScore,
+			isDoubled: game.bet > game.initialBet
+		});
 
 		this.games.delete(game.messageId);
 		return game;
+	}
+
+	public async doubleDown(messageId: string): Promise<BlackjackGame | null> {
+		const game = this.games.get(messageId);
+		if (!game) return null;
+
+		// 1. Vérifier si l'utilisateur a assez de rubis pour doubler
+		const check = await container.economyService.view(game.userId);
+		if (!check.success || check.data.rubies < game.bet) return null;
+
+		// 2. Débiter la seconde mise (on double la mise actuelle)
+		const transaction = await container.casinoService.transaction(game.userId, game.bet, 'remove');
+		if (!transaction.success) return null;
+
+		// Mettre à jour la mise dans l'objet game
+		game.bet *= 2;
+
+		// 3. Tirer UNE SEULE carte
+		const draw = await axios.get(`https://deckofcardsapi.com/api/deck/${game.deckId}/draw/?count=1`);
+		game.playerCards.push(draw.data.cards[0].image);
+
+		// 4. Terminer le tour (Stand forcé)
+		// Note: On passe l'objet game directement à stand()
+		return await this.stand(game);
 	}
 
 	public getGame(id: string) {

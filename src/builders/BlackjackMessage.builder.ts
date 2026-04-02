@@ -97,23 +97,30 @@ export class BlackjackMessageBuilder {
 		}
 
 		// =========================================================
-		// GESTION DES BOUTONS (Tirer/Rester VS Rejouer)
+		// GESTION DES BOUTONS (Tirer/Doubler/S'arrêter VS Rejouer)
 		// =========================================================
 		let actionRows = [];
 
 		if (!isFinished) {
-			// Boutons en cours de jeu
-			actionRows.push(
-				new ActionRowBuilder<ButtonBuilder>().addComponents(
-					new ButtonBuilder().setCustomId(`bj:hit:${game.messageId}`).setLabel('Tirer').setStyle(ButtonStyle.Primary),
-					new ButtonBuilder().setCustomId(`bj:stand:${game.messageId}`).setLabel('Rester').setStyle(ButtonStyle.Secondary)
-				)
-			);
+			const row = new ActionRowBuilder<ButtonBuilder>();
+
+			// 1. On ajoute "Tirer" en premier (Action principale)
+			row.addComponents(new ButtonBuilder().setCustomId(`bj:hit:${game.messageId}`).setLabel('Tirer').setStyle(ButtonStyle.Primary));
+
+			// 2. On ajoute "Doubler" au milieu (Uniquement au premier tour)
+			if (game.playerCards.length === 2) {
+				row.addComponents(new ButtonBuilder().setCustomId(`bj:double:${game.messageId}`).setLabel('Doubler').setStyle(ButtonStyle.Success));
+			}
+
+			// 3. On ajoute "S'arrêter" en dernier
+			row.addComponents(new ButtonBuilder().setCustomId(`bj:stand:${game.messageId}`).setLabel("S'arrêter").setStyle(ButtonStyle.Secondary));
+
+			actionRows.push(row);
 		} else {
-			// Bouton de fin de partie (On stocke la mise et l'ID du joueur dans le CustomId)
+			// Bouton de fin de partie (Inchangé)
 			actionRows.push(
 				new ActionRowBuilder<ButtonBuilder>().addComponents(
-					new ButtonBuilder().setCustomId(`bj:replay:${game.bet}:${game.userId}`).setLabel(`Rejouer`).setStyle(ButtonStyle.Primary)
+					new ButtonBuilder().setCustomId(`bj:replay:${game.initialBet}:${game.userId}`).setLabel(`Rejouer`).setStyle(ButtonStyle.Primary)
 				)
 			);
 		}

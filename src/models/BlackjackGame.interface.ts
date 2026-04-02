@@ -4,6 +4,7 @@ export interface BlackjackGame {
 	userId: string;
 	deckId: string;
 	bet: number;
+	initialBet: number;
 	playerCards: string[]; // URLs des images
 	dealerCards: string[]; // URLs des images
 	status: 'playing' | 'dealer_turn' | 'finished';
