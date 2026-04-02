@@ -52,7 +52,8 @@ export class BlackjackCommand extends Command {
 		await interaction.deferReply();
 		const response = await interaction.fetchReply();
 
-		const game = await container.blackjackService.initGame(userId, bet, response.id);
+		const channelId = interaction.channelId!;
+		const game = await container.blackjackService.initGame(userId, bet, response.id, channelId);
 
 		if (!game) return interaction.editReply('Erreur lors du mélange du deck.');
 

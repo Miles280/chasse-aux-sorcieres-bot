@@ -59,41 +59,63 @@ export class BlackjackMessageBuilder {
 		const embedColor = isFinished ? (game.result === 'lose' ? colors.fail : colors.success) : colors.goldCasino;
 
 		// 1. Détermination de l'emoji du titre
-		let titleEmoji = emojis.yellowcheck; // Emoji par défaut (en cours)
+		let titleEmoji = emojis.yellowcheck;
 
 		if (isFinished) {
-			if (game.result === 'win' || game.result === 'blackjack') {
-				titleEmoji = emojis.greencheck;
-			} else if (game.result === 'lose') {
-				titleEmoji = emojis.redcheck;
-			} else {
-				titleEmoji = emojis.greencheck;
-			}
+			if (game.result === 'win' || game.result === 'blackjack') titleEmoji = emojis.greencheck;
+			else if (game.result === 'lose') titleEmoji = emojis.redcheck;
+			else titleEmoji = emojis.greencheck; // Égalité
 		}
 
 		let statusText = `### ${titleEmoji} Blackjack\n\n`;
 
 		if (isFinished) {
-			// =========================================================
-			// AFFICHAGE FIN DE PARTIE (Résultat pur)
-			// =========================================================
-			const results = {
-				win: `${emojis.crown} **Gagné !** (\`+${game.bet * 2}\` ${emojis.rubies})`,
-				blackjack: `${emojis.crown} **BLACKJACK !** (\`+${Math.floor(game.bet * 2.5)}\` ${emojis.rubies})`,
-				lose: `${emojis.dead} **Perdu...** (\`-${game.bet}\` ${emojis.rubies})`,
-				draw: `**Égalité !** (Mise rendue)`
+			const messages = {
+				win: `Bien joué ! Vous remportez la manche et doublez votre mise.\n`,
+				blackjack: `Exceptionnel ! Un Blackjack parfait, vous repartez avec le jackpot.\n`,
+				lose: `Dommage, la banque remporte cette main. Retentez votre chance !\n`,
+				draw: `Égalité ! Personne ne l'emporte, vous récupérez votre mise.\n`,
+				timeout: `Temps écoulé ! Vous avez mis trop de temps à jouer, la banque encaisse votre mise.\n`
 			};
 
-			statusText += results[game.result!];
+			const details = {
+				win: `**Gain :** \`+${game.bet * 2}\` ${emojis.rubies}`,
+				blackjack: `**Gain :** \`+${Math.floor(game.bet * 2.5)}\` ${emojis.rubies}`,
+				lose: `**Perte :** \`-${game.bet}\` ${emojis.rubies}`,
+				draw: `**Retour :** \`${game.bet}\` ${emojis.rubies}`,
+				timeout: `**Perte :** \`-${game.bet}\` ${emojis.rubies}`
+			};
+
+			statusText += `${messages[game.result!]}\n${details[game.result!]}`;
 		} else {
-			// =========================================================
-			// AFFICHAGE EN COURS (Points + Tour du joueur)
-			// =========================================================
 			const playerScore = this.calculateScore(game.playerCards);
 			const firstCardScore = this.calculateScore([game.dealerCards[0]]);
 
-			statusText += `**Vos points :** \`${playerScore}\`\n**Points du croupier :** \`${firstCardScore} + ?\`\n\n`;
-			statusText += `-# Mise en jeu : ${game.bet} ${emojis.rubies}`;
+			statusText += `La partie est en cours. Que souhaitez-vous faire ?\n\n`;
+			statusText += `**Votre score :** \`${playerScore}\` | **Banque :** \`${firstCardScore} + ?\`\n`;
+			statusText += `**Mise :** ${game.bet} ${emojis.rubies}`;
+		}
+
+		// =========================================================
+		// GESTION DES BOUTONS (Tirer/Rester VS Rejouer)
+		// =========================================================
+		let actionRows = [];
+
+		if (!isFinished) {
+			// Boutons en cours de jeu
+			actionRows.push(
+				new ActionRowBuilder<ButtonBuilder>().addComponents(
+					new ButtonBuilder().setCustomId(`bj:hit:${game.messageId}`).setLabel('Tirer').setStyle(ButtonStyle.Primary),
+					new ButtonBuilder().setCustomId(`bj:stand:${game.messageId}`).setLabel('Rester').setStyle(ButtonStyle.Secondary)
+				)
+			);
+		} else {
+			// Bouton de fin de partie (On stocke la mise et l'ID du joueur dans le CustomId)
+			actionRows.push(
+				new ActionRowBuilder<ButtonBuilder>().addComponents(
+					new ButtonBuilder().setCustomId(`bj:replay:${game.bet}:${game.userId}`).setLabel(`Rejouer`).setStyle(ButtonStyle.Primary)
+				)
+			);
 		}
 
 		return {
@@ -105,18 +127,9 @@ export class BlackjackMessageBuilder {
 					color: embedColor
 				}
 			],
-			components: isFinished ? [] : this.buildButtons(game),
+			components: actionRows,
 			files: [attachment]
 		};
-	}
-
-	private static buildButtons(game: BlackjackGame) {
-		return [
-			new ActionRowBuilder<ButtonBuilder>().addComponents(
-				new ButtonBuilder().setCustomId(`bj:hit:${game.messageId}`).setLabel('Tirer').setStyle(ButtonStyle.Primary),
-				new ButtonBuilder().setCustomId(`bj:stand:${game.messageId}`).setLabel('Rester').setStyle(ButtonStyle.Secondary)
-			)
-		];
 	}
 
 	// =========================================================
