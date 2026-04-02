@@ -95,7 +95,7 @@ export class BlackjackButtonHandler extends InteractionHandler {
 		const messageId = parts[2];
 		const game = container.blackjackService.getGame(messageId);
 
-		if (!game) return interaction.reply({ content: 'Partie expirée.', flags: MessageFlags.Ephemeral });
+		if (!game) return interaction.reply({ embeds: [Embeds.errorEmbed({ message: 'Partie expirée.' })], flags: MessageFlags.Ephemeral });
 		if (interaction.user.id !== game.userId) return interaction.reply({ content: 'Pas ta partie !', flags: MessageFlags.Ephemeral });
 
 		await interaction.deferUpdate();
