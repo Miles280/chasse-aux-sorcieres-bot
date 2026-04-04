@@ -18,33 +18,13 @@ export class MoreOrLessCommand extends Command {
 				.setName(this.name)
 				.setDescription(this.description)
 				.setContexts([InteractionContextType.Guild])
-				.addIntegerOption((opt) =>
-					opt //
-						.setName('mise')
-						.setDescription('Montant à miser')
-						.setMinValue(10)
-						.setMaxValue(500)
-						.setRequired(true)
-				)
-				.addUserOption((opt) =>
-					opt //
-						.setName('adversaire')
-						.setDescription('Joueur à défier')
-				)
-				.addIntegerOption((opt) =>
-					opt //
-						.setName('vies')
-						.setDescription('Nombre de vies')
-						.setMinValue(2)
-						.setMaxValue(5)
-				)
+				.addIntegerOption((opt) => opt.setName('mise').setDescription('Montant à miser').setMinValue(10).setMaxValue(500).setRequired(true))
+				.addUserOption((opt) => opt.setName('adversaire').setDescription('Joueur à défier'))
+				.addIntegerOption((opt) => opt.setName('vies').setDescription('Nombre de vies').setMinValue(2).setMaxValue(5))
 		);
 	}
 
 	public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
-		const response = await interaction.deferReply({ withResponse: true });
-		const messageId = response.resource!.message!.id;
-
 		const bet = interaction.options.getInteger('mise', true);
 		const opponent = interaction.options.getUser('adversaire');
 		const lives = interaction.options.getInteger('vies') ?? 3;
@@ -53,8 +33,9 @@ export class MoreOrLessCommand extends Command {
 		// 1. Vérification économique du joueur
 		const check = await container.economyService.view(userId);
 		if (!check.success || check.data.rubies < bet) {
-			return interaction.editReply({
-				embeds: [Embeds.errorEmbed({ message: 'Pas assez de rubis !' })]
+			return interaction.reply({
+				embeds: [Embeds.errorEmbed({ message: 'Pas assez de rubis !' })],
+				flags: MessageFlags.Ephemeral
 			});
 		}
 
@@ -98,9 +79,9 @@ export class MoreOrLessCommand extends Command {
 				return interaction.reply({ content: 'Erreur deck.', flags: MessageFlags.Ephemeral });
 			}
 
-			// 2.5 Création partie (pending)
 			const startingPlayer = Math.random() > 0.5 ? userId : opponent.id;
 
+			// 2.5 Préparation des données (messageId sera rempli après le reply)
 			const challengeData: MoreOrLessGame = {
 				messageId: '',
 				channelId: interaction.channelId,
@@ -113,18 +94,25 @@ export class MoreOrLessCommand extends Command {
 				status: 'pending',
 				totalLives: lives,
 				totalCards: initData.totalCards,
-				remainingCards: initData.remainingCards
+				remainingCards: initData.remainingCards,
+				challengeMessageId: ''
 			};
 
-			// 2.6 Envoi du défi
-			await interaction.editReply(MoreOrLessMessageBuilder.buildChallengeMessage(challengeData));
+			// 2.6 Envoi du défi (On utilise reply pour le PING)
+			// Note: Si buildChallengeMessage utilise ComponentsV2, n'ajoute pas de "content" ici
+			// car cela causerait l'erreur "MESSAGE_CANNOT_USE_LEGACY_FIELDS"
+			const challengeMessage = MoreOrLessMessageBuilder.buildChallengeMessage(challengeData);
 
+			const response = await interaction.reply({
+				...challengeMessage,
+				withResponse: true
+			});
+
+			const messageId = response.resource!.message!.id;
 			challengeData.messageId = messageId;
 			challengeData.challengeMessageId = messageId;
 
 			await container.moreOrLessService.registerChallenge(challengeData);
-
-			await interaction.editReply(MoreOrLessMessageBuilder.buildChallengeMessage(challengeData));
 
 			// 2.7 Timeout du défi
 			setTimeout(async () => {
@@ -152,31 +140,24 @@ export class MoreOrLessCommand extends Command {
 		// 3. MODE SOLO (PvE)
 		// =========================================================
 
-		// 3.1 Débit joueur
 		const transaction = await container.casinoService.transaction(userId, bet, 'remove');
 		if (!transaction.success) {
 			return interaction.reply({ content: 'Erreur de transaction.', flags: MessageFlags.Ephemeral });
 		}
 
-		// 3.2 Initialisation deck
 		const initData = await container.moreOrLessService.initDeckAndDraw();
 		if (!initData) {
 			await container.casinoService.transaction(userId, bet, 'add');
-
-			return interaction.editReply({
-				components: [
-					new ContainerBuilder()
-						.setAccentColor(colors.fail)
-						.addTextDisplayComponents(new TextDisplayBuilder().setContent('Erreur avec le paquet.'))
-						.toJSON()
-				]
+			return interaction.reply({
+				embeds: [Embeds.errorEmbed({ message: 'Erreur avec le paquet.' })],
+				flags: MessageFlags.Ephemeral
 			});
 		}
 
 		const startingPlayer = Math.random() > 0.5 ? userId : 'bot';
 
 		const gameData: MoreOrLessGame = {
-			messageId,
+			messageId: '',
 			channelId: interaction.channelId,
 			deckId: initData.deckId,
 			bet,
@@ -191,17 +172,21 @@ export class MoreOrLessCommand extends Command {
 			remainingCards: initData.remainingCards
 		};
 
-		// 3.3 Affichage tirage initial
-		await interaction.editReply(MoreOrLessMessageBuilder.buildInitialDrawMessage(gameData));
+		// 3.3 Affichage tirage initial (reply pour créer le message)
+		const response = await interaction.reply({
+			...MoreOrLessMessageBuilder.buildInitialDrawMessage(gameData),
+			withResponse: true
+		});
+
+		const messageId = response.resource!.message!.id;
+		gameData.messageId = messageId;
 
 		await new Promise((r) => setTimeout(r, 4000));
 
-		// 3.4 Lancement partie
+		// 3.4 Lancement partie (editReply car le message existe déjà)
 		await container.moreOrLessService.registerGame(gameData);
-
 		await interaction.editReply(MoreOrLessMessageBuilder.buildGameMessage(gameData));
 
-		// 3.5 Tour du bot si nécessaire
 		if (startingPlayer === 'bot') {
 			setTimeout(() => container.moreOrLessService.handleBotTurn(messageId), 4000);
 		}
