@@ -5,8 +5,8 @@ export interface BlackjackGame {
 	deckId: string;
 	bet: number;
 	initialBet: number;
-	playerCards: string[]; // URLs des images
-	dealerCards: string[]; // URLs des images
+	playerCards: string[];
+	dealerCards: string[];
 	status: 'playing' | 'dealer_turn' | 'finished';
 	result?: 'win' | 'lose' | 'draw' | 'blackjack' | 'timeout';
 	timer?: NodeJS.Timeout;

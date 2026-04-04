@@ -99,8 +99,6 @@ export class MoreOrLessCommand extends Command {
 			};
 
 			// 2.6 Envoi du défi (On utilise reply pour le PING)
-			// Note: Si buildChallengeMessage utilise ComponentsV2, n'ajoute pas de "content" ici
-			// car cela causerait l'erreur "MESSAGE_CANNOT_USE_LEGACY_FIELDS"
 			const challengeMessage = MoreOrLessMessageBuilder.buildChallengeMessage(challengeData);
 
 			const response = await interaction.reply({

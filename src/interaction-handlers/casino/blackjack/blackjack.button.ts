@@ -1,42 +1,28 @@
+import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes, container } from '@sapphire/framework';
-import { ButtonInteraction, GuildMember, MessageFlags } from 'discord.js';
+import { ButtonInteraction, MessageFlags, GuildMember } from 'discord.js';
 import { BlackjackMessageBuilder } from '../../../builders/BlackjackMessage.builder';
 import * as Embeds from '../../../utils/embeds';
 
+@ApplyOptions<InteractionHandler.Options>({
+	interactionHandlerType: InteractionHandlerTypes.Button
+})
 export class BlackjackButtonHandler extends InteractionHandler {
-	public constructor(context: InteractionHandler.LoaderContext, options: InteractionHandler.Options) {
-		super(context, { ...options, interactionHandlerType: InteractionHandlerTypes.Button });
-	}
-
 	public override parse(interaction: ButtonInteraction) {
 		if (!interaction.customId.startsWith('bj:')) return this.none();
 		return this.some();
 	}
 
 	public async run(interaction: ButtonInteraction) {
-		const parts = interaction.customId.split(':');
-		const action = parts[1]; // "hit", "stand", ou "replay"
+		const [, action, ...params] = interaction.customId.split(':');
 		const userId = interaction.user.id;
 
-		// =========================================
-		// FONCTION UTILITAIRE : TIMER BOUTON REJOUER
-		// =========================================
-		const triggerReplayButtonTimeout = (gameStatus: string) => {
-			if (gameStatus === 'finished') {
-				setTimeout(() => {
-					// Retire les composants 60s plus tard
-					interaction.editReply({ components: [] }).catch(() => null);
-				}, 60000);
-			}
-		};
-
-		// =========================================
-		// LOGIQUE : BOUTON REJOUER
-		// =========================================
+		// 1. Cas Rejouer
 		if (action === 'replay') {
-			const bet = parseInt(parts[2]);
-			const ownerId = parts[3];
+			const bet = parseInt(params[0]);
+			const ownerId = params[1];
 
+			// 1.1 Vérifie que c'est le joueur d'origine
 			if (userId !== ownerId) {
 				return interaction.reply({
 					embeds: [
@@ -50,6 +36,7 @@ export class BlackjackButtonHandler extends InteractionHandler {
 				});
 			}
 
+			// 1.2 Vérifie que le joueur a assez de rubis
 			const check = await container.economyService.view(userId);
 			if (!check.success || check.data.rubies < bet) {
 				return interaction.reply({
@@ -58,7 +45,7 @@ export class BlackjackButtonHandler extends InteractionHandler {
 				});
 			}
 
-			// Débiter la mise
+			// 1.3 Débiter la mise
 			const transaction = await container.casinoService.transaction(userId, bet, 'remove');
 			if (!transaction.success) {
 				return interaction.reply({
@@ -67,14 +54,13 @@ export class BlackjackButtonHandler extends InteractionHandler {
 				});
 			}
 
+			// 1.4 Préparation de la nouvelle partie
 			await interaction.message.edit({ components: [] });
-
 			await interaction.deferReply();
 			const response = await interaction.fetchReply();
 
-			const channelId = interaction.channelId!;
-			const game = await container.blackjackService.initGame(userId, bet, response.id, channelId);
-
+			// 1.5 Initialisation via le service
+			const game = await container.blackjackService.initGame(userId, bet, response.id, interaction.channelId!);
 			if (!game) {
 				return interaction.followUp({
 					embeds: [Embeds.errorEmbed({ message: 'Erreur lors du mélange du deck.' })],
@@ -82,51 +68,60 @@ export class BlackjackButtonHandler extends InteractionHandler {
 				});
 			}
 
+			// 1.6 Construction et envoi du message
 			const msg = await BlackjackMessageBuilder.buildGameMessage(game);
 			await interaction.editReply(msg as any);
 
-			triggerReplayButtonTimeout(game.status);
+			// 1.7 Gestion du timeout si terminé (Blackjack instantané)
+			if (game.status === 'finished') this.setupReplayTimeout(interaction);
 			return;
 		}
 
-		// =========================================
-		// LOGIQUE : BOUTONS EN JEU (Tirer/Rester)
-		// =========================================
-		const messageId = parts[2];
+		// 2. Récupération de la partie en cours
+		const messageId = params[0];
 		const game = container.blackjackService.getGame(messageId);
 
+		// 3. Vérifications de sécurité
 		if (!game) return interaction.reply({ embeds: [Embeds.errorEmbed({ message: 'Partie expirée.' })], flags: MessageFlags.Ephemeral });
-		if (interaction.user.id !== game.userId) return interaction.reply({ content: 'Pas ta partie !', flags: MessageFlags.Ephemeral });
+		if (userId !== game.userId) return interaction.reply({ content: 'Pas ta partie !', flags: MessageFlags.Ephemeral });
 
+		// 4. Exécution de l'action de jeu
 		await interaction.deferUpdate();
+		let updatedGame;
 
 		if (action === 'hit') {
-			const updatedGame = await container.blackjackService.hit(messageId);
-			const response = await BlackjackMessageBuilder.buildGameMessage(updatedGame!);
-			await interaction.editReply(response);
-
-			triggerReplayButtonTimeout(updatedGame!.status);
+			updatedGame = await container.blackjackService.hit(messageId);
 		} else if (action === 'double') {
-			const updatedGame = await container.blackjackService.doubleDown(messageId);
-
+			updatedGame = await container.blackjackService.doubleDown(messageId);
 			if (!updatedGame) {
 				return interaction.followUp({
 					embeds: [Embeds.errorEmbed({ message: "Tu n'as pas assez de rubis pour doubler la mise !" })],
 					flags: MessageFlags.Ephemeral
 				});
 			}
-
-			const response = await BlackjackMessageBuilder.buildGameMessage(updatedGame);
-			await interaction.editReply(response);
-			triggerReplayButtonTimeout(updatedGame.status);
 		} else if (action === 'stand') {
-			const updatedGame = await container.blackjackService.stand(messageId);
+			updatedGame = await container.blackjackService.stand(messageId);
+		}
+
+		// 5. Mise à jour du message et gestion de la fin
+		if (updatedGame) {
 			const response = await BlackjackMessageBuilder.buildGameMessage(updatedGame);
 			await interaction.editReply(response);
 
-			triggerReplayButtonTimeout(updatedGame.status);
+			if (updatedGame.status === 'finished') {
+				this.setupReplayTimeout(interaction);
+			}
 		}
 
 		return;
+	}
+
+	/**
+	 * Supprime les boutons après 60 secondes d'inactivité en fin de partie
+	 */
+	private setupReplayTimeout(interaction: ButtonInteraction) {
+		setTimeout(() => {
+			interaction.editReply({ components: [] }).catch(() => null);
+		}, 60000);
 	}
 }

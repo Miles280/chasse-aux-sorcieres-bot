@@ -49,15 +49,21 @@ export class BlackjackCommand extends Command {
 			});
 		}
 
+		// 3. Prépare la réponse (obligatoire pour récupérer l'ID du message)
 		await interaction.deferReply();
 		const response = await interaction.fetchReply();
 
-		const channelId = interaction.channelId!;
-		const game = await container.blackjackService.initGame(userId, bet, response.id, channelId);
+		// 4. Initialise la partie de Blackjack
+		const game = await container.blackjackService.initGame(userId, bet, response.id, interaction.channelId!);
 
-		if (!game) return interaction.editReply('Erreur lors du mélange du deck.');
+		if (!game) {
+			return interaction.editReply('Erreur lors du mélange du deck.');
+		}
 
-		const msg = await BlackjackMessageBuilder.buildGameMessage(game);
-		return interaction.editReply(msg as any);
+		// 5. Construit le message de jeu (cartes, score, actions)
+		const message = await BlackjackMessageBuilder.buildGameMessage(game);
+
+		// 6. Met à jour le message avec l'état initial de la partie
+		return interaction.editReply(message as any);
 	}
 }
