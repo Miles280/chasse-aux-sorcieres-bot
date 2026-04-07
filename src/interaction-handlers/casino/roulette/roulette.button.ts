@@ -68,7 +68,7 @@ export class RouletteButtonHandler extends InteractionHandler {
 			const payload = RouletteMessageBuilder.buildGameMessage(initialGame);
 
 			// 3. Suppression immédiate du bouton sur le message précédent.
-			await interaction.deferUpdate();
+			await interaction.message.edit({ components: [interaction.message.components[0].toJSON()] });
 
 			// 4. Envoi du nouveau lobby et enregistrement dans le service.
 			const message = await interaction.followUp({

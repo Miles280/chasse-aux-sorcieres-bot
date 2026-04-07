@@ -263,6 +263,8 @@ export class MoreOrLessService {
 			});
 		}
 
+		this.scheduleButtonRemoval(game.messageId, game.channelId);
+
 		return { status: 'win', game, winnerId, loserId };
 	}
 
@@ -309,6 +311,25 @@ export class MoreOrLessService {
 		} catch (err) {
 			console.error('Timeout error:', err);
 		}
+	}
+
+	private async scheduleButtonRemoval(messageId: string, channelId: string) {
+		setTimeout(async () => {
+			try {
+				const channel = await container.client.channels.fetch(channelId);
+				if (!channel?.isTextBased()) return;
+
+				const message = await channel.messages.fetch(messageId);
+				if (!message || message.components.length === 0) return;
+
+				// On ne garde que le premier composant (le Container V2)
+				await message.edit({
+					components: [message.components[0].toJSON()]
+				});
+			} catch (err) {
+				// Le message a peut-être été supprimé, on ignore l'erreur
+			}
+		}, 60000); // 1 minute
 	}
 
 	// =========================================================

@@ -39,9 +39,7 @@ export class MoreOrLessCommand extends Command {
 			});
 		}
 
-		// =========================================================
 		// 2. MODE DUEL (PvP)
-		// =========================================================
 		if (opponent) {
 			// 2.1 Validation adversaire
 			if (opponent.bot || opponent.id === userId) {
@@ -112,6 +110,8 @@ export class MoreOrLessCommand extends Command {
 
 			await container.moreOrLessService.registerChallenge(challengeData);
 
+			await interaction.editReply(MoreOrLessMessageBuilder.buildChallengeMessage(challengeData));
+
 			// 2.7 Timeout du défi
 			setTimeout(async () => {
 				const challenge = container.moreOrLessService.getChallenge(messageId);
@@ -134,10 +134,7 @@ export class MoreOrLessCommand extends Command {
 			return;
 		}
 
-		// =========================================================
 		// 3. MODE SOLO (PvE)
-		// =========================================================
-
 		const transaction = await container.casinoService.transaction(userId, bet, 'remove');
 		if (!transaction.success) {
 			return interaction.reply({ content: 'Erreur de transaction.', flags: MessageFlags.Ephemeral });
