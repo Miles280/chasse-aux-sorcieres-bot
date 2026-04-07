@@ -1,7 +1,7 @@
-import { Currency } from '../enums/Currency';
-import { ApiResponse, ValidationResponse } from '../models/ApiResponse.interface';
-import { Inventory } from '../models/Shop.interface';
-import { ApiClient } from './apiClient.service';
+import { Currency } from '../../enums/Currency';
+import { ApiResponse, ValidationResponse } from '../../models/ApiResponse.interface';
+import { Inventory } from '../../models/Shop.interface';
+import { ApiClient } from './../apiClient.service';
 
 export class InventoryService {
 	constructor(private api: ApiClient) {}

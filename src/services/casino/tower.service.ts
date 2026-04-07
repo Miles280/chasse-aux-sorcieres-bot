@@ -1,8 +1,8 @@
 import { Collection } from 'discord.js';
-import { TowerGame, TowerTurnResult } from '../models/TowerGame.interface';
+import { TowerGame, TowerTurnResult } from '../../models/TowerGame.interface';
 import { container } from '@sapphire/framework';
-import { TowerMessageBuilder } from '../builders/TowerMessage.builder';
-import { TOWER_CONFIG } from '../utils/constants';
+import { TowerMessageBuilder } from '../../builders/casino/TowerMessage.builder';
+import { TOWER_CONFIG } from '../../utils/constants';
 
 export class TowerService {
 	// Stockage en mémoire des parties

@@ -1,8 +1,8 @@
 import { Collection } from 'discord.js';
 import { container } from '@sapphire/framework';
 import axios from 'axios';
-import { BlackjackGame } from '../models/BlackjackGame.interface';
-import { BlackjackMessageBuilder } from '../builders/BlackjackMessage.builder';
+import { BlackjackGame } from '../../models/BlackjackGame.interface';
+import { BlackjackMessageBuilder } from '../../builders/casino/BlackjackMessage.builder';
 
 export class BlackjackService {
 	// Stockage des parties en cours

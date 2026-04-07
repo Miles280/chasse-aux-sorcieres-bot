@@ -4,7 +4,7 @@ import { ComponentType, GuildMember, InteractionContextType, MessageFlags } from
 import { container } from '@sapphire/framework';
 import { Currency } from '../../enums/Currency';
 import * as Embeds from '../../utils/embeds';
-import { SellMessageBuilder } from '../../builders/SellMessage.builder';
+import { SellMessageBuilder } from '../../builders/economy-core/SellMessage.builder';
 
 @ApplyOptions<Command.Options>({
 	name: 'sell',

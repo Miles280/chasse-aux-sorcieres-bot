@@ -1,7 +1,7 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes, container } from '@sapphire/framework';
 import { ModalSubmitInteraction, MessageFlags } from 'discord.js';
-import { RouletteBetType } from '../../../models/RouletteGame.interface';
+import { RouletteBet, RouletteBetType } from '../../../models/RouletteGame.interface';
 import { ROULETTE_CONFIG } from '../../../utils/constants';
 import { emojis } from '../../../utils/emojis';
 import * as Embeds from '../../../utils/embeds';
@@ -58,8 +58,8 @@ export class RouletteModalHandler extends InteractionHandler {
 
 		// 4. Vérification du plafond par emplacement (Type de mise spécifique)
 		// On cherche uniquement les mises du joueur sur CE type (ex: uniquement ses mises sur 'red')
-		const existingBetsOnType = game.bets.filter((bet) => bet.userId === userId && bet.type === finalBetType);
-		const currentTotalOnType = existingBetsOnType.reduce((sum, bet) => sum + bet.amount, 0);
+		const existingBetsOnType = game.bets.filter((bet: RouletteBet) => bet.userId === userId && bet.type === finalBetType);
+		const currentTotalOnType = existingBetsOnType.reduce((sum: number, bet: RouletteBet) => sum + bet.amount, 0);
 		const remainingOnType = ROULETTE_CONFIG.MAX_BET - currentTotalOnType;
 
 		if (amount + currentTotalOnType > ROULETTE_CONFIG.MAX_BET) {

@@ -1,7 +1,7 @@
 import { Command } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
 import { container } from '@sapphire/framework';
-import { BlackjackMessageBuilder } from '../../builders/BlackjackMessage.builder';
+import { BlackjackMessageBuilder } from '../../builders/casino/BlackjackMessage.builder';
 import { InteractionContextType, MessageFlags } from 'discord.js';
 import * as Embeds from '../../utils/embeds';
 

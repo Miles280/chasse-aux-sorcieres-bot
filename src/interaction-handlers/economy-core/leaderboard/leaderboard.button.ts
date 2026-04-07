@@ -2,7 +2,7 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes, container } from '@sapphire/framework';
 import { ButtonInteraction, GuildMember, MessageFlags } from 'discord.js';
 import { Currency } from '../../../enums/Currency';
-import { LeaderboardMessageBuilder } from '../../../builders/LeaderboardMessage.builder';
+import { LeaderboardMessageBuilder } from '../../../builders/economy-core/LeaderboardMessage.builder';
 import * as Embeds from '../../../utils/embeds';
 
 @ApplyOptions<InteractionHandler.Options>({

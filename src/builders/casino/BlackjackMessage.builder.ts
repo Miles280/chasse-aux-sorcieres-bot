@@ -1,8 +1,8 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder } from 'discord.js';
 import { createCanvas, loadImage } from 'canvas';
-import { BlackjackGame } from '../models/BlackjackGame.interface';
-import { colors } from '../utils/customColors';
-import { emojis } from '../utils/emojis';
+import { BlackjackGame } from '../../models/BlackjackGame.interface';
+import { colors } from '../../utils/customColors';
+import { emojis } from '../../utils/emojis';
 
 export class BlackjackMessageBuilder {
 	/**

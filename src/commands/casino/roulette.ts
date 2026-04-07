@@ -2,7 +2,7 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { Command } from '@sapphire/framework';
 import { container } from '@sapphire/framework';
 import { InteractionContextType, MessageFlags } from 'discord.js';
-import { RouletteMessageBuilder } from '../../builders/RouletteMessage.builder';
+import { RouletteMessageBuilder } from '../../builders/casino/RouletteMessage.builder';
 import { ROULETTE_CONFIG } from '../../utils/constants';
 import { RouletteGame } from '../../models/RouletteGame.interface';
 import * as Embeds from '../../utils/embeds';

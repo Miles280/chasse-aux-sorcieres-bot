@@ -3,7 +3,7 @@ import { Command } from '@sapphire/framework';
 import { container } from '@sapphire/framework';
 import { Currency } from '../../enums/Currency';
 import { InteractionContextType, MessageFlags } from 'discord.js';
-import { ShopMessageBuilder } from '../../builders/ShopMessage.builder';
+import { ShopMessageBuilder } from '../../builders/economy-core/ShopMessage.builder';
 import * as Embeds from '../../utils/embeds';
 
 @ApplyOptions<Command.Options>({

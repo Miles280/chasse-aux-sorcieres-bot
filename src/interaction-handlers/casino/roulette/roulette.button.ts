@@ -3,7 +3,7 @@ import { container, InteractionHandler, InteractionHandlerTypes } from '@sapphir
 import { ButtonInteraction, EmbedBuilder, MessageFlags } from 'discord.js';
 import { ROULETTE_CONFIG } from '../../../utils/constants';
 import { RouletteGame } from '../../../models/RouletteGame.interface';
-import { RouletteMessageBuilder } from '../../../builders/RouletteMessage.builder';
+import { RouletteMessageBuilder } from '../../../builders/casino/RouletteMessage.builder';
 import * as Embeds from '../../../utils/embeds';
 
 @ApplyOptions<InteractionHandler.Options>({

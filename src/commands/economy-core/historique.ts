@@ -1,7 +1,7 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { Command, container } from '@sapphire/framework';
 import { ChatInputCommandInteraction, InteractionContextType, MessageFlags } from 'discord.js';
-import { HistoryMessageBuilder } from '../../builders/HistoryMessage.builder';
+import { HistoryMessageBuilder } from '../../builders/economy-core/HistoryMessage.builder';
 import * as Embeds from '../../utils/embeds';
 
 @ApplyOptions<Command.Options>({

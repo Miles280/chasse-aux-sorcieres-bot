@@ -1,6 +1,6 @@
-import { ApiClient } from './apiClient.service';
-import { CasinoUpdate } from '../models/Economy.interface';
-import { ApiResponse } from '../models/ApiResponse.interface';
+import { ApiClient } from '../apiClient.service';
+import { CasinoUpdate } from '../../models/Economy.interface';
+import { ApiResponse } from '../../models/ApiResponse.interface';
 
 export class CasinoService {
 	constructor(private api: ApiClient) {}

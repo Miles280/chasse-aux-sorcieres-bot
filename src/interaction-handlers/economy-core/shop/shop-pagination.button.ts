@@ -3,7 +3,7 @@ import { InteractionHandler, InteractionHandlerTypes, container } from '@sapphir
 import { MessageFlags, type ButtonInteraction } from 'discord.js';
 import { Currency } from '../../../enums/Currency';
 import * as Embeds from '../../../utils/embeds';
-import { ShopMessageBuilder } from '../../../builders/ShopMessage.builder';
+import { ShopMessageBuilder } from '../../../builders/economy-core/ShopMessage.builder';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.Button

@@ -1,7 +1,7 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { Command, container } from '@sapphire/framework';
 import { ContainerBuilder, InteractionContextType, MessageFlags, TextDisplayBuilder } from 'discord.js';
-import { MoreOrLessMessageBuilder } from '../../builders/MoreOrLessMessage.builder';
+import { MoreOrLessMessageBuilder } from '../../builders/casino/MoreOrLessMessage.builder';
 import { MoreOrLessGame } from '../../models/MoreOrLessGame.interface';
 import { colors } from '../../utils/customColors';
 import { emojis } from '../../utils/emojis';

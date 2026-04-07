@@ -1,6 +1,7 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes, container } from '@sapphire/framework';
 import type { AutocompleteInteraction } from 'discord.js';
+import { Item } from '../../../models/Shop.interface';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.Autocomplete
@@ -19,9 +20,9 @@ export class ItemAutocompleteHandler extends InteractionHandler {
 		if (!response.success) return this.none();
 
 		const choices = response.data
-			.filter((i) => i.name.toLowerCase().includes(searchTerm))
+			.filter((i: Item) => i.name.toLowerCase().includes(searchTerm))
 			.slice(0, 25)
-			.map((i) => ({ name: i.name, value: i.id.toString() }));
+			.map((i: Item) => ({ name: i.name, value: i.id.toString() }));
 
 		return this.some(choices);
 	}

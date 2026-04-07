@@ -1,7 +1,7 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes, container } from '@sapphire/framework';
 import { ButtonInteraction, MessageFlags, GuildMember } from 'discord.js';
-import { BlackjackMessageBuilder } from '../../../builders/BlackjackMessage.builder';
+import { BlackjackMessageBuilder } from '../../../builders/casino/BlackjackMessage.builder';
 import * as Embeds from '../../../utils/embeds';
 
 @ApplyOptions<InteractionHandler.Options>({

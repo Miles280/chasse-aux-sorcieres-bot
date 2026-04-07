@@ -1,8 +1,8 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, GuildMember, AnyComponentBuilder } from 'discord.js';
-import { TransactionHistory } from '../models/Economy.interface';
-import { TransactionType } from '../enums/TransactionType';
-import { TRANSACTION_LABELS } from '../utils/transactionLabels';
-import * as Embeds from '../utils/embeds';
+import { TransactionHistory } from '../../models/Economy.interface';
+import { TransactionType } from '../../enums/TransactionType';
+import { TRANSACTION_LABELS } from '../../utils/transactionLabels';
+import * as Embeds from '../../utils/embeds';
 
 export class HistoryMessageBuilder {
 	/**

@@ -2,7 +2,7 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes, container } from '@sapphire/framework';
 import { MessageFlags, StringSelectMenuInteraction } from 'discord.js';
 import * as Embeds from '../../../utils/embeds';
-import { HistoryMessageBuilder } from '../../../builders/HistoryMessage.builder';
+import { HistoryMessageBuilder } from '../../../builders/economy-core/HistoryMessage.builder';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.SelectMenu

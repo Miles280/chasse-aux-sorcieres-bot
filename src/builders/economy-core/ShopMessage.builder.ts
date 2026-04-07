@@ -8,10 +8,10 @@ import {
 	TextDisplayBuilder,
 	SectionBuilder
 } from 'discord.js';
-import { Currency } from '../enums/Currency';
-import { Shop, Item } from '../models/Shop.interface';
-import { emojis, emojisV2 } from '../utils/emojis';
-import { colors } from '../utils/customColors';
+import { Currency } from '../../enums/Currency';
+import { Shop, Item } from '../../models/Shop.interface';
+import { emojis, emojisV2 } from '../../utils/emojis';
+import { colors } from '../../utils/customColors';
 
 export class ShopMessageBuilder {
 	/**

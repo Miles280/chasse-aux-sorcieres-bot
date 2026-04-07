@@ -3,7 +3,7 @@ import { Command } from '@sapphire/framework';
 import { container } from '@sapphire/framework';
 import { InteractionContextType, MessageFlags } from 'discord.js';
 import * as Embeds from '../../utils/embeds';
-import { TowerMessageBuilder } from '../../builders/TowerMessage.builder';
+import { TowerMessageBuilder } from '../../builders/casino/TowerMessage.builder';
 
 @ApplyOptions<Command.Options>({
 	name: 'tour',
