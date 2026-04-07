@@ -1,29 +1,28 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes, container } from '@sapphire/framework';
 import type { AutocompleteInteraction } from 'discord.js';
-import { Item } from '../../models/Shop.interface';
+import { RoleInterface } from '../../../models/Role.interface';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.Autocomplete
 })
-export class ItemAutocompleteHandler extends InteractionHandler {
+export class ROleAutocompleteHandler extends InteractionHandler {
 	public override async parse(interaction: AutocompleteInteraction) {
-		if (interaction.commandName !== 'info') return this.none();
+		if (interaction.commandName !== 'role') return this.none();
 
-		const sub = interaction.options.getSubcommand(false);
 		const focused = interaction.options.getFocused(true);
 
-		if (sub !== 'item' || focused.name !== 'item') return this.none();
+		if (focused.name !== 'nom') return this.none();
 
 		const searchTerm = focused.value.toLowerCase();
 
-		const response = await container.shopService.getAllArticles();
+		const response = await container.rolesService.getAllRoles();
 		if (!response.success) return this.none();
 
 		const choices = response.data
-			.filter((i: Item) => i.name.toLowerCase().includes(searchTerm))
+			.filter((r: RoleInterface) => r.name.toLowerCase().includes(searchTerm))
 			.slice(0, 25)
-			.map((i: Item) => ({ name: i.name, value: i.id.toString() }));
+			.map((r: RoleInterface) => ({ name: r.name, value: r.id.toString() }));
 
 		return this.some(choices);
 	}

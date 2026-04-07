@@ -12,6 +12,7 @@ import { InventoryService } from './services/economy-core/inventory.service';
 import { TowerService } from './services/casino/tower.service';
 import { RouletteService } from './services/casino/roulette.service';
 import { BlackjackService } from './services/casino/blackjack.service';
+import { RolesService } from './services/game/roles.service';
 
 const client = new SapphireClient({
 	defaultPrefix: ',',
@@ -25,14 +26,18 @@ const client = new SapphireClient({
 
 container.discordService = new DiscordService();
 container.apiClient = new ApiClient(process.env.API_URL!, process.env.BOT_SECRET_KEY!);
+
 container.economyService = new EconomyService(container.apiClient);
 container.shopService = new ShopService(container.apiClient);
 container.inventoryService = new InventoryService(container.apiClient);
+
 container.casinoService = new CasinoService(container.apiClient);
 container.towerService = new TowerService();
 container.rouletteService = new RouletteService();
 container.moreOrLessService = new MoreOrLessService();
 container.blackjackService = new BlackjackService();
+
+container.rolesService = new RolesService(container.apiClient);
 
 const main = async () => {
 	try {

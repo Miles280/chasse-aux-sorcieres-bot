@@ -8,6 +8,7 @@ import { InventoryService } from '../services/economy-core/inventory.service';
 import { TowerService } from '../services/casino/tower.service';
 import { RouletteService } from '../services/casino/roulette.service';
 import { BlackjackService } from '../services/casino/blackjack.service';
+import { RolesService } from '../services/game/roles.service';
 
 declare module '@sapphire/pieces' {
 	interface Container {
@@ -21,5 +22,6 @@ declare module '@sapphire/pieces' {
 		rouletteService: RouletteService;
 		moreOrLessService: MoreOrLessService;
 		blackjackService: BlackjackService;
+		rolesService: RolesService;
 	}
 }

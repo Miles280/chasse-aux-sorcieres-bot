@@ -10,10 +10,14 @@ export const emojis = {
 	redcheck: `<a:redcheck:${process.env.EMOJI_REDCHECK_ID}>`,
 	pinkcheck: `<a:pinkcheck:${process.env.EMOJI_PINKCHECK_ID}>`,
 	purplecheck: `<a:purplecheck:${process.env.EMOJI_PURPLECHECK_ID}>`,
-	deny: `<:deny:${process.env.EMOJI_DENY_ID}>`,
 	crown: `<:crown:${process.env.EMOJI_CROWN_ID}>`,
 	alive: `<:alive:${process.env.EMOJI_ALIVE_ID}>`,
-	dead: `<:dead:${process.env.EMOJI_DEAD_ID}>`
+	dead: `<:dead:${process.env.EMOJI_DEAD_ID}>`,
+	opened_doors: `<:opened_doors:${process.env.EMOJI_OPENEDDOORS_ID}>`,
+	closed_doors: `<:closed_doors:${process.env.EMOJI_CLOSEDDOORS_ID}>`,
+	villagers: `<:villagers:${process.env.EMOJI_VILLAGER_ID}>`,
+	witch: `<:witch:${process.env.EMOJI_WITCH_ID}>`,
+	independent: `<:independent:${process.env.EMOJI_INDEPENDENT_ID}>`
 };
 
 export const emojisV2 = {

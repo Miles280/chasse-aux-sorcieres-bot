@@ -24,7 +24,13 @@ export class InfoCommand extends Subcommand {
 					sub // ITEM
 						.setName('item')
 						.setDescription("Consulte les informations d'un item.")
-						.addStringOption((opt) => opt.setName('item').setDescription("L'item concerné.").setAutocomplete(true).setRequired(true))
+						.addStringOption((opt) =>
+							opt //
+								.setName('item')
+								.setDescription("L'item concerné.")
+								.setAutocomplete(true)
+								.setRequired(true)
+						)
 				)
 				.addSubcommand((sub) =>
 					sub // CONVERSION

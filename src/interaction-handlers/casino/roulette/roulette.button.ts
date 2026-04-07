@@ -71,12 +71,14 @@ export class RouletteButtonHandler extends InteractionHandler {
 			await interaction.message.edit({ components: [interaction.message.components[0].toJSON()] });
 
 			// 4. Envoi du nouveau lobby et enregistrement dans le service.
-			const message = await interaction.followUp({
+			const response = await interaction.reply({
 				...payload,
 				withResponse: true
 			});
 
-			return container.rouletteService.createLobby(message.id, channelId, endsAt, now);
+			const messageId = response.resource!.message!.id;
+
+			return container.rouletteService.createLobby(messageId, channelId, endsAt, now);
 		}
 	}
 }
