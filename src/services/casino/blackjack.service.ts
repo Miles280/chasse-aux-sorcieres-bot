@@ -9,7 +9,7 @@ export class BlackjackService {
 	private games = new Collection<string, BlackjackGame>();
 
 	/**
-	 * 1. Reset du timer de jeu (60s)
+	 * Reset du timer de jeu (60s)
 	 */
 	private resetGameTimer(game: BlackjackGame) {
 		this.clearGameTimer(game);
@@ -44,7 +44,7 @@ export class BlackjackService {
 	}
 
 	/**
-	 * 2. Stoppe le timer en cours
+	 * Stoppe le timer en cours
 	 */
 	private clearGameTimer(game: BlackjackGame) {
 		if (game.timer) {
@@ -54,7 +54,7 @@ export class BlackjackService {
 	}
 
 	/**
-	 * 3. Calcul du score des cartes
+	 * Calcul du score des cartes
 	 */
 	public calculateScore(cards: string[]): number {
 		if (!Array.isArray(cards)) return 0;
@@ -93,7 +93,7 @@ export class BlackjackService {
 	}
 
 	/**
-	 * 4. Création d’une partie
+	 * Création d’une partie
 	 */
 	public async initGame(userId: string, bet: number, messageId: string, channelId: string): Promise<BlackjackGame | null> {
 		try {
@@ -119,7 +119,11 @@ export class BlackjackService {
 
 			// 3. Vérifie blackjack immédiat
 			if (this.calculateScore(game.playerCards) === 21) {
-				return await this.stand(game);
+				const finalGame = await this.stand(game);
+
+				this.setupReplayTimeout(game.channelId, game.messageId);
+
+				return finalGame;
 			}
 
 			this.games.set(messageId, game);
@@ -133,7 +137,7 @@ export class BlackjackService {
 	}
 
 	/**
-	 * 5. Action HIT (tirer une carte)
+	 * Action HIT (tirer une carte)
 	 */
 	public async hit(messageId: string): Promise<BlackjackGame | null> {
 		const game = this.games.get(messageId);
@@ -167,7 +171,7 @@ export class BlackjackService {
 	}
 
 	/**
-	 * 6. Action STAND (fin du tour joueur)
+	 * Action STAND (fin du tour joueur)
 	 */
 	public async stand(gameOrId: string | BlackjackGame): Promise<BlackjackGame> {
 		const game = typeof gameOrId === 'string' ? this.games.get(gameOrId)! : gameOrId;
@@ -231,7 +235,7 @@ export class BlackjackService {
 	}
 
 	/**
-	 * 7. Action DOUBLE DOWN
+	 * Action DOUBLE DOWN
 	 */
 	public async doubleDown(messageId: string): Promise<BlackjackGame | null> {
 		const game = this.games.get(messageId);
@@ -256,9 +260,28 @@ export class BlackjackService {
 	}
 
 	/**
-	 * 8. Récupération d’une partie
+	 * Récupération d’une partie
 	 */
 	public getGame(id: string) {
 		return this.games.get(id);
+	}
+
+	/**
+	 * Supprime le bouton Rejouer au bout d'une minute
+	 */
+	private setupReplayTimeout(channelId: string, messageId: string) {
+		setTimeout(async () => {
+			try {
+				const channel = await container.client.channels.fetch(channelId);
+				if (!channel?.isTextBased()) return;
+
+				const message = await channel.messages.fetch(messageId);
+				if (!message) return;
+
+				await message.edit({ components: [] });
+			} catch {
+				// ignore
+			}
+		}, 60000);
 	}
 }
