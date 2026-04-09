@@ -18,9 +18,26 @@ export class MoreOrLessCommand extends Command {
 				.setName(this.name)
 				.setDescription(this.description)
 				.setContexts([InteractionContextType.Guild])
-				.addIntegerOption((opt) => opt.setName('mise').setDescription('Montant à miser').setMinValue(10).setMaxValue(500).setRequired(true))
-				.addUserOption((opt) => opt.setName('adversaire').setDescription('Joueur à défier'))
-				.addIntegerOption((opt) => opt.setName('vies').setDescription('Nombre de vies').setMinValue(2).setMaxValue(5))
+				.addIntegerOption((opt) =>
+					opt //
+						.setName('mise')
+						.setDescription('Montant à miser')
+						.setMinValue(10)
+						.setMaxValue(400)
+						.setRequired(true)
+				)
+				.addUserOption((opt) =>
+					opt //
+						.setName('adversaire')
+						.setDescription('Joueur à défier')
+				)
+				.addIntegerOption((opt) =>
+					opt //
+						.setName('vies')
+						.setDescription('Nombre de vies')
+						.setMinValue(2)
+						.setMaxValue(5)
+				)
 		);
 	}
 

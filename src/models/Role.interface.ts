@@ -11,6 +11,7 @@ export interface RoleInterface {
 	notes?: string;
 	powers: Power[];
 	alignments: Alignment[];
+	imageUrl?: string;
 }
 
 export interface Power {

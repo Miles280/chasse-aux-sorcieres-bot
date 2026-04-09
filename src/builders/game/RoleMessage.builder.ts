@@ -61,6 +61,8 @@ export class RoleMessageBuilder {
 			});
 		}
 
+		embed.setImage(`${process.env.BASE_URL}` + `${role.imageUrl}`);
+
 		// 4. Footer dynamique pour les alignements
 		const alignmentText =
 			role.alignments && role.alignments.length > 0 ? role.alignments.map((alignment) => this.getAlignmentLabel(alignment)).join('/') : 'Aucun';
