@@ -1,6 +1,6 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { Command, container } from '@sapphire/framework';
-import { ChatInputCommandInteraction, InteractionContextType, ChannelType, MessageFlags, ForumChannel } from 'discord.js';
+import { ChatInputCommandInteraction, InteractionContextType, ChannelType, MessageFlags, ForumChannel, PermissionFlagsBits } from 'discord.js';
 import { Camp } from '../../enums/Camp';
 import { Alignment } from '../../enums/Alignment';
 import * as Embeds from '../../utils/embeds';
@@ -17,6 +17,7 @@ export class SyncRolesCommand extends Command {
 				.setName(this.name)
 				.setDescription(this.description)
 				.setContexts([InteractionContextType.Guild])
+				.setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
 				.addChannelOption((opt) =>
 					opt
 						.setName('salon')
