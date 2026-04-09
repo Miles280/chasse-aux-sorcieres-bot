@@ -2,6 +2,7 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { Command, container } from '@sapphire/framework';
 import { ChatInputCommandInteraction, InteractionContextType, MessageFlags } from 'discord.js';
 import * as Embeds from '../../utils/embeds';
+import { RoleMessageBuilder } from '../../builders/game/RoleMessage.builder';
 
 @ApplyOptions<Command.Options>({
 	name: 'role',
@@ -35,7 +36,7 @@ export class RoleCommand extends Command {
 			});
 		}
 
-		const embed = Embeds.roleEmbed(response.data);
+		const embed = RoleMessageBuilder.buildRoleEmbed(response.data);
 
 		return interaction.reply({ embeds: [embed] });
 	}
