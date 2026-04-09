@@ -35,12 +35,19 @@ export class SyncRolesCommand extends Command {
 							{ name: 'Indépendants', value: Camp.INDEPENDENT }
 						)
 				)
+				.addBooleanOption((opt) =>
+					opt //
+						.setName('clean')
+						.setDescription('Supprime TOUS les posts existants avant la synchronisation.')
+						.setRequired(false)
+				)
 		);
 	}
 
 	public override async chatInputRun(interaction: ChatInputCommandInteraction) {
 		const forum = interaction.options.getChannel('salon', true) as ForumChannel;
 		const campOption = interaction.options.getString('camp') as Camp | null;
+		const cleanOption = interaction.options.getBoolean('clean') ?? false;
 
 		// 1. Diffère l'interaction
 		await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
@@ -73,12 +80,25 @@ export class SyncRolesCommand extends Command {
 		// 4. Récupération des threads existants
 		const activeThreads = await forum.threads.fetchActive();
 		const archivedThreads = await forum.threads.fetchArchived();
-		const allThreads = [...activeThreads.threads.values(), ...archivedThreads.threads.values()];
+		let allThreads = [...activeThreads.threads.values(), ...archivedThreads.threads.values()];
 
 		let createdCount = 0;
 		let updatedCount = 0;
 		let deletedCount = 0;
 		let errorCount = 0;
+
+		if (cleanOption) {
+			for (const thread of allThreads) {
+				try {
+					await thread.delete();
+					deletedCount++;
+				} catch (e) {
+					errorCount++;
+				}
+			}
+			// On vide la liste des threads existants puisqu'on vient de tout supprimer
+			allThreads = [];
+		}
 
 		// 5. Synchronisation des rôles (Création / Édition)
 		for (const role of rolesToSync) {
@@ -150,7 +170,7 @@ export class SyncRolesCommand extends Command {
 
 		// 7. Conclusion
 		const resultMessage =
-			`Modifications dans <#${forum.id}> :\n` +
+			`Modifications dans <#${forum.id}> ${cleanOption ? '(Nettoyage complet effectué)' : ''} :\n` +
 			`> **${createdCount}** rôles créés,\n` +
 			`> **${updatedCount}** rôles mis à jour,\n` +
 			`> **${deletedCount}** posts supprimés.` +
