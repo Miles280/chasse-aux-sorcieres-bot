@@ -78,3 +78,10 @@ export interface LeaderboardData {
 	users: LeaderboardUser[];
 	pagination: PaginationData;
 }
+
+export interface DailyReward {
+	reward: number;
+	streak: number;
+	previous: number;
+	current: number;
+}

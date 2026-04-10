@@ -1,6 +1,6 @@
 import { ApiClient } from './../apiClient.service';
 import { Currency } from '../../enums/Currency';
-import { BalanceUpdate, ConversionData, ConversionRates, TransactionHistory, UserBalance } from '../../models/Economy.interface';
+import { BalanceUpdate, ConversionData, ConversionRates, DailyReward, TransactionHistory, UserBalance } from '../../models/Economy.interface';
 import { ApiResponse } from '../../models/ApiResponse.interface';
 
 export class EconomyService {
@@ -43,11 +43,16 @@ export class EconomyService {
 	}
 
 	async getLeaderboard(currency: Currency, page: number = 1): Promise<ApiResponse<any>> {
-		// Idéalement, remplace "any" par une interface "LeaderboardData"
 		const queryParams = new URLSearchParams({
 			currency: currency,
 			page: String(page)
 		});
 		return await this.api.get<any>(`/economy/leaderboard?${queryParams.toString()}`);
+	}
+
+	async daily(discordId: string): Promise<ApiResponse<DailyReward>> {
+		return await this.api.post<DailyReward>(`/economy/daily`, {
+			discordId
+		});
 	}
 }

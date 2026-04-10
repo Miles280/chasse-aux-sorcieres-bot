@@ -2,7 +2,7 @@ import { EmbedBuilder, GuildMember } from 'discord.js';
 import { emojis } from '../emojis';
 import { formatTransactions } from '../formatTransactions';
 import { formatTransactionLabel } from '../transactionLabels';
-import { ConversionData, ConversionRates, EconomyAction, EconomyEmbedOptions, TransactionHistory } from '../../models/Economy.interface';
+import { ConversionData, ConversionRates, DailyReward, EconomyAction, EconomyEmbedOptions, TransactionHistory } from '../../models/Economy.interface';
 import { colors } from '../customColors';
 
 export function bourseEmbed(member: GuildMember, gems: number, rubies: number, transactionsText: string): EmbedBuilder {
@@ -181,4 +181,27 @@ export function conversionRateEmbed(member: GuildMember, data: ConversionRates):
 		.setTitle(`${emojis.purplecheck} Taux de conversion`)
 		.setDescription(`${headerText}\n${subHeaderText}\n\n${ratesList}`)
 		.setColor(colors.purpleWitch);
+}
+
+export function dailyEmbed(data: DailyReward): EmbedBuilder {
+	const { reward, streak, previous, current } = data;
+
+	const rewardFmt = reward.toLocaleString();
+	const prevFmt = previous.toLocaleString();
+	const currentFmt = current.toLocaleString();
+
+	return new EmbedBuilder()
+		.setTitle(`${emojis.purplecheck} Récompense journalière`)
+		.setDescription(
+			`Vous avez gagné **+${rewardFmt} ${emojis.rubies}** aujourd'hui.\n` + `> Streak actuelle : __${streak} jour${streak > 1 ? 's' : ''}__\n\n`
+		)
+		.addFields({
+			name: `${emojis.rubies} Solde :`,
+			value: `\`${prevFmt}\` ${emojis.rubies} **→** \`${currentFmt}\` ${emojis.rubies}`,
+			inline: true
+		})
+		.setColor(colors.purpleWitch)
+		.setFooter({
+			text: 'Revenez demain pour augmenter votre streak !'
+		});
 }

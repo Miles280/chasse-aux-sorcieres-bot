@@ -15,7 +15,7 @@ export function formatTransactions(transactions: Transaction[]): string {
 
 			switch (tx.type) {
 				case TransactionType.GAIN:
-					description = `Vous avez gagné **+${tx.amount} ${currencyEmoji}**.`;
+					description = `${tx.description} : Vous avez gagné **+${tx.amount} ${currencyEmoji}**.`;
 					break;
 				case TransactionType.LOSE:
 					description = `Vous avez perdu **-${tx.amount} ${currencyEmoji}**...`;
