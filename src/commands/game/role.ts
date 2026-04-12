@@ -1,8 +1,8 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { Command, container } from '@sapphire/framework';
 import { ChatInputCommandInteraction, InteractionContextType, MessageFlags } from 'discord.js';
-import * as Embeds from '../../utils/embeds';
 import { RoleMessageBuilder } from '../../builders/game/RoleMessage.builder';
+import * as Embeds from '../../utils/embeds';
 
 @ApplyOptions<Command.Options>({
 	name: 'role',

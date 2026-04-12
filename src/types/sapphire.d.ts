@@ -9,6 +9,7 @@ import { TowerService } from '../services/casino/tower.service';
 import { RouletteService } from '../services/casino/roulette.service';
 import { BlackjackService } from '../services/casino/blackjack.service';
 import { RolesService } from '../services/game/roles.service';
+import { ServerConfigService } from '../services/serverConfig.service';
 
 declare module '@sapphire/pieces' {
 	interface Container {
@@ -23,5 +24,6 @@ declare module '@sapphire/pieces' {
 		moreOrLessService: MoreOrLessService;
 		blackjackService: BlackjackService;
 		rolesService: RolesService;
+		serverConfigService: ServerConfigService;
 	}
 }

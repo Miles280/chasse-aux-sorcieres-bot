@@ -13,6 +13,7 @@ import { TowerService } from './services/casino/tower.service';
 import { RouletteService } from './services/casino/roulette.service';
 import { BlackjackService } from './services/casino/blackjack.service';
 import { RolesService } from './services/game/roles.service';
+import { ServerConfigService } from './services/serverConfig.service';
 
 const client = new SapphireClient({
 	defaultPrefix: ',',
@@ -36,6 +37,7 @@ container.towerService = new TowerService();
 container.rouletteService = new RouletteService();
 container.moreOrLessService = new MoreOrLessService();
 container.blackjackService = new BlackjackService();
+container.serverConfigService = new ServerConfigService(container.apiClient);
 
 container.rolesService = new RolesService(container.apiClient);
 
