@@ -1,11 +1,14 @@
 export interface ServerConfig {
 	id?: number;
 	discordServerId: string;
-	mjRoleId?: string | null;
-	inscriptionChannelId?: string | null;
-	gameCategoryId?: string | null;
-	gameMjChannelId?: string | null;
-	gamePrivateCategoryId?: string | null;
-	playerRoleId?: string | null;
-	deadPlayerRoleId?: string | null;
+	mjRoleId?: string;
+	inscriptionChannelId?: string;
+	gameCategoryId?: string;
+	gameMjChannelId?: string;
+	gamePrivateCategoryId?: string;
+	playerRoleId?: string;
+	deadPlayerRoleId?: string;
+	inscriptionVoiceChannelId?: string;
+	gameVoiceChannelId?: string;
+	deadVoiceChannelId?: string;
 }

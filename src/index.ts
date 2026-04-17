@@ -14,6 +14,7 @@ import { RouletteService } from './services/casino/roulette.service';
 import { BlackjackService } from './services/casino/blackjack.service';
 import { RolesService } from './services/game/roles.service';
 import { ServerConfigService } from './services/serverConfig.service';
+import { InscriptionService } from './services/game/inscription.service';
 
 const client = new SapphireClient({
 	defaultPrefix: ',',
@@ -40,6 +41,7 @@ container.blackjackService = new BlackjackService();
 container.serverConfigService = new ServerConfigService(container.apiClient);
 
 container.rolesService = new RolesService(container.apiClient);
+container.inscriptionService = new InscriptionService(container.apiClient);
 
 const main = async () => {
 	try {

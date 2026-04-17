@@ -6,5 +6,6 @@ export const colors = {
 	warning: 0xa81e0f,
 	villagers: 0x6cc3a5,
 	witch: 0x9c59b6,
-	independent: 0xb3d4e3
+	independent: 0xb3d4e3,
+	orange: 0xcc5500
 };
