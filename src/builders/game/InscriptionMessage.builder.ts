@@ -1,10 +1,10 @@
-import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Message } from 'discord.js';
 import { GameData } from '../../models/Game.interface';
 import { colors } from '../../utils/customColors';
 import { emojis, emojisV2 } from '../../utils/emojis';
 
 export class InscriptionMessageBuilder {
-	public static buildOpened(game: GameData, inscriptionVocId: string, maxPlayers: number | null, remainingTimeMinutes: number | null) {
+	public static buildOpened(game: GameData, inscriptionVocId: string, maxPlayers: number | null, closeTimestamp: number | null) {
 		// Formatage du compteur max
 		const limitText = maxPlayers ? `/${maxPlayers}` : '';
 
@@ -50,9 +50,8 @@ export class InscriptionMessageBuilder {
 		}
 
 		// Gestion du footer
-		if (remainingTimeMinutes) {
-			const unixTimestamp = Math.floor(Date.now() / 1000) + remainingTimeMinutes * 60;
-			embed.addFields({ name: '\u200B', value: `-# Fermeture des inscriptions <t:${unixTimestamp}:R>.`, inline: false });
+		if (closeTimestamp) {
+			embed.addFields({ name: '\u200B', value: `-# Fermeture des inscriptions <t:${closeTimestamp}:R>.`, inline: false });
 		}
 
 		const buttons = this.buildActionButtons(game.id, 'opened');
@@ -217,5 +216,33 @@ export class InscriptionMessageBuilder {
 			);
 
 		return { embeds: [embed], components: [] };
+	}
+
+	/**
+	 * Lit un message existant pour extraire la limite de joueurs et le timestamp de fin.
+	 */
+	public static extractGameMetaFromMessage(message: Message | null) {
+		let maxPlayers: number | null = null;
+		let closeTimestamp: number | null = null;
+
+		if (!message || message.embeds.length === 0) return { maxPlayers, closeTimestamp };
+
+		const embed = message.embeds[0];
+
+		for (const field of embed.fields) {
+			// Extraction du maxPlayers (Ex: "12/15 inscrits")
+			if (field.name === 'Liste des joueurs :') {
+				const match = field.value.match(/\/(\d+)\s+inscrit/);
+				if (match) maxPlayers = parseInt(match[1], 10);
+			}
+
+			// Extraction du timestamp (Ex: "-# Fermeture des inscriptions <t:1234567890:R>")
+			if (field.value.includes('Fermeture des inscriptions')) {
+				const match = field.value.match(/<t:(\d+):R>/);
+				if (match) closeTimestamp = parseInt(match[1], 10);
+			}
+		}
+
+		return { maxPlayers, closeTimestamp };
 	}
 }

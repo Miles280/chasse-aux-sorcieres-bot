@@ -125,7 +125,9 @@ export class InscriptionCommand extends Subcommand {
 			statusMessage = `Une nouvelle partie a été créée. `;
 		}
 
-		const payload = InscriptionMessageBuilder.buildOpened(game, vocalId, maxPlayers, remainingTime);
+		const closeTimestamp = remainingTime ? Math.floor(Date.now() / 1000) + remainingTime * 60 : null;
+
+		const payload = InscriptionMessageBuilder.buildOpened(game, vocalId, maxPlayers, closeTimestamp);
 
 		// --- GESTION DU MESSAGE D'INSCRIPTION (Public) ---
 		if (game.inscriptionMessageId) {
@@ -173,7 +175,7 @@ export class InscriptionCommand extends Subcommand {
 		if (remainingTime && remainingTime > 0) {
 			setTimeout(
 				async () => {
-					await this.autoCloseInscription(game.id, message.id, targetChannel.id, vocalId).catch(console.error);
+					await container.inscriptionService.autoCloseInscription(game.id, message.id, targetChannel.id, vocalId).catch(console.error);
 				},
 				remainingTime * 60 * 1000
 			);
@@ -248,7 +250,7 @@ export class InscriptionCommand extends Subcommand {
 			}
 		} else {
 			return interaction.editReply({
-				embeds: [Embeds.errorEmbed({ title: 'Action refusée', message: "Le message d'inscription n'a pas été trouvé." })]
+				embeds: [Embeds.errorEmbed({ title: 'Action refusée', message: "Aucune partie est en cours d'inscription." })]
 			});
 		}
 
@@ -267,137 +269,228 @@ export class InscriptionCommand extends Subcommand {
 	public async chatInputKick(interaction: Subcommand.ChatInputCommandInteraction) {
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-		try {
-			const player = interaction.options.getUser('joueur', true);
+		const player = interaction.options.getUser('joueur', true);
+		const guildId = interaction.guildId!; // Correction : il manquait la définition du guildId
 
-			// 1. Récupérer la partie en attente
-			const gameResponse = await container.inscriptionService.getWaitingGame();
+		// 1. Récupérer la partie en attente
+		const gameResponse = await container.inscriptionService.getWaitingGame();
 
-			if (!gameResponse.success) {
-				return interaction.editReply({ content: '❌ Aucune inscription en cours.' });
-			}
-
-			const game = gameResponse.data;
-
-			// 2. Vérifier que le joueur est bien inscrit
-			if (!game.players.includes(player.id)) {
-				return interaction.editReply({ content: `❌ <@${player.id}> n'est pas inscrit à cette partie.` });
-			}
-
-			// 3. Retirer le joueur via l'API
-			const kickResponse = await container.inscriptionService.inscription(game.id, player.id, 'leave');
-
-			if (!kickResponse.success) {
-				return interaction.editReply({ content: `❌ Impossible d'expulser le joueur: ${kickResponse.error}` });
-			}
-
-			// 4. Mettre à jour le message d'inscription
-			if (game.inscriptionMessageId) {
-				await this.updateInscriptionMessage(game.id, interaction.guildId!);
-			}
-
-			await interaction.editReply({ content: `✅ <@${player.id}> a été expulsé des inscriptions.` });
-		} catch (error) {
-			console.error('Erreur dans chatInputKick:', error);
-			await interaction.editReply({
-				content: `❌ Une erreur s'est produite: ${error instanceof Error ? error.message : 'Erreur inconnue'}`
+		if (!gameResponse.success) {
+			return interaction.editReply({
+				embeds: [Embeds.errorEmbed({ title: 'Action refusée', message: "Aucune partie est en cours d'inscription." })]
 			});
 		}
-		return;
+
+		const game = gameResponse.data;
+
+		// 2. Vérifier que le joueur est bien inscrit (joueur ou spectateur)
+		const isPlayer = game.players?.includes(player.id);
+		const isSpectator = game.spectators?.includes(player.id);
+
+		if (!isPlayer && !isSpectator) {
+			return interaction.editReply({
+				embeds: [Embeds.errorEmbed({ title: 'Action refusée', message: `<@${player.id}> n'est pas inscrit à cette partie.` })]
+			});
+		}
+
+		// 3. Retirer le joueur via l'API
+		const kickResponse = await container.inscriptionService.inscription(game.id, player.id, 'leave');
+
+		if (!kickResponse.success) {
+			return interaction.editReply({
+				embeds: [Embeds.errorEmbed({ title: 'Erreur', message: `Impossible d'expulser <@${player.id}> :\n${kickResponse.error}` })]
+			});
+		}
+
+		// On utilise directement la partie mise à jour renvoyée par l'API
+		const updatedGame = kickResponse.data;
+
+		// 4. Récupération de la config (pour les rôles et les salons)
+		const configResponse = await container.serverConfigService.getConfig(guildId);
+		if (!configResponse.success) {
+			return interaction.editReply({
+				embeds: [Embeds.errorEmbed({ title: 'Erreur', message: 'Impossible de charger la configuration du serveur.' })]
+			});
+		}
+		const config = configResponse.data;
+
+		// 5. Retirer les rôles du joueur expulsé
+		try {
+			const member = await interaction.guild?.members.fetch(player.id).catch(() => null);
+			if (member) {
+				if (config.playerRoleId) await member.roles.remove(config.playerRoleId);
+				if (config.deadPlayerRoleId) await member.roles.remove(config.deadPlayerRoleId); // Retrait du rôle spectateur
+			}
+		} catch (error) {
+			console.error(`Impossible de retirer les rôles de ${player.tag} lors du kick:`, error);
+		}
+
+		// 6. Mettre à jour le message public d'inscription
+		if (updatedGame.inscriptionMessageId && config.inscriptionChannelId) {
+			try {
+				const channel = await interaction.guild?.channels.fetch(config.inscriptionChannelId);
+				if (channel?.isTextBased()) {
+					const message = await channel.messages.fetch(updatedGame.inscriptionMessageId);
+
+					// Extraction des données (le fameux timestamp et la limite)
+					const meta = InscriptionMessageBuilder.extractGameMetaFromMessage(message);
+
+					// On reconstruit le message (on présume que c'est l'état 'opened' si on est en train de kick)
+					const updatedPayload = InscriptionMessageBuilder.buildOpened(
+						updatedGame,
+						config.inscriptionVoiceChannelId!,
+						meta.maxPlayers,
+						meta.closeTimestamp
+					);
+
+					await message.edit(updatedPayload);
+				}
+			} catch (error) {
+				console.error("Erreur lors de la mise à jour du message public d'inscription (Kick):", error);
+			}
+		}
+
+		// 7. Mettre à jour le message de composition (Panel MJ)
+		if (updatedGame.compoMessageId && config.gameMjChannelId) {
+			try {
+				const mjChannel = await interaction.guild?.channels.fetch(config.gameMjChannelId);
+				if (mjChannel?.isTextBased()) {
+					const compoMsg = await mjChannel.messages.fetch(updatedGame.compoMessageId);
+
+					const compoPayload = InscriptionMessageBuilder.buildCompo(updatedGame);
+					await compoMsg.edit(compoPayload);
+				}
+			} catch (error) {
+				console.error('Erreur lors de la mise à jour du message de compo MJ (Kick):', error);
+			}
+		}
+
+		// 8. Confirmer la réussite
+		return interaction.editReply({
+			embeds: [
+				Embeds.successEmbed({
+					title: 'Expulsion réussie',
+					message: `<@${player.id}> a été expulsé des inscriptions et ses rôles ont été retirés.`
+				})
+			]
+		});
 	}
 
 	public async chatInputCancel(interaction: Subcommand.ChatInputCommandInteraction) {
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		try {
+			const guildId = interaction.guildId!;
+
+			const guild = interaction.guild;
+			if (!guild) {
+				return interaction.editReply({
+					embeds: [Embeds.errorEmbed({ message: 'Cette commande ne peut être utilisée que sur un serveur.' })]
+				});
+			}
+
 			// 1. Récupérer la partie en attente
 			const response = await container.inscriptionService.getWaitingGame();
 
 			if (!response.success) {
-				return interaction.editReply({ content: '❌ Aucune inscription en cours.' });
+				return interaction.editReply({
+					embeds: [Embeds.errorEmbed({ title: 'Erreur', message: 'Aucune inscription en cours.' })]
+				});
 			}
 
 			const game = response.data;
 
-			// 2. Supprimer le message d'inscription
-			if (game.inscriptionMessageId) {
-				const configResponse = await container.serverConfigService.getConfig(interaction.guildId!);
-				let channelId = interaction.channelId;
+			// 2. Récupérer la config du serveur (pour les rôles et salons)
+			const configResponse = await container.serverConfigService.getConfig(guildId);
+			if (!configResponse.success) {
+				return interaction.editReply({
+					embeds: [Embeds.errorEmbed({ title: 'Erreur', message: 'Impossible de charger la configuration du serveur.' })]
+				});
+			}
+			const config = configResponse.data;
 
-				if (configResponse.success && configResponse.data.inscriptionChannelId) {
-					channelId = configResponse.data.inscriptionChannelId;
-				}
+			// 3. Enlever les rôles aux joueurs et spectateurs (en parallèle)
+			const removeRolesPromises: Promise<any>[] = [];
 
-				const channel = await interaction.guild?.channels.fetch(channelId);
-				if (channel?.isTextBased()) {
-					try {
-						const message = await channel.messages.fetch(game.inscriptionMessageId);
-						await message.delete();
-					} catch (error) {
-						console.error('Impossible de supprimer le message:', error);
-					}
+			// Retrait du rôle Joueur
+			if (config.playerRoleId && game.players && game.players.length > 0) {
+				for (const playerId of game.players) {
+					removeRolesPromises.push(
+						interaction.guild?.members
+							.fetch(playerId)
+							.then((member) => member.roles.remove(config.playerRoleId!))
+							.catch(() => null) // Ignore les erreurs (ex: membre a quitté le serveur)
+					);
 				}
 			}
 
-			// 3. Appeler l'API pour supprimer la partie
+			// Retrait du rôle Spectateur
+			if (config.deadPlayerRoleId && game.spectators && game.spectators.length > 0) {
+				for (const spectatorId of game.spectators) {
+					removeRolesPromises.push(
+						interaction.guild?.members
+							.fetch(spectatorId)
+							.then((member) => member.roles.remove(config.deadPlayerRoleId!))
+							.catch(() => null)
+					);
+				}
+			}
+
+			// Exécution de tous les retraits de rôles en même temps
+			await Promise.allSettled(removeRolesPromises);
+
+			// 4. Supprimer les messages (Inscription & Compo MJ)
+			const deleteMessage = async (channelId?: string, messageId?: string) => {
+				if (!channelId || !messageId) return;
+				try {
+					const channel = await interaction.guild?.channels.fetch(channelId);
+					if (channel?.isTextBased()) {
+						const message = await channel.messages.fetch(messageId).catch(() => null);
+						if (message) await message.delete();
+					}
+				} catch (error) {
+					console.error(`Impossible de supprimer le message ${messageId} dans le salon ${channelId}:`, error);
+				}
+			};
+
+			await Promise.allSettled([
+				deleteMessage(config.inscriptionChannelId || interaction.channelId, game.inscriptionMessageId), // Message public
+				deleteMessage(config.gameMjChannelId, game.compoMessageId) // Panel MJ
+			]);
+
+			// 5. Appeler l'API pour supprimer la partie
 			const cancelResponse = await container.inscriptionService.cancelGame(game.id);
 
 			if (!cancelResponse.success) {
 				return interaction.editReply({
-					content: `⚠️ Le message a été supprimé mais erreur API: ${cancelResponse.error}`
+					embeds: [
+						Embeds.errorEmbed({
+							title: 'Annulation partielle',
+							message: `Les messages et rôles ont été nettoyés, mais une erreur API est survenue : ${cancelResponse.error}`
+						})
+					]
 				});
 			}
 
-			await interaction.editReply({ content: '✅ Les inscriptions ont été annulées et la partie supprimée.' });
+			// 6. Succès
+			return interaction.editReply({
+				embeds: [
+					Embeds.successEmbed({
+						title: 'Annulation réussie',
+						message: 'Les inscriptions ont été annulées, les rôles retirés, les messages supprimés et la partie effacée.'
+					})
+				]
+			});
 		} catch (error) {
 			console.error('Erreur dans chatInputCancel:', error);
-			await interaction.editReply({
-				content: `❌ Une erreur s'est produite: ${error instanceof Error ? error.message : 'Erreur inconnue'}`
+			return interaction.editReply({
+				embeds: [
+					Embeds.errorEmbed({
+						title: 'Erreur critique',
+						message: `Une erreur inattendue s'est produite: ${error instanceof Error ? error.message : 'Erreur inconnue'}`
+					})
+				]
 			});
 		}
-		return;
-	}
-
-	/**
-	 * Méthode utilitaire pour mettre à jour le message d'inscription
-	 */
-	private async updateInscriptionMessage(gameId: number, guildId: string): Promise<void> {
-		const gameResponse = await container.inscriptionService.getGameById(gameId);
-		if (!gameResponse.success) return;
-
-		const game = gameResponse.data;
-		if (!game.inscriptionMessageId) return;
-
-		const configResponse = await container.serverConfigService.getConfig(guildId);
-		const channelId = configResponse.success ? configResponse.data.inscriptionChannelId : null;
-		if (!channelId) return;
-
-		const channel = await container.client.channels.fetch(channelId);
-		if (!channel?.isSendable()) return;
-
-		// const message = await channel.messages.fetch(game.inscriptionMessageId);
-		// const updatedPayload = InscriptionMessageBuilder.build(game, null);
-
-		// await message.edit(updatedPayload);
-	}
-
-	/**
-	 * Fermeture automatique des inscriptions
-	 */
-	private async autoCloseInscription(gameId: number, messageId: string, channelId: string, vocId: string): Promise<void> {
-		const response = await container.inscriptionService.getGameById(gameId);
-		if (!response.success) {
-			return;
-		}
-
-		const channel = await container.client.channels.fetch(channelId).catch(() => null);
-		if (!channel || !channel.isTextBased()) {
-			return;
-		}
-
-		const message = await (channel as GuildTextBasedChannel).messages.fetch(messageId);
-		const updatedPayload = InscriptionMessageBuilder.buildClosed(response.data, vocId);
-
-		await message.edit(updatedPayload);
 	}
 }
