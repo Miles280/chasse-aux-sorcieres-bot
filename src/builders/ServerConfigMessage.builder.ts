@@ -15,6 +15,7 @@ export class ServerConfigMessageBuilder {
 			{ id: 'mjRoleId', name: 'Rôle MJ', type: 'role' },
 			{ id: 'playerRoleId', name: 'Rôle Joueur', type: 'role' },
 			{ id: 'deadPlayerRoleId', name: 'Rôle Joueur Mort', type: 'role' },
+			{ id: 'spectatorRoleId', name: 'Rôle Spectateur', type: 'role' },
 			{ id: 'inscriptionVoiceChannelId', name: 'Vocal Inscription', type: 'channel' },
 			{ id: 'gameVoiceChannelId', name: 'Vocal Partie', type: 'channel' },
 			{ id: 'deadVoiceChannelId', name: 'Vocal Morts', type: 'channel' },
@@ -37,7 +38,7 @@ export class ServerConfigMessageBuilder {
 			container.addSectionComponents(this.buildConfigSection(field.id, field.name, field.type, val as string));
 
 			// 2. Un en dessous de Rôle Joueur Mort (index 2)
-			if (field.id === 'deadPlayerRoleId') {
+			if (field.id === 'spectatorRoleId') {
 				container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
 			}
 

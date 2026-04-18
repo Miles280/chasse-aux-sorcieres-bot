@@ -1,6 +1,6 @@
 import { ApiClient } from './../apiClient.service';
 import { ApiResponse } from '../../models/ApiResponse.interface';
-import { GameData, InscriptionResponse } from '../../models/Game.interface';
+import { GameData } from '../../models/Game.interface';
 
 export class InscriptionService {
 	constructor(private api: ApiClient) {}
@@ -40,10 +40,10 @@ export class InscriptionService {
 
 	/**
 	 * Gère l'inscription ou la désinscription d'un joueur (Toggle)
-	 * action: 'join' | 'leave'
+	 * action: 'join' | 'leave' | 'spectate'
 	 */
-	async inscription(gameId: number, discordId: string, action: 'join' | 'leave'): Promise<ApiResponse<InscriptionResponse>> {
-		return await this.api.post<InscriptionResponse>(`/games/inscription/${gameId}`, {
+	async inscription(gameId: number, discordId: string, action: 'join' | 'leave' | 'spectate'): Promise<ApiResponse<GameData>> {
+		return await this.api.post<GameData>(`/games/inscription/${gameId}`, {
 			discordId,
 			action
 		});

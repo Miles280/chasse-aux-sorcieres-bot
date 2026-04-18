@@ -80,10 +80,9 @@ export class InscriptionCommand extends Subcommand {
 			return;
 		}
 
-		const { inscriptionChannelId, inscriptionVoiceChannelId: vocalId } = configResponse.data;
+		const { inscriptionChannelId, inscriptionVoiceChannelId: vocalId, gameMjChannelId } = configResponse.data;
 
 		let targetChannel = interaction.channel as GuildTextBasedChannel;
-
 		if (inscriptionChannelId) {
 			const fetchedChannel = await interaction.guild?.channels.fetch(inscriptionChannelId).catch(() => null);
 			if (fetchedChannel?.isTextBased() && fetchedChannel.isSendable()) {
@@ -91,42 +90,30 @@ export class InscriptionCommand extends Subcommand {
 			}
 		}
 
-		if (!targetChannel) {
-			return interaction.editReply({
-				embeds: [Embeds.errorEmbed({ title: 'Erreur de config', message: 'InscriptionChannelId manquant !' })]
-			});
+		// Récupération du salon MJ
+		let mjChannel: GuildTextBasedChannel | null = null;
+		if (gameMjChannelId) {
+			const fetchedMjChannel = await interaction.guild?.channels.fetch(gameMjChannelId).catch(() => null);
+			if (fetchedMjChannel?.isTextBased() && fetchedMjChannel.isSendable()) {
+				mjChannel = fetchedMjChannel;
+			}
 		}
 
-		if (!vocalId) {
+		if (!targetChannel || !vocalId) {
 			return interaction.editReply({
-				embeds: [Embeds.errorEmbed({ title: 'Erreur de config', message: 'inscriptionVoiceChannelId manquant !' })]
+				embeds: [Embeds.errorEmbed({ title: 'Erreur de config', message: "Salon d'inscription ou Vocal manquant !" })]
 			});
 		}
 
 		let response = await container.inscriptionService.getWaitingGame();
 		let game: GameData;
 		let message: Message;
+		let compoMessage: Message | null = null;
 		let statusMessage: string = '';
 
+		// Initialisation / Récupération de la game
 		if (response.success) {
 			game = response.data;
-			if (game.inscriptionMessageId) {
-				try {
-					const existingMessage = await targetChannel.messages.fetch(game.inscriptionMessageId);
-					const updatedPayload = InscriptionMessageBuilder.buildOpened(game, vocalId, maxPlayers, remainingTime);
-					message = await existingMessage.edit(updatedPayload);
-					statusMessage = `Le message d'inscription existant a été mis à jour dans <#${targetChannel.id}>.`;
-				} catch (err) {
-					// Si l'ancien message est mort, on en renvoie un nouveau
-					const messagePayload = InscriptionMessageBuilder.buildOpened(game, vocalId, maxPlayers, remainingTime);
-					message = await targetChannel.send(messagePayload);
-					statusMessage = `Un nouveau message d'inscription a été envoyé dans <#${targetChannel.id}>.`;
-				}
-			} else {
-				const messagePayload = InscriptionMessageBuilder.buildOpened(game, vocalId, maxPlayers, remainingTime);
-				message = await targetChannel.send(messagePayload);
-				statusMessage = `Un nouveau message d'inscription a été envoyé dans <#${targetChannel.id}>.`;
-			}
 		} else {
 			const createResponse = await container.inscriptionService.create(interaction.user.id);
 			if (!createResponse.success) {
@@ -135,13 +122,52 @@ export class InscriptionCommand extends Subcommand {
 				});
 			}
 			game = createResponse.data;
-			const messagePayload = InscriptionMessageBuilder.buildOpened(game, vocalId, maxPlayers, remainingTime);
-			message = await targetChannel.send(messagePayload);
-			statusMessage = `Les inscriptions sont ouvertes dans <#${targetChannel.id}> !`;
+			statusMessage = `Une nouvelle partie a été créée. `;
 		}
 
-		// 1. Mettre à jour l'ID du message dans l'API
-		await container.inscriptionService.updateMessages(game.id, message.id, game.compoMessageId || '');
+		const payload = InscriptionMessageBuilder.buildOpened(game, vocalId, maxPlayers, remainingTime);
+
+		// --- GESTION DU MESSAGE D'INSCRIPTION (Public) ---
+		if (game.inscriptionMessageId) {
+			try {
+				const existingMessage = await targetChannel.messages.fetch(game.inscriptionMessageId);
+				message = await existingMessage.edit(payload);
+				statusMessage += `Message d'inscription mis à jour dans <#${targetChannel.id}>.`;
+			} catch {
+				message = await targetChannel.send(payload);
+				statusMessage += `Nouveau message d'inscription envoyé dans <#${targetChannel.id}>.`;
+			}
+		} else {
+			message = await targetChannel.send(payload);
+			statusMessage += `Inscriptions ouvertes dans <#${targetChannel.id}> !`;
+		}
+
+		// --- GESTION DU MESSAGE DE COMPO (Salon MJ) ---
+		if (mjChannel) {
+			// Supposons que tu as une méthode buildCompo dans ton Builder
+			const compoPayload = InscriptionMessageBuilder.buildCompo(game);
+
+			if (game.compoMessageId) {
+				try {
+					const existingCompo = await mjChannel.messages.fetch(game.compoMessageId);
+					compoMessage = await existingCompo.edit(compoPayload);
+				} catch {
+					compoMessage = await mjChannel.send(compoPayload);
+				}
+			} else {
+				compoMessage = await mjChannel.send(compoPayload);
+			}
+			statusMessage += `\nMessage de compo synchronisé dans <#${mjChannel.id}>.`;
+		} else {
+			statusMessage += `\nAucun salon MJ configuré, le message de compo n'a pas pu être envoyé.`;
+		}
+
+		// 1. Mettre à jour les IDs dans l'API
+		await container.inscriptionService.updateMessages(
+			game.id,
+			message.id,
+			compoMessage?.id || '' // On envoie l'ID du nouveau message compo (ou vide s'il n'existe pas)
+		);
 
 		// 2. Programmation de la fermeture automatique
 		if (remainingTime && remainingTime > 0) {

@@ -19,10 +19,3 @@ export interface GameData {
 	dayNumber?: number;
 	winningCamp?: string;
 }
-
-/**
- * Réponse de l'API pour l'inscription/désinscription
- */
-export interface InscriptionResponse {
-	players: string[];
-}

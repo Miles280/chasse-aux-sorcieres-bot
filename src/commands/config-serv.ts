@@ -22,7 +22,6 @@ export class ConfigCommand extends Command {
 	public override async chatInputRun(interaction: ChatInputCommandInteraction) {
 		if (!interaction.guildId) return;
 
-		// On diffère la réponse en éphémère
 		await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
 
 		const response = await container.serverConfigService.getConfig(interaction.guildId);
@@ -35,7 +34,6 @@ export class ConfigCommand extends Command {
 
 		const messageOptions = ServerConfigMessageBuilder.build(response.data);
 
-		// CRITIQUE : C'est ce flag qui permet d'utiliser ContainerBuilder
 		return interaction.editReply({
 			...messageOptions,
 			flags: [MessageFlags.IsComponentsV2]

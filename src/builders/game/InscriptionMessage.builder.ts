@@ -1,7 +1,7 @@
 import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { GameData } from '../../models/Game.interface';
 import { colors } from '../../utils/customColors';
-import { emojis } from '../../utils/emojis';
+import { emojis, emojisV2 } from '../../utils/emojis';
 
 export class InscriptionMessageBuilder {
 	public static buildOpened(game: GameData, inscriptionVocId: string, maxPlayers: number | null, remainingTimeMinutes: number | null) {
@@ -55,7 +55,7 @@ export class InscriptionMessageBuilder {
 			embed.addFields({ name: '\u200B', value: `-# Fermeture des inscriptions <t:${unixTimestamp}:R>.`, inline: false });
 		}
 
-		const buttons = this.buildActionButtons(game.id, 'open');
+		const buttons = this.buildActionButtons(game.id, 'opened');
 
 		return { embeds: [embed], components: [buttons] };
 	}
@@ -113,7 +113,7 @@ export class InscriptionMessageBuilder {
 	/**
 	 * Construit le message d'inscription quand la partie est lancé
 	 */
-	public static buildPlaying(game: GameData) {
+	public static buildStarted(game: GameData) {
 		// Listes (avec fallback si vide)
 		const playersList = game.players?.length > 0 ? game.players.map((id) => `> <@${id}>`).join('\n') : '> *Aucun inscrit*';
 
@@ -155,7 +155,7 @@ export class InscriptionMessageBuilder {
 			);
 		}
 
-		const buttons = this.buildActionButtons(game.id, 'playing');
+		const buttons = this.buildActionButtons(game.id, 'started');
 
 		return { embeds: [embed], components: [buttons] };
 	}
@@ -163,28 +163,59 @@ export class InscriptionMessageBuilder {
 	/**
 	 * Construit dynamiquement les boutons en fonction de l'état de la partie
 	 * @param gameId L'ID de la partie
-	 * @param state L'état actuel ('open' | 'CLOSED' | 'PLAYING')
+	 * @param state L'état actuel ('opened' | 'closed' | 'started')
 	 */
-	private static buildActionButtons(gameId: number, state: 'open' | 'closed' | 'playing') {
+	private static buildActionButtons(gameId: number, state: 'opened' | 'closed' | 'started') {
 		const row = new ActionRowBuilder<ButtonBuilder>();
 
 		// 1. Bouton "S'inscrire" (Uniquement quand c'est ouvert)
-		if (state === 'open') {
-			row.addComponents(new ButtonBuilder().setCustomId(`game:join:${state}:${gameId}`).setLabel("S'inscrire").setStyle(ButtonStyle.Success));
+		if (state === 'opened') {
+			row.addComponents(
+				new ButtonBuilder()
+					.setCustomId(`inscription:join:${state}:${gameId}`)
+					.setLabel("S'inscrire")
+					.setEmoji(emojisV2.alive)
+					.setStyle(ButtonStyle.Success)
+			);
 		}
 
 		// 2. Bouton "Se désinscrire" (Quand c'est ouvert OU fermé, mais pas lancé)
-		if (state === 'open' || state === 'closed') {
+		if (state === 'opened' || state === 'closed') {
 			row.addComponents(
-				new ButtonBuilder().setCustomId(`game:leave:${state}:${gameId}`).setLabel('Se désinscrire').setStyle(ButtonStyle.Danger)
+				new ButtonBuilder()
+					.setCustomId(`inscription:leave:${state}:${gameId}`)
+					.setLabel('Se désinscrire')
+					.setEmoji(emojisV2.dead)
+					.setStyle(ButtonStyle.Danger)
 			);
 		}
 
 		// 3. Bouton "Spectateur" (Toujours présent dans les 3 états)
 		row.addComponents(
-			new ButtonBuilder().setCustomId(`game:spectate:${state}:${gameId}`).setLabel('Spectateur').setEmoji('👁️').setStyle(ButtonStyle.Secondary)
+			new ButtonBuilder()
+				.setCustomId(`inscription:spectate:${state}:${gameId}`)
+				.setLabel('Spectateur')
+				.setEmoji('👁️')
+				.setStyle(ButtonStyle.Secondary)
 		);
 
 		return row;
+	}
+
+	/**
+	 * Construit le message de composition de la partie
+	 */
+	public static buildCompo(game: GameData) {
+		const embed = new EmbedBuilder()
+			.setColor(colors.purpleWitch)
+			.setTitle(`${emojis.purplecheck} Préparation de la partie`)
+			.setDescription(
+				`Voici ton pannel de contrôle pour préparer la partie à venir.\n\n` +
+					`__Animateur__ : <@${game.gameMasterId}>\n` +
+					`__Joueurs__ : ${game.players?.length || 0} inscrit${game.players?.length > 1 ? 's' : ''}` +
+					`\u200B`
+			);
+
+		return { embeds: [embed], components: [] };
 	}
 }
