@@ -107,8 +107,13 @@ export class InscriptionService {
 		// 3. MISE À JOUR DU MESSAGE PUBLIC (celui où on a cliqué)
 		const meta = InscriptionMessageBuilder.extractGameMetaFromMessage(interaction.message);
 
+		let currentState = ctx.state;
+		if (currentState === 'opened' && meta.maxPlayers && gameData.players.length >= meta.maxPlayers) {
+			currentState = 'closed';
+		}
+
 		let publicPayload;
-		switch (ctx.state) {
+		switch (currentState) {
 			case 'opened':
 				publicPayload = InscriptionMessageBuilder.buildOpened(
 					gameData,
