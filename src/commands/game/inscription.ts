@@ -425,12 +425,12 @@ export class InscriptionCommand extends Subcommand {
 			}
 
 			// Retrait du rôle Spectateur
-			if (config.deadPlayerRoleId && game.spectators && game.spectators.length > 0) {
+			if (config.spectatorRoleId && game.spectators && game.spectators.length > 0) {
 				for (const spectatorId of game.spectators) {
 					removeRolesPromises.push(
 						interaction.guild?.members
 							.fetch(spectatorId)
-							.then((member) => member.roles.remove(config.deadPlayerRoleId!))
+							.then((member) => member.roles.remove(config.spectatorRoleId!))
 							.catch(() => null)
 					);
 				}

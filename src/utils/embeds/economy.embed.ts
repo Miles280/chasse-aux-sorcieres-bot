@@ -4,6 +4,7 @@ import { formatTransactions } from '../formatTransactions';
 import { formatTransactionLabel } from '../transactionLabels';
 import { ConversionData, ConversionRates, DailyReward, EconomyAction, EconomyEmbedOptions, TransactionHistory } from '../../models/Economy.interface';
 import { colors } from '../customColors';
+import { getRandomDailyMessage } from '../dailyMessages';
 
 export function bourseEmbed(member: GuildMember, gems: number, rubies: number, transactionsText: string): EmbedBuilder {
 	return new EmbedBuilder()
@@ -184,24 +185,31 @@ export function conversionRateEmbed(member: GuildMember, data: ConversionRates):
 }
 
 export function dailyEmbed(data: DailyReward): EmbedBuilder {
-	const { reward, streak, previous, current } = data;
+	const { reward, previous_balance, current_balance, details } = data;
+	const { roll_result, multipliers } = details;
 
-	const rewardFmt = reward.toLocaleString();
-	const prevFmt = previous.toLocaleString();
-	const currentFmt = current.toLocaleString();
+	const prevFmt = previous_balance.toLocaleString();
+	const currentFmt = current_balance.toLocaleString();
+
+	// Récupération d'un message aléatoire "pro"
+	const randomMoodText = getRandomDailyMessage(roll_result.type);
 
 	return new EmbedBuilder()
 		.setTitle(`${emojis.purplecheck} Récompense journalière`)
+		.setColor(colors.purpleWitch)
 		.setDescription(
-			`Vous avez gagné **+${rewardFmt} ${emojis.rubies}** aujourd'hui.\n` + `> Streak actuelle : __${streak} jour${streak > 1 ? 's' : ''}__\n\n`
+			`*${randomMoodText}*\n` +
+				`Vous recevez **+${reward.toLocaleString()}** ${emojis.rubies}.\n\n` +
+				`__Multiplicateurs appliqués__ :\n` +
+				`> Rang social : \`x${multipliers.role_rate.toFixed(2)}\`\n` +
+				`> Série de **${multipliers.streak_days}** jour${multipliers.streak_days > 1 ? 's' : ''} : \`x${multipliers.streak_rate.toFixed(2)}\`\n`
 		)
 		.addFields({
-			name: `${emojis.rubies} Solde :`,
-			value: `\`${prevFmt}\` ${emojis.rubies} **→** \`${currentFmt}\` ${emojis.rubies}`,
-			inline: true
+			name: `${emojis.rubies} Solde actuel`,
+			value: `\`${prevFmt}\` **→** \`${currentFmt}\` ${emojis.rubies}`,
+			inline: false
 		})
-		.setColor(colors.purpleWitch)
 		.setFooter({
-			text: 'Revenez demain pour augmenter votre streak !'
+			text: 'Revenez demain !'
 		});
 }

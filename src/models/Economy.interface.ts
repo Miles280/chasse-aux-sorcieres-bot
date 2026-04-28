@@ -81,7 +81,16 @@ export interface LeaderboardData {
 
 export interface DailyReward {
 	reward: number;
-	streak: number;
-	previous: number;
-	current: number;
+	previous_balance: number;
+	current_balance: number;
+	details: {
+		roll_result: {
+			type: 'critical_failure' | 'common' | 'jackpot';
+		};
+		multipliers: {
+			role_rate: number;
+			streak_days: number;
+			streak_rate: number;
+		};
+	};
 }
