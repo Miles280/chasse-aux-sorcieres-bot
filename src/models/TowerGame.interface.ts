@@ -1,20 +1,18 @@
-import { EmbedBuilder, InteractionResponse, Message } from 'discord.js';
-
 export interface TowerGame {
 	userId: string;
+	messageId: string;
+	channelId: string; // Ajouté pour pouvoir retrouver le message lors du Timeout
 	bet: number;
-	currentFloor: number; // De 0 à 9
-	grid: number[]; // Tableau de 10 entiers (0, 1 ou 2 indiquent la position de la bombe pour chaque étage)
-	history: number[]; // Stocke les choix du joueur (ex: [1, 0, 2] pour les 3 premiers étages)
-	message: Message | InteractionResponse; // Référence au message pour pouvoir l'éditer en cas de timeout
+	currentFloor: number; // 0 à 9
+	grid: number[]; // Tableau de 10 entiers (0, 1, 2)
+	history: number[]; // Les choix du joueur
 	timer: NodeJS.Timeout;
 }
 
-export interface TowerResult {
-	error?: string;
-	finished?: boolean;
-	payload?: {
-		embeds: EmbedBuilder[];
-		components: any[];
-	};
+export interface TowerTurnResult {
+	status: 'continue' | 'win' | 'lose' | 'cashout' | 'error';
+	game?: TowerGame;
+	payout?: number; // Gain en cas de victoire/cashout
+	badChoice?: number; // La position de la bombe qui a tué le joueur
+	message?: string; // En cas d'erreur
 }

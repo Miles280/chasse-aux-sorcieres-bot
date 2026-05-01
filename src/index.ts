@@ -3,12 +3,18 @@ import './lib/setup';
 import { LogLevel, SapphireClient, container } from '@sapphire/framework';
 import { GatewayIntentBits } from 'discord.js';
 import { ApiClient } from './services/apiClient.service';
-import { EconomyService } from './services/economy.service';
 import { DiscordService } from './services/discord.service';
-import { ShopService } from './services/shop.service';
-import { InventoryService } from './services/inventory.service';
-import { TowerService } from './services/tower.service';
-import { CasinoService } from './services/casino.service';
+import { CasinoService } from './services/casino/casino.service';
+import { MoreOrLessService } from './services/casino/MoreOrLess.service';
+import { EconomyService } from './services/economy-core/economy.service';
+import { ShopService } from './services/economy-core/shop.service';
+import { InventoryService } from './services/economy-core/inventory.service';
+import { TowerService } from './services/casino/tower.service';
+import { RouletteService } from './services/casino/roulette.service';
+import { BlackjackService } from './services/casino/blackjack.service';
+import { RolesService } from './services/game/roles.service';
+import { ServerConfigService } from './services/serverConfig.service';
+import { InscriptionService } from './services/game/inscription.service';
 
 const client = new SapphireClient({
 	defaultPrefix: ',',
@@ -22,11 +28,20 @@ const client = new SapphireClient({
 
 container.discordService = new DiscordService();
 container.apiClient = new ApiClient(process.env.API_URL!, process.env.BOT_SECRET_KEY!);
+
 container.economyService = new EconomyService(container.apiClient);
 container.shopService = new ShopService(container.apiClient);
 container.inventoryService = new InventoryService(container.apiClient);
+
 container.casinoService = new CasinoService(container.apiClient);
 container.towerService = new TowerService();
+container.rouletteService = new RouletteService();
+container.moreOrLessService = new MoreOrLessService();
+container.blackjackService = new BlackjackService();
+container.serverConfigService = new ServerConfigService(container.apiClient);
+
+container.rolesService = new RolesService(container.apiClient);
+container.inscriptionService = new InscriptionService(container.apiClient);
 
 const main = async () => {
 	try {
