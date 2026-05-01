@@ -13,8 +13,8 @@ export const emojis = {
 	crown: `<:crown:${process.env.EMOJI_CROWN_ID}>`,
 	alive: `<:alive:${process.env.EMOJI_ALIVE_ID}>`,
 	dead: `<:dead:${process.env.EMOJI_DEAD_ID}>`,
-	opened_doors: `<:opened_doors:${process.env.EMOJI_OPENEDDOORS_ID}>`,
-	closed_doors: `<:closed_doors:${process.env.EMOJI_CLOSEDDOORS_ID}>`,
+	opened_door: `<:opened_door:${process.env.EMOJI_OPENEDDOOR_ID}>`,
+	closed_door: `<:closed_door:${process.env.EMOJI_CLOSEDDOOR_ID}>`,
 	villagers: `<:villagers:${process.env.EMOJI_VILLAGER_ID}>`,
 	witch: `<:witch:${process.env.EMOJI_WITCH_ID}>`,
 	independent: `<:independent:${process.env.EMOJI_INDEPENDENT_ID}>`

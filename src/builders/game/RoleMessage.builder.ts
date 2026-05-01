@@ -109,7 +109,7 @@ export class RoleMessageBuilder {
 		const formattedDetails = details.length > 0 ? ` (${details.join(', ')})` : '';
 
 		// 5. Icône de porte
-		const doorEmoji = power.leavingHouse ? emojis.opened_doors : emojis.closed_doors;
+		const doorEmoji = power.leavingHouse ? emojis.opened_door : emojis.closed_door;
 
 		// 6. Résultat final : "Emoji Titre (Détails) :"
 		return `${doorEmoji} ${power.title}${formattedDetails} :`;
