@@ -1,7 +1,9 @@
 FROM node:20
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update -o Acquire::Check-Valid-Until=false && \
+    apt-get install -y --no-install-recommends \
+    ca-certificates \
     build-essential \
     libcairo2-dev \
     libpango1.0-dev \
