@@ -22,7 +22,7 @@ export class BlackjackCommand extends Command {
 						.setDescription('Le montant à parier')
 						.setRequired(true)
 						.setMinValue(10)
-						.setMaxValue(250)
+						.setMaxValue(300)
 				)
 		);
 	}
