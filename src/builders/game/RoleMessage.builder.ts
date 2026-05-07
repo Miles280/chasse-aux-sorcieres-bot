@@ -1,7 +1,7 @@
 import { EmbedBuilder } from 'discord.js';
 import { Power, RoleInterface } from '../../models/Role.interface';
 import { Camp } from '../../enums/Camp';
-import { Alignment } from '../../enums/Alignment';
+import { getAlignmentLabel } from '../../enums/Alignment';
 import { emojis } from '../../utils/emojis';
 import { colors } from '../../utils/customColors';
 
@@ -65,25 +65,13 @@ export class RoleMessageBuilder {
 
 		// 4. Footer dynamique pour les alignements
 		const alignmentText =
-			role.alignments && role.alignments.length > 0 ? role.alignments.map((alignment) => this.getAlignmentLabel(alignment)).join('/') : 'Aucun';
+			role.alignments && role.alignments.length > 0 ? role.alignments.map((alignment) => getAlignmentLabel(alignment)).join('/') : 'Aucun';
 
 		embed.setFooter({
 			text: `Alignement : ${alignmentText} ⸱ Minimum : ${role.minPlayer} joueurs`
 		});
 
 		return embed;
-	}
-
-	/** Getter pour le label de l'alignement */
-	private static getAlignmentLabel(alignment: Alignment): string {
-		const labels = {
-			[Alignment.KILLER]: 'Tueur',
-			[Alignment.INFORMER]: 'Informateur',
-			[Alignment.LEADER]: 'Meneur',
-			[Alignment.PROTECTOR]: 'Protecteur',
-			[Alignment.SUPPORT]: 'Support'
-		};
-		return labels[alignment];
 	}
 
 	private static getPowerTitle(power: Power): string {

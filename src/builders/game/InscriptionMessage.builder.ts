@@ -14,6 +14,7 @@ import { CompoData, GameData } from '../../models/Game.interface';
 import { colors } from '../../utils/customColors';
 import { emojis, emojisV2 } from '../../utils/emojis';
 import { RoleInterface } from '../../models/Role.interface';
+import { getAlignmentLabel } from '../../enums/Alignment';
 
 export class InscriptionMessageBuilder {
 	public static buildOpened(game: GameData, inscriptionVocId: string, maxPlayers: number | null, closeTimestamp: number | null) {
@@ -266,18 +267,57 @@ export class InscriptionMessageBuilder {
 	}
 
 	/**
-	 * Construit le message de composition de la partie (Version Block Kit)
+	 * Construit le message de composition de la partie
 	 */
 	public static buildCompoV2(game: GameData, compo: CompoData) {
 		const roles = compo.composition || [];
-
 		const sorcieres = roles.filter((r) => r.camp === 'witch');
 		const villageois = roles.filter((r) => r.camp === 'villagers');
 		const independants = roles.filter((r) => r.camp === 'independent');
 
+		// Dictionnaire placé dans la méthode pour éviter l'erreur "introuvable"
+		const alignTranslations: Record<string, string> = {
+			killer: 'Tueur',
+			informer: 'Informateur',
+			leader: 'Meneur',
+			protector: 'Protecteur',
+			support: 'Support'
+		};
+
 		const formatList = (list: RoleInterface[]) => {
-			if (list.length === 0) return '> *Aucun*';
-			return list.map((r) => `> ${r.name}`).join('\n');
+			if (list.length === 0) return '*Aucun*';
+
+			// 1. Liste des rôles avec numérotation (1. 2. 3.) et alignements
+			const rolesListText = list
+				.map((r, index) => {
+					// Utilisation de ta nouvelle fonction exportée ici !
+					const alignsText = r.alignments?.length ? ` *[${r.alignments.map((a) => getAlignmentLabel(a)).join(', ')}]*` : '';
+
+					return `**${index + 1}.** ${r.name}${alignsText}`;
+				})
+				.join('\n');
+
+			// 2. Calcul du récapitulatif des alignements
+			const alignmentCounts: Record<string, number> = {};
+			list.forEach((role) => {
+				if (role.alignments) {
+					role.alignments.forEach((align) => {
+						alignmentCounts[align] = (alignmentCounts[align] || 0) + 1;
+					});
+				}
+			});
+
+			// 3. Formatage du récapitulatif
+			const summaryEntries = Object.entries(alignmentCounts).map(([align, count]) => {
+				const translatedName = alignTranslations[align] || align;
+				// On ajoute un 's' si le count est supérieur à 1
+				const pluralizedName = count > 1 ? `${translatedName}s` : translatedName;
+				return `**${count}** ${pluralizedName}`;
+			});
+
+			const summaryText = summaryEntries.length > 0 ? `\n\n*Récap : ${summaryEntries.join(', ')}*` : '';
+
+			return rolesListText + summaryText;
 		};
 
 		const container = new ContainerBuilder()
@@ -297,26 +337,28 @@ export class InscriptionMessageBuilder {
 		// SORCIÈRES - Section avec bouton à droite
 		const witchSection = new SectionBuilder()
 			.addTextDisplayComponents(
-				new TextDisplayBuilder().setContent(`${emojis.witch} Sorcières *(${sorcieres.length})* :`),
+				new TextDisplayBuilder().setContent(`${emojis.witch} Sorcières :`),
 				new TextDisplayBuilder().setContent(formatList(sorcieres))
 			)
 			.setButtonAccessory((btn) => btn.setCustomId('add_witch_role').setEmoji(emojisV2.witch).setStyle(ButtonStyle.Primary));
 		container.addSectionComponents(witchSection);
+
 		container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
 
 		// VILLAGEOIS - Section avec bouton à droite
 		const villagerSection = new SectionBuilder()
 			.addTextDisplayComponents(
-				new TextDisplayBuilder().setContent(`${emojis.villagers} Villageois *(${villageois.length})* :`),
+				new TextDisplayBuilder().setContent(`${emojis.villagers} Villageois :`),
 				new TextDisplayBuilder().setContent(formatList(villageois))
 			)
 			.setButtonAccessory((btn) => btn.setCustomId('add_villager_role').setEmoji(emojisV2.villagers).setStyle(ButtonStyle.Primary));
 		container.addSectionComponents(villagerSection);
+
 		container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
 
 		// INDÉPENDANTS - Juste du texte, pas de bouton
 		container.addTextDisplayComponents(
-			new TextDisplayBuilder().setContent(`${emojis.independent} Indépendants *(${independants.length})* :`),
+			new TextDisplayBuilder().setContent(`${emojis.independent} Indépendants :`),
 			new TextDisplayBuilder().setContent(formatList(independants))
 		);
 
