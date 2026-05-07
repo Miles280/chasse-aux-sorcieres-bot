@@ -1,6 +1,6 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder } from 'discord.js';
 import { createCanvas, loadImage } from 'canvas';
-import { BlackjackGame } from '../../models/BlackjackGame.interface';
+import { BlackjackGame } from '../../models/casino/BlackjackGame.interface';
 import { colors } from '../../utils/customColors';
 import { emojis } from '../../utils/emojis';
 

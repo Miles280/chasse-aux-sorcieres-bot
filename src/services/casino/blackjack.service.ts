@@ -1,7 +1,7 @@
 import { Collection } from 'discord.js';
 import { container } from '@sapphire/framework';
 import axios from 'axios';
-import { BlackjackGame } from '../../models/BlackjackGame.interface';
+import { BlackjackGame } from '../../models/casino/BlackjackGame.interface';
 import { BlackjackMessageBuilder } from '../../builders/casino/BlackjackMessage.builder';
 
 export class BlackjackService {

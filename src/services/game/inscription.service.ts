@@ -1,6 +1,6 @@
 import { ApiClient } from './../apiClient.service';
 import { ApiResponse } from '../../models/ApiResponse.interface';
-import { GameData } from '../../models/Game.interface';
+import { CompoData, GameData } from '../../models/Game.interface';
 import { ButtonInteraction, GuildTextBasedChannel, MessageFlags } from 'discord.js';
 import { InscriptionMessageBuilder } from '../../builders/game/InscriptionMessage.builder';
 import { container } from '@sapphire/framework';
@@ -60,6 +60,13 @@ export class InscriptionService {
 	 */
 	async cancelGame(gameId: number): Promise<ApiResponse<{ message: string }>> {
 		return await this.api.delete<{ message: string }>(`/games/cancel/${gameId}`);
+	}
+
+	/**
+	 * Récupère les infos d'une composition de partie
+	 */
+	async getCompo(gameId: number): Promise<ApiResponse<CompoData>> {
+		return await this.api.get<CompoData>(`/composition/${gameId}`);
 	}
 
 	/**
@@ -137,7 +144,10 @@ export class InscriptionService {
 				const mjChannel = (await interaction.guild?.channels.fetch(config.data.gameMjChannelId)) as GuildTextBasedChannel;
 				const compoMsg = await mjChannel.messages.fetch(gameData.compoMessageId);
 
-				const compoPayload = InscriptionMessageBuilder.buildCompo(gameData);
+				const compoData = await container.inscriptionService.getCompo(gameData.id);
+				if (!compoData.success) return;
+
+				const compoPayload = InscriptionMessageBuilder.buildCompo(gameData, compoData.data);
 				await compoMsg.edit(compoPayload);
 			} catch (err) {
 				console.error('Impossible de mettre à jour le message de compo MJ:', err);

@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { Collection } from 'discord.js';
-import { MoreOrLessGame, TurnResult, DeckApiResponse, DrawApiResponse } from '../../models/MoreOrLessGame.interface';
+import { MoreOrLessGame, TurnResult, DeckApiResponse, DrawApiResponse } from '../../models/casino/MoreOrLessGame.interface';
 import { container } from '@sapphire/framework';
 import { MoreOrLessMessageBuilder } from '../../builders/casino/MoreOrLessMessage.builder';
 

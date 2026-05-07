@@ -1,6 +1,6 @@
 import { Collection } from 'discord.js';
 import { container } from '@sapphire/framework';
-import { RouletteGame, RouletteBet, RouletteBetType } from '../../models/RouletteGame.interface';
+import { RouletteGame, RouletteBet, RouletteBetType } from '../../models/casino/RouletteGame.interface';
 import { ROULETTE_CONFIG } from '../../utils/constants';
 import { RouletteMessageBuilder } from '../../builders/casino/RouletteMessage.builder';
 import { BET_OPTIONS } from '../../utils/betLabels';

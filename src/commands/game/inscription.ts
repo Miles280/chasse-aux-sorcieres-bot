@@ -146,18 +146,29 @@ export class InscriptionCommand extends Subcommand {
 
 		// --- GESTION DU MESSAGE DE COMPO (Salon MJ) ---
 		if (mjChannel) {
-			// Supposons que tu as une méthode buildCompo dans ton Builder
-			const compoPayload = InscriptionMessageBuilder.buildCompo(game);
+			const compoData = await container.inscriptionService.getCompo(game.id);
+			if (!compoData.success) return;
+
+			const compoPayload = InscriptionMessageBuilder.buildCompoV2(game, compoData.data);
 
 			if (game.compoMessageId) {
 				try {
 					const existingCompo = await mjChannel.messages.fetch(game.compoMessageId);
-					compoMessage = await existingCompo.edit(compoPayload);
+					compoMessage = await existingCompo.edit({
+						...compoPayload,
+						flags: MessageFlags.IsComponentsV2 // ✅ Les flags ICI
+					});
 				} catch {
-					compoMessage = await mjChannel.send(compoPayload);
+					compoMessage = await mjChannel.send({
+						...compoPayload,
+						flags: MessageFlags.IsComponentsV2 // ✅ Les flags ICI
+					});
 				}
 			} else {
-				compoMessage = await mjChannel.send(compoPayload);
+				compoMessage = await mjChannel.send({
+					...compoPayload,
+					flags: MessageFlags.IsComponentsV2 // ✅ Les flags ICI
+				});
 			}
 			statusMessage += `\nMessage de compo synchronisé dans <#${mjChannel.id}>.`;
 		} else {
@@ -357,7 +368,10 @@ export class InscriptionCommand extends Subcommand {
 				if (mjChannel?.isTextBased()) {
 					const compoMsg = await mjChannel.messages.fetch(updatedGame.compoMessageId);
 
-					const compoPayload = InscriptionMessageBuilder.buildCompo(updatedGame);
+					const compoData = await container.inscriptionService.getCompo(game.id);
+					if (!compoData.success) return;
+
+					const compoPayload = InscriptionMessageBuilder.buildCompo(updatedGame, compoData.data);
 					await compoMsg.edit(compoPayload);
 				}
 			} catch (error) {

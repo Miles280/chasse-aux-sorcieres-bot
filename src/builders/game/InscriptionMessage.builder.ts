@@ -1,7 +1,19 @@
-import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Message } from 'discord.js';
-import { GameData } from '../../models/Game.interface';
+import {
+	EmbedBuilder,
+	ActionRowBuilder,
+	ButtonBuilder,
+	ButtonStyle,
+	Message,
+	ContainerBuilder,
+	SeparatorSpacingSize,
+	TextDisplayBuilder,
+	SeparatorBuilder,
+	SectionBuilder
+} from 'discord.js';
+import { CompoData, GameData } from '../../models/Game.interface';
 import { colors } from '../../utils/customColors';
 import { emojis, emojisV2 } from '../../utils/emojis';
+import { RoleInterface } from '../../models/Role.interface';
 
 export class InscriptionMessageBuilder {
 	public static buildOpened(game: GameData, inscriptionVocId: string, maxPlayers: number | null, closeTimestamp: number | null) {
@@ -204,18 +216,113 @@ export class InscriptionMessageBuilder {
 	/**
 	 * Construit le message de composition de la partie
 	 */
-	public static buildCompo(game: GameData) {
+	public static buildCompo(game: GameData, compo: CompoData) {
+		const roles = compo.composition || [];
+
+		// 1. On filtre les rôles par camp
+		const sorcieres = roles.filter((r) => r.camp === 'witch' /* ou 'sorcieres' */);
+		const villageois = roles.filter((r) => r.camp === 'villagers');
+		const independants = roles.filter((r) => r.camp === 'independent' /* ou 'independant' */);
+
+		// Fonction utilitaire pour formater la liste avec le design souhaité
+		const formatList = (list: RoleInterface[]) => {
+			if (list.length === 0) return '> *Aucun*';
+			// Affiche chaque rôle sur une nouvelle ligne avec un petit chevron
+			return list.map((r) => `> ${r.name}`).join('\n');
+		};
+
 		const embed = new EmbedBuilder()
 			.setColor(colors.purpleWitch)
 			.setTitle(`${emojis.purplecheck} Préparation de la partie`)
 			.setDescription(
 				`Voici ton pannel de contrôle pour préparer la partie à venir.\n\n` +
 					`__Animateur__ : <@${game.gameMasterId}>\n` +
-					`__Joueurs__ : ${game.players?.length || 0} inscrit${game.players?.length > 1 ? 's' : ''}` +
-					`\u200B`
+					`__Joueurs__ : ${game.players?.length || 0} inscrit${(game.players?.length || 0) > 1 ? 's' : ''}\n\n` +
+					`**— COMPOSITION (${roles.length} rôles) —**`
+			)
+			// 2. On ajoute les sections (Fields) pour chaque camp
+			.addFields(
+				{
+					name: `🦇 Sorcières (${sorcieres.length})`,
+					value: formatList(sorcieres),
+					inline: true // Passe à false si tu préfères qu'ils soient les uns sous les autres
+				},
+				{
+					name: `🧑‍🌾 Villageois (${villageois.length})`,
+					value: formatList(villageois),
+					inline: true
+				},
+				{
+					name: `🎭 Indépendants (${independants.length})`,
+					value: formatList(independants),
+					inline: true
+				}
 			);
 
-		return { embeds: [embed], components: [] };
+		return {
+			embeds: [embed],
+			components: [] // C'est ici que tu pourras injecter ton ComponentV2
+		};
+	}
+
+	/**
+	 * Construit le message de composition de la partie (Version Block Kit)
+	 */
+	public static buildCompoV2(game: GameData, compo: CompoData) {
+		const roles = compo.composition || [];
+
+		const sorcieres = roles.filter((r) => r.camp === 'witch');
+		const villageois = roles.filter((r) => r.camp === 'villagers');
+		const independants = roles.filter((r) => r.camp === 'independent');
+
+		const formatList = (list: RoleInterface[]) => {
+			if (list.length === 0) return '> *Aucun*';
+			return list.map((r) => `> ${r.name}`).join('\n');
+		};
+
+		const container = new ContainerBuilder()
+			.setAccentColor(colors.purpleWitch)
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(`### ${emojis.purplecheck} Préparation de la partie`),
+				new TextDisplayBuilder().setContent(
+					`Voici ton pannel de contrôle pour préparer la partie à venir.\n\n` +
+						`__Animateur__ : <@${game.gameMasterId}>\n` +
+						`__Joueurs__ : ${game.players?.length || 0} inscrit${(game.players?.length || 0) > 1 ? 's' : ''}\n\n` +
+						`**Composition** *(${roles.length} rôles)* :`
+				)
+			);
+
+		container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
+
+		// SORCIÈRES - Section avec bouton à droite
+		const witchSection = new SectionBuilder()
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(`${emojis.witch} Sorcières *(${sorcieres.length})* :`),
+				new TextDisplayBuilder().setContent(formatList(sorcieres))
+			)
+			.setButtonAccessory((btn) => btn.setCustomId('add_witch_role').setEmoji(emojisV2.witch).setStyle(ButtonStyle.Primary));
+		container.addSectionComponents(witchSection);
+		container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
+
+		// VILLAGEOIS - Section avec bouton à droite
+		const villagerSection = new SectionBuilder()
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(`${emojis.villagers} Villageois *(${villageois.length})* :`),
+				new TextDisplayBuilder().setContent(formatList(villageois))
+			)
+			.setButtonAccessory((btn) => btn.setCustomId('add_villager_role').setEmoji(emojisV2.villagers).setStyle(ButtonStyle.Primary));
+		container.addSectionComponents(villagerSection);
+		container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
+
+		// INDÉPENDANTS - Juste du texte, pas de bouton
+		container.addTextDisplayComponents(
+			new TextDisplayBuilder().setContent(`${emojis.independent} Indépendants *(${independants.length})* :`),
+			new TextDisplayBuilder().setContent(formatList(independants))
+		);
+
+		return {
+			components: [container]
+		};
 	}
 
 	/**

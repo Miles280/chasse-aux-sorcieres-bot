@@ -10,7 +10,7 @@ import {
 	ThumbnailBuilder,
 	SectionBuilder
 } from 'discord.js';
-import { MoreOrLessGame, Card } from '../../models/MoreOrLessGame.interface';
+import { MoreOrLessGame, Card } from '../../models/casino/MoreOrLessGame.interface';
 import { emojis } from '../../utils/emojis';
 import { colors } from '../../utils/customColors';
 
