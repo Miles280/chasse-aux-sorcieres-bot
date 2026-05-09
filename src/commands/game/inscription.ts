@@ -149,25 +149,25 @@ export class InscriptionCommand extends Subcommand {
 			const compoData = await container.inscriptionService.getCompo(game.id);
 			if (!compoData.success) return;
 
-			const compoPayload = InscriptionMessageBuilder.buildCompoV2(game, compoData.data);
+			const compoPayload = InscriptionMessageBuilder.buildCompo(game, compoData.data);
 
 			if (game.compoMessageId) {
 				try {
 					const existingCompo = await mjChannel.messages.fetch(game.compoMessageId);
 					compoMessage = await existingCompo.edit({
 						...compoPayload,
-						flags: MessageFlags.IsComponentsV2 // ✅ Les flags ICI
+						flags: MessageFlags.IsComponentsV2
 					});
 				} catch {
 					compoMessage = await mjChannel.send({
 						...compoPayload,
-						flags: MessageFlags.IsComponentsV2 // ✅ Les flags ICI
+						flags: MessageFlags.IsComponentsV2
 					});
 				}
 			} else {
 				compoMessage = await mjChannel.send({
 					...compoPayload,
-					flags: MessageFlags.IsComponentsV2 // ✅ Les flags ICI
+					flags: MessageFlags.IsComponentsV2
 				});
 			}
 			statusMessage += `\nMessage de compo synchronisé dans <#${mjChannel.id}>.`;

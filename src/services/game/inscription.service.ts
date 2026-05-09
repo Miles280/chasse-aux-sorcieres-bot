@@ -70,6 +70,24 @@ export class InscriptionService {
 	}
 
 	/**
+	 * Ajoute des rôles à la composition d'une partie
+	 */
+	async addRolesToGame(gameId: number, roleIds: string[]): Promise<ApiResponse<CompoData>> {
+		return await this.api.post<CompoData>(`/composition/${gameId}/add`, {
+			roleIds
+		});
+	}
+
+	/**
+	 * Supprime des rôles à la composition d'une partie
+	 */
+	async removeRolesToGame(gameId: number, roleIds: string[]): Promise<ApiResponse<CompoData>> {
+		return await this.api.post<CompoData>(`/composition/${gameId}/remove`, {
+			roleIds
+		});
+	}
+
+	/**
 	 * Fermeture automatique des inscriptions
 	 */
 	async autoCloseInscription(gameId: number, messageId: string, channelId: string, vocId: string): Promise<void> {
@@ -148,7 +166,10 @@ export class InscriptionService {
 				if (!compoData.success) return;
 
 				const compoPayload = InscriptionMessageBuilder.buildCompo(gameData, compoData.data);
-				await compoMsg.edit(compoPayload);
+				await compoMsg.edit({
+					...compoPayload,
+					flags: MessageFlags.IsComponentsV2
+				});
 			} catch (err) {
 				console.error('Impossible de mettre à jour le message de compo MJ:', err);
 			}
