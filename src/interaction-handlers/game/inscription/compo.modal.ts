@@ -42,27 +42,37 @@ export class CompositionModalHandler extends InteractionHandler {
 	}
 
 	private async handleAddRole(interaction: ModalSubmitInteraction, game: GameData) {
-		// 1. Récupération des IDs (Ton code était bon ici !)
-		const selectedRoleIds = interaction.fields.fields
-			.filter((_, customId) => customId.startsWith('selected_roles_group_'))
-			.reduce((acc, field) => {
-				if ('values' in field && Array.isArray(field.values)) {
-					// NETTOYAGE : On enlève le "-index"
-					const cleanIds = field.values.map((val) => val.split('-')[0]);
-					acc.push(...cleanIds);
-				}
-				return acc;
-			}, [] as string[]);
+		// 1. Extraction des données complexes
+		const selectedData = interaction.fields.fields
+			.filter((_, customId) => customId.includes('_group_'))
+			.reduce(
+				(acc, field) => {
+					if ('values' in field && Array.isArray(field.values)) {
+						field.values.forEach((val) => {
+							const [idPart] = val.split('-');
+							const [id, name] = idPart.split(':');
 
-		if (selectedRoleIds.length === 0) {
+							acc.push({ id, name });
+						});
+					}
+					return acc;
+				},
+				[] as { id: string; name: string }[]
+			);
+
+		if (selectedData.length === 0) {
 			return interaction.reply({
 				embeds: [Embeds.errorEmbed({ member: interaction.member as GuildMember, message: "Tu n'as sélectionné aucun rôle." })],
 				flags: MessageFlags.Ephemeral
 			});
 		}
 
+		// On sépare les IDs pour l'API et les noms pour l'affichage
+		const selectedIds = selectedData.map((d) => d.id);
+		const roleNames = selectedData.map((d) => `> ${d.name}`).join('\n');
+
 		// 2. Mise à jour en base de données
-		const response = await container.inscriptionService.addRolesToGame(game.id, selectedRoleIds);
+		const response = await container.inscriptionService.addRolesToGame(game.id, selectedIds);
 
 		if (!response.success) {
 			return interaction.reply({
@@ -71,22 +81,18 @@ export class CompositionModalHandler extends InteractionHandler {
 			});
 		}
 
-		// 3. MISE À JOUR DU MESSAGE D'INSCRIPTION
+		// 3. Mise à jour du message d'inscription
 		const compoPayload = InscriptionMessageBuilder.buildCompo(game, response.data);
-
 		if (interaction.message) {
-			await interaction.message.edit({
-				...compoPayload,
-				flags: MessageFlags.IsComponentsV2
-			});
+			await interaction.message.edit({ ...compoPayload, flags: MessageFlags.IsComponentsV2 });
 		}
 
-		// 4. RÉPONSE À LA MODAL (Succès)
+		// 4. RÉPONSE À LA MODAL
 		return interaction.reply({
 			embeds: [
 				Embeds.successEmbed({
 					member: interaction.member as GuildMember,
-					message: `**${selectedRoleIds.length}** rôle(s) ajouté(s) avec succès !`
+					message: `Ajouté avec succès :\n${roleNames}`
 				})
 			],
 			flags: MessageFlags.Ephemeral
@@ -94,26 +100,38 @@ export class CompositionModalHandler extends InteractionHandler {
 	}
 
 	private async handleRemoveRole(interaction: ModalSubmitInteraction, game: GameData) {
-		// 1. Récupération des IDs (Ton code était bon ici !)
-		const selectedRoleIds = interaction.fields.fields
+		// 1. Extraction des données complexes
+		const selectedData = interaction.fields.fields
 			.filter((_, customId) => customId.includes('_group_'))
-			.reduce((acc, field) => {
-				if ('values' in field && Array.isArray(field.values)) {
-					const cleanIds = field.values.map((val) => val.split('-')[0]);
-					acc.push(...cleanIds);
-				}
-				return acc;
-			}, [] as string[]);
+			.reduce(
+				(acc, field) => {
+					if ('values' in field && Array.isArray(field.values)) {
+						field.values.forEach((val) => {
+							// val ressemble à "12:Sorcière-0"
+							const [idPart] = val.split('-'); // ["12:Sorcière", "0"]
+							const [id, name] = idPart.split(':'); // ["12", "Sorcière"]
 
-		if (selectedRoleIds.length === 0) {
+							acc.push({ id, name });
+						});
+					}
+					return acc;
+				},
+				[] as { id: string; name: string }[]
+			);
+
+		if (selectedData.length === 0) {
 			return interaction.reply({
 				embeds: [Embeds.errorEmbed({ member: interaction.member as GuildMember, message: "Tu n'as sélectionné aucun rôle." })],
 				flags: MessageFlags.Ephemeral
 			});
 		}
 
+		// On sépare les IDs pour l'API et les noms pour l'affichage
+		const selectedIds = selectedData.map((d) => d.id);
+		const roleNames = selectedData.map((d) => `> ${d.name}`).join('\n');
+
 		// 2. Mise à jour en base de données
-		const response = await container.inscriptionService.removeRolesToGame(game.id, selectedRoleIds);
+		const response = await container.inscriptionService.removeRolesToGame(game.id, selectedIds);
 
 		if (!response.success) {
 			return interaction.reply({
@@ -122,22 +140,18 @@ export class CompositionModalHandler extends InteractionHandler {
 			});
 		}
 
-		// 3. MISE À JOUR DU MESSAGE D'INSCRIPTION
+		// 3. Mise à jour du message d'inscription
 		const compoPayload = InscriptionMessageBuilder.buildCompo(game, response.data);
-
 		if (interaction.message) {
-			await interaction.message.edit({
-				...compoPayload,
-				flags: MessageFlags.IsComponentsV2
-			});
+			await interaction.message.edit({ ...compoPayload, flags: MessageFlags.IsComponentsV2 });
 		}
 
-		// 4. RÉPONSE À LA MODAL (Succès)
+		// 4. RÉPONSE À LA MODAL
 		return interaction.reply({
 			embeds: [
 				Embeds.successEmbed({
 					member: interaction.member as GuildMember,
-					message: `**${selectedRoleIds.length}** rôle(s) suprimé(s) avec succès !`
+					message: `Supprimé avec succès :\n${roleNames}`
 				})
 			],
 			flags: MessageFlags.Ephemeral

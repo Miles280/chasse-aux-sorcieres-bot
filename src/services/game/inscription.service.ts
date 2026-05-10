@@ -88,6 +88,13 @@ export class InscriptionService {
 	}
 
 	/**
+	 * Reset la composition d'une partie
+	 */
+	async resetRolesToGame(gameId: number): Promise<ApiResponse<CompoData>> {
+		return await this.api.get<CompoData>(`/composition/${gameId}/reset`);
+	}
+
+	/**
 	 * Fermeture automatique des inscriptions
 	 */
 	async autoCloseInscription(gameId: number, messageId: string, channelId: string, vocId: string): Promise<void> {

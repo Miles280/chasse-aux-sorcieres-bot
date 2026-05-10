@@ -231,7 +231,7 @@ export class InscriptionMessageBuilder {
 					`Voici ton panneau de contrôle pour préparer la partie à venir.\n\n` +
 						`__Animateur__ : <@${game.gameMasterId}>\n` +
 						`__Joueurs__ : ${game.players?.length || 0} inscrit${(game.players?.length || 0) > 1 ? 's' : ''}\n\n` +
-						`**__Composition__** *(${roles.length} rôles)* :`
+						`**__Composition__** *(${roles.length} rôle${roles.length > 1 ? 's' : ''})* :`
 				)
 			);
 
@@ -263,11 +263,14 @@ export class InscriptionMessageBuilder {
 
 		container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
 
-		// INDÉPENDANTS - Juste du texte, pas de bouton
-		container.addTextDisplayComponents(
-			new TextDisplayBuilder().setContent(`${emojis.independent} **Indépendants** :`),
-			new TextDisplayBuilder().setContent(this.formatList(independants))
-		);
+		if (independants.length > 0) {
+			// INDÉPENDANTS - Juste du texte, pas de bouton
+			container.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(`${emojis.independent} **Indépendants** :`),
+				new TextDisplayBuilder().setContent(this.formatList(independants))
+			);
+			container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
+		}
 
 		// 4. Construction des boutons de navigation
 		const buttonsRow = this.buildButtons(game.id);
