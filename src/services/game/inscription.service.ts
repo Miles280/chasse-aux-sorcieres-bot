@@ -198,17 +198,59 @@ export class InscriptionService {
 		const member = await interaction.guild?.members.fetch(interaction.user.id).catch(() => null);
 		if (!member) return;
 
+		const rolesResponse = await container.usersService.getRoles(interaction.user.id);
+		if (!rolesResponse.success) return console.log(rolesResponse.error);
+		const memberPerms = rolesResponse.data ?? [];
+
 		const playerRole = config.playerRoleId;
 		const spectatorRole = config.spectatorRoleId;
 
+		const mjRole = process.env.MJ_ROLE;
+		const devRole = process.env.DEV_ROLE;
+		const adminRole = process.env.ADMIN_ROLE;
+
+		const specialRoles = [mjRole, devRole, adminRole].filter(Boolean) as string[];
+
 		try {
 			if (action === 'join') {
-				if (playerRole) await member.roles.add(playerRole);
-				if (spectatorRole) await member.roles.remove(spectatorRole);
+				// Ajoute joueur
+				if (playerRole) {
+					await member.roles.add(playerRole);
+				}
+
+				// Retire spectateur
+				if (spectatorRole) {
+					await member.roles.remove(spectatorRole);
+				}
+
+				// Retire les rôles staff si le membre les possède
+				for (const roleId of specialRoles) {
+					if (member.roles.cache.has(roleId)) {
+						await member.roles.remove(roleId);
+					}
+				}
 			} else if (action === 'spectate') {
-				if (spectatorRole) await member.roles.add(spectatorRole);
+				if (spectatorRole) {
+					await member.roles.add(spectatorRole);
+				}
 			} else if (action === 'leave') {
-				if (playerRole) await member.roles.remove(playerRole);
+				if (playerRole) {
+					await member.roles.remove(playerRole);
+				}
+
+				const roleMap: Record<string, string | undefined> = {
+					ROLE_MJ: process.env.MJ_ROLE,
+					ROLE_DEV: process.env.DEV_ROLE,
+					ROLE_ADMIN: process.env.ADMIN_ROLE
+				};
+
+				for (const perm of memberPerms) {
+					const discordRoleId = roleMap[perm];
+
+					if (discordRoleId) {
+						await member.roles.add(discordRoleId);
+					}
+				}
 			}
 		} catch (error) {
 			console.error(`Erreur lors de la mise à jour des rôles pour ${member.user.tag}:`, error);
