@@ -15,6 +15,7 @@ import { BlackjackService } from './services/casino/blackjack.service';
 import { RolesService } from './services/game/roles.service';
 import { ServerConfigService } from './services/serverConfig.service';
 import { InscriptionService } from './services/game/inscription.service';
+import { UsersService } from './services/users.service';
 
 const client = new SapphireClient({
 	defaultPrefix: ',',
@@ -28,6 +29,7 @@ const client = new SapphireClient({
 
 container.discordService = new DiscordService();
 container.apiClient = new ApiClient(process.env.API_URL!, process.env.BOT_SECRET_KEY!);
+container.usersService = new UsersService(container.apiClient);
 
 container.economyService = new EconomyService(container.apiClient);
 container.shopService = new ShopService(container.apiClient);

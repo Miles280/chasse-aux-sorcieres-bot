@@ -10,7 +10,7 @@ import {
 	MediaGalleryBuilder,
 	MediaGalleryItemBuilder
 } from 'discord.js';
-import { RouletteGame, RouletteBet } from '../../models/RouletteGame.interface';
+import { RouletteGame, RouletteBet } from '../../models/casino/RouletteGame.interface';
 import { emojis } from '../../utils/emojis';
 import { colors } from '../../utils/customColors';
 import { BET_OPTIONS, BetType } from '../../utils/betLabels';

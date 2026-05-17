@@ -1,6 +1,6 @@
 import { ApiClient } from './../apiClient.service';
 import { ApiResponse } from '../../models/ApiResponse.interface';
-import { GameData } from '../../models/Game.interface';
+import { CompoData, GameData } from '../../models/Game.interface';
 import { ButtonInteraction, GuildTextBasedChannel, MessageFlags } from 'discord.js';
 import { InscriptionMessageBuilder } from '../../builders/game/InscriptionMessage.builder';
 import { container } from '@sapphire/framework';
@@ -60,6 +60,38 @@ export class InscriptionService {
 	 */
 	async cancelGame(gameId: number): Promise<ApiResponse<{ message: string }>> {
 		return await this.api.delete<{ message: string }>(`/games/cancel/${gameId}`);
+	}
+
+	/**
+	 * Récupère les infos d'une composition de partie
+	 */
+	async getCompo(gameId: number): Promise<ApiResponse<CompoData>> {
+		return await this.api.get<CompoData>(`/composition/${gameId}`);
+	}
+
+	/**
+	 * Ajoute des rôles à la composition d'une partie
+	 */
+	async addRolesToGame(gameId: number, roleIds: string[]): Promise<ApiResponse<CompoData>> {
+		return await this.api.post<CompoData>(`/composition/${gameId}/add`, {
+			roleIds
+		});
+	}
+
+	/**
+	 * Supprime des rôles à la composition d'une partie
+	 */
+	async removeRolesToGame(gameId: number, roleIds: string[]): Promise<ApiResponse<CompoData>> {
+		return await this.api.post<CompoData>(`/composition/${gameId}/remove`, {
+			roleIds
+		});
+	}
+
+	/**
+	 * Reset la composition d'une partie
+	 */
+	async resetRolesToGame(gameId: number): Promise<ApiResponse<CompoData>> {
+		return await this.api.get<CompoData>(`/composition/${gameId}/reset`);
 	}
 
 	/**
@@ -137,8 +169,14 @@ export class InscriptionService {
 				const mjChannel = (await interaction.guild?.channels.fetch(config.data.gameMjChannelId)) as GuildTextBasedChannel;
 				const compoMsg = await mjChannel.messages.fetch(gameData.compoMessageId);
 
-				const compoPayload = InscriptionMessageBuilder.buildCompo(gameData);
-				await compoMsg.edit(compoPayload);
+				const compoData = await container.inscriptionService.getCompo(gameData.id);
+				if (!compoData.success) return;
+
+				const compoPayload = InscriptionMessageBuilder.buildCompo(gameData, compoData.data);
+				await compoMsg.edit({
+					...compoPayload,
+					flags: MessageFlags.IsComponentsV2
+				});
 			} catch (err) {
 				console.error('Impossible de mettre à jour le message de compo MJ:', err);
 			}
@@ -160,17 +198,59 @@ export class InscriptionService {
 		const member = await interaction.guild?.members.fetch(interaction.user.id).catch(() => null);
 		if (!member) return;
 
+		const rolesResponse = await container.usersService.getRoles(interaction.user.id);
+		if (!rolesResponse.success) return console.log(rolesResponse.error);
+		const memberPerms = rolesResponse.data ?? [];
+
 		const playerRole = config.playerRoleId;
 		const spectatorRole = config.spectatorRoleId;
 
+		const mjRole = process.env.MJ_ROLE;
+		const devRole = process.env.DEV_ROLE;
+		const adminRole = process.env.ADMIN_ROLE;
+
+		const specialRoles = [mjRole, devRole, adminRole].filter(Boolean) as string[];
+
 		try {
 			if (action === 'join') {
-				if (playerRole) await member.roles.add(playerRole);
-				if (spectatorRole) await member.roles.remove(spectatorRole);
+				// Ajoute joueur
+				if (playerRole) {
+					await member.roles.add(playerRole);
+				}
+
+				// Retire spectateur
+				if (spectatorRole) {
+					await member.roles.remove(spectatorRole);
+				}
+
+				// Retire les rôles staff si le membre les possède
+				for (const roleId of specialRoles) {
+					if (member.roles.cache.has(roleId)) {
+						await member.roles.remove(roleId);
+					}
+				}
 			} else if (action === 'spectate') {
-				if (spectatorRole) await member.roles.add(spectatorRole);
+				if (spectatorRole) {
+					await member.roles.add(spectatorRole);
+				}
 			} else if (action === 'leave') {
-				if (playerRole) await member.roles.remove(playerRole);
+				if (playerRole) {
+					await member.roles.remove(playerRole);
+				}
+
+				const roleMap: Record<string, string | undefined> = {
+					ROLE_MJ: process.env.MJ_ROLE,
+					ROLE_DEV: process.env.DEV_ROLE,
+					ROLE_ADMIN: process.env.ADMIN_ROLE
+				};
+
+				for (const perm of memberPerms) {
+					const discordRoleId = roleMap[perm];
+
+					if (discordRoleId) {
+						await member.roles.add(discordRoleId);
+					}
+				}
 			}
 		} catch (error) {
 			console.error(`Erreur lors de la mise à jour des rôles pour ${member.user.tag}:`, error);

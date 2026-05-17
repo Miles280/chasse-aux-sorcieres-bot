@@ -4,7 +4,7 @@ import { ButtonInteraction, ContainerBuilder, MessageFlags, TextDisplayBuilder }
 import { MoreOrLessMessageBuilder } from '../../../builders/casino/MoreOrLessMessage.builder';
 import { colors } from '../../../utils/customColors';
 import { emojis } from '../../../utils/emojis';
-import { MoreOrLessGame } from '../../../models/MoreOrLessGame.interface';
+import { MoreOrLessGame } from '../../../models/casino/MoreOrLessGame.interface';
 import * as Embeds from '../../../utils/embeds';
 
 @ApplyOptions<InteractionHandler.Options>({

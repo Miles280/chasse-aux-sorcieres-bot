@@ -24,5 +24,8 @@ export const emojisV2 = {
 	gems: { name: `gems`, id: `${process.env.EMOJI_GEMS_ID}` },
 	rubies: { name: `rubies`, id: `${process.env.EMOJI_RUBIES_ID}` },
 	alive: { name: `alive`, id: `${process.env.EMOJI_ALIVE_ID}` },
-	dead: { name: `dead`, id: `${process.env.EMOJI_DEAD_ID}` }
+	dead: { name: `dead`, id: `${process.env.EMOJI_DEAD_ID}` },
+	villagers: { name: `villagers`, id: `${process.env.EMOJI_VILLAGER_ID}` },
+	witch: { name: `witch`, id: `${process.env.EMOJI_WITCH_ID}` },
+	independent: { name: `independent`, id: `${process.env.EMOJI_INDEPENDENT_ID}` }
 };

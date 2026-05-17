@@ -1,7 +1,7 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes, container } from '@sapphire/framework';
 import { ModalSubmitInteraction, MessageFlags } from 'discord.js';
-import { RouletteBet, RouletteBetType } from '../../../models/RouletteGame.interface';
+import { RouletteBet, RouletteBetType } from '../../../models/casino/RouletteGame.interface';
 import { ROULETTE_CONFIG } from '../../../utils/constants';
 import { emojis } from '../../../utils/emojis';
 import * as Embeds from '../../../utils/embeds';

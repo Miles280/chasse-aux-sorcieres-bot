@@ -1,3 +1,5 @@
+import { RoleInterface } from './Role.interface';
+
 /**
  * Interface pour les données d'une partie
  */
@@ -18,4 +20,8 @@ export interface GameData {
 	currentStep?: string;
 	dayNumber?: number;
 	winningCamp?: string;
+}
+
+export interface CompoData {
+	composition: RoleInterface[];
 }

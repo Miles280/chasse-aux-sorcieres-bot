@@ -2,7 +2,7 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { Command, container } from '@sapphire/framework';
 import { ChatInputCommandInteraction, InteractionContextType, ChannelType, MessageFlags, ForumChannel, PermissionFlagsBits } from 'discord.js';
 import { Camp } from '../../enums/Camp';
-import { Alignment } from '../../enums/Alignment';
+import { Alignment, getAlignmentLabel } from '../../enums/Alignment';
 import * as Embeds from '../../utils/embeds';
 import { RoleMessageBuilder } from '../../builders/game/RoleMessage.builder';
 
@@ -114,7 +114,7 @@ export class SyncRolesCommand extends Command {
 
 				if (role.alignments) {
 					for (const alignment of role.alignments) {
-						const alignmentLabel = this.getAlignmentLabel(alignment);
+						const alignmentLabel = getAlignmentLabel(alignment);
 						if (tagsMap.has(alignmentLabel)) roleTagsIds.push(tagsMap.get(alignmentLabel)!);
 					}
 				}
@@ -203,8 +203,9 @@ export class SyncRolesCommand extends Command {
 			requiredTags.push(...Object.values(this.CAMP_TAGS));
 		}
 
-		// 2. On ajoute toujours tous les alignements
-		requiredTags.push(...Object.values(this.ALIGNMENT_TAGS));
+		// 2. On ajoute toujours tous les alignements (traduits en libellés français)
+		const alignmentLabels = Object.values(Alignment).map((align) => getAlignmentLabel(align));
+		requiredTags.push(...alignmentLabels);
 
 		const currentTags: { id?: string; name: string }[] = [...forum.availableTags];
 		let tagsUpdated = false;
@@ -239,29 +240,10 @@ export class SyncRolesCommand extends Command {
 		return labels[camp];
 	}
 
-	private getAlignmentLabel(alignment: Alignment): string {
-		const labels = {
-			[Alignment.KILLER]: this.ALIGNMENT_TAGS.KILLER,
-			[Alignment.INFORMER]: this.ALIGNMENT_TAGS.INFORMER,
-			[Alignment.LEADER]: this.ALIGNMENT_TAGS.LEADER,
-			[Alignment.PROTECTOR]: this.ALIGNMENT_TAGS.PROTECTOR,
-			[Alignment.SUPPORT]: this.ALIGNMENT_TAGS.SUPPORT
-		};
-		return labels[alignment];
-	}
-
 	// Constantes pour les noms de tags
 	private readonly CAMP_TAGS = {
 		VILLAGERS: 'Villageois',
 		WITCH: 'Sorcières',
 		INDEPENDENT: 'Indépendants'
-	} as const;
-
-	private readonly ALIGNMENT_TAGS = {
-		KILLER: 'Tueur',
-		INFORMER: 'Informateur',
-		LEADER: 'Meneur',
-		PROTECTOR: 'Protecteur',
-		SUPPORT: 'Support'
 	} as const;
 }

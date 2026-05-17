@@ -4,7 +4,7 @@ import { container } from '@sapphire/framework';
 import { InteractionContextType, MessageFlags } from 'discord.js';
 import { RouletteMessageBuilder } from '../../builders/casino/RouletteMessage.builder';
 import { ROULETTE_CONFIG } from '../../utils/constants';
-import { RouletteGame } from '../../models/RouletteGame.interface';
+import { RouletteGame } from '../../models/casino/RouletteGame.interface';
 import * as Embeds from '../../utils/embeds';
 
 @ApplyOptions<Command.Options>({

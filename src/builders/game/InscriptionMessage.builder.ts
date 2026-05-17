@@ -1,7 +1,20 @@
-import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Message } from 'discord.js';
-import { GameData } from '../../models/Game.interface';
+import {
+	EmbedBuilder,
+	ActionRowBuilder,
+	ButtonBuilder,
+	ButtonStyle,
+	Message,
+	ContainerBuilder,
+	SeparatorSpacingSize,
+	TextDisplayBuilder,
+	SeparatorBuilder,
+	SectionBuilder
+} from 'discord.js';
+import { CompoData, GameData } from '../../models/Game.interface';
 import { colors } from '../../utils/customColors';
 import { emojis, emojisV2 } from '../../utils/emojis';
+import { RoleInterface } from '../../models/Role.interface';
+import { Alignment, getAlignmentLabel } from '../../enums/Alignment';
 
 export class InscriptionMessageBuilder {
 	public static buildOpened(game: GameData, inscriptionVocId: string, maxPlayers: number | null, closeTimestamp: number | null) {
@@ -204,18 +217,67 @@ export class InscriptionMessageBuilder {
 	/**
 	 * Construit le message de composition de la partie
 	 */
-	public static buildCompo(game: GameData) {
-		const embed = new EmbedBuilder()
-			.setColor(colors.purpleWitch)
-			.setTitle(`${emojis.purplecheck} Préparation de la partie`)
-			.setDescription(
-				`Voici ton pannel de contrôle pour préparer la partie à venir.\n\n` +
-					`__Animateur__ : <@${game.gameMasterId}>\n` +
-					`__Joueurs__ : ${game.players?.length || 0} inscrit${game.players?.length > 1 ? 's' : ''}` +
-					`\u200B`
+	public static buildCompo(game: GameData, compo: CompoData) {
+		const roles = compo.composition || [];
+		const sorcieres = roles.filter((r) => r.camp === 'witch');
+		const villageois = roles.filter((r) => r.camp === 'villagers');
+		const independants = roles.filter((r) => r.camp === 'independent');
+
+		const container = new ContainerBuilder()
+			.setAccentColor(colors.purpleWitch)
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(`### ${emojis.purplecheck} Préparation de la partie`),
+				new TextDisplayBuilder().setContent(
+					`Voici ton panneau de contrôle pour préparer la partie à venir.\n\n` +
+						`__Animateur__ : <@${game.gameMasterId}>\n` +
+						`__Joueurs__ : ${game.players?.length || 0} inscrit${(game.players?.length || 0) > 1 ? 's' : ''}\n\n` +
+						`**__Composition__** *(${roles.length} rôle${roles.length > 1 ? 's' : ''})* :`
+				)
 			);
 
-		return { embeds: [embed], components: [] };
+		container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
+
+		// SORCIÈRES - Section avec bouton à droite
+		const witchSection = new SectionBuilder()
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(`${emojis.witch} **Sorcières** :`),
+				new TextDisplayBuilder().setContent(this.formatList(sorcieres))
+			)
+			.setButtonAccessory((btn) =>
+				btn.setCustomId(`compo:button:quickadd:${game.id}:witch`).setEmoji(emojisV2.witch).setStyle(ButtonStyle.Primary)
+			);
+		container.addSectionComponents(witchSection);
+
+		container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
+
+		// VILLAGEOIS - Section avec bouton à droite
+		const villagerSection = new SectionBuilder()
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(`${emojis.villagers} **Villageois** :`),
+				new TextDisplayBuilder().setContent(this.formatList(villageois))
+			)
+			.setButtonAccessory((btn) =>
+				btn.setCustomId(`compo:button:quickadd:${game.id}:villagers`).setEmoji(emojisV2.villagers).setStyle(ButtonStyle.Primary)
+			);
+		container.addSectionComponents(villagerSection);
+
+		container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
+
+		if (independants.length > 0) {
+			// INDÉPENDANTS - Juste du texte, pas de bouton
+			container.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(`${emojis.independent} **Indépendants** :`),
+				new TextDisplayBuilder().setContent(this.formatList(independants))
+			);
+			container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
+		}
+
+		// 4. Construction des boutons de navigation
+		const buttonsRow = this.buildButtons(game.id);
+
+		return {
+			components: [container, buttonsRow]
+		};
 	}
 
 	/**
@@ -244,5 +306,55 @@ export class InscriptionMessageBuilder {
 		}
 
 		return { maxPlayers, closeTimestamp };
+	}
+
+	/**
+	 * Formatage des listes de rôles
+	 */
+	private static formatList = (list: RoleInterface[]) => {
+		if (list.length === 0) return '> *Aucun*';
+
+		// 1. Liste des rôles avec numérotation (1. 2. 3.) et alignements
+		const rolesListText = list
+			.map((r, index) => {
+				const alignsText = r.alignments?.length ? `   »   [ *${r.alignments.map((a) => getAlignmentLabel(a)).join(', ')}* ]` : '';
+				return `**${index + 1}.** ${r.name}${alignsText}`;
+			})
+			.join('\n');
+
+		// 2. Calcul du récapitulatif des alignements
+		const alignmentCounts: Record<string, number> = {};
+		list.forEach((role) => {
+			if (role.alignments) {
+				role.alignments.forEach((align) => {
+					alignmentCounts[align] = (alignmentCounts[align] || 0) + 1;
+				});
+			}
+		});
+
+		// 3. Formatage du récapitulatif
+		const summaryEntries = Object.entries(alignmentCounts).map(([align, count]) => {
+			// Ici aussi, on utilise la fonction globale
+			const label = getAlignmentLabel(align as Alignment);
+			return `**${count}** ${count > 1 ? label + 's' : label}`;
+		});
+
+		const summaryText = summaryEntries.length > 0 ? `\n\n*Récap : ${summaryEntries.join(', ')}*` : '';
+
+		return rolesListText + summaryText;
+	};
+
+	/**
+	 * Boutons en bas du message
+	 */
+	private static buildButtons(gameId: Number): ActionRowBuilder<ButtonBuilder> {
+		return new ActionRowBuilder<ButtonBuilder>().addComponents(
+			new ButtonBuilder().setCustomId(`compo:button:add:${gameId}:witch`).setEmoji(emojisV2.witch).setStyle(ButtonStyle.Success),
+			new ButtonBuilder().setCustomId(`compo:button:add:${gameId}:villagers`).setEmoji(emojisV2.villagers).setStyle(ButtonStyle.Success),
+			new ButtonBuilder().setCustomId(`compo:button:add:${gameId}:independent`).setEmoji(emojisV2.independent).setStyle(ButtonStyle.Success),
+
+			new ButtonBuilder().setCustomId(`compo:button:delete:${gameId}`).setEmoji('🗑️').setStyle(ButtonStyle.Danger),
+			new ButtonBuilder().setCustomId(`compo:button:reset:${gameId}`).setEmoji('🔄').setStyle(ButtonStyle.Danger)
+		);
 	}
 }

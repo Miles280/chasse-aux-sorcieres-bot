@@ -1,5 +1,5 @@
 import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
-import { TowerGame } from '../../models/TowerGame.interface';
+import { TowerGame } from '../../models/casino/TowerGame.interface';
 import { emojis } from '../../utils/emojis';
 import { colors } from '../../utils/customColors';
 import { TOWER_CONFIG } from '../../utils/constants';
