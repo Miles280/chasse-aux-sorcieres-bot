@@ -1,6 +1,6 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { container } from '@sapphire/framework';
-import { GuildTextBasedChannel, InteractionContextType, Message, MessageFlags, PermissionFlagsBits } from 'discord.js';
+import { GuildMember, GuildTextBasedChannel, InteractionContextType, Message, MessageFlags, PermissionFlagsBits } from 'discord.js';
 import { Subcommand } from '@sapphire/plugin-subcommands';
 import { InscriptionMessageBuilder } from '../../builders/game/InscriptionMessage.builder';
 import { GameData } from '../../models/Game.interface';
@@ -13,7 +13,8 @@ import * as Embeds from '../../utils/embeds';
 		{ name: 'open', chatInputRun: 'chatInputOpen' },
 		{ name: 'close', chatInputRun: 'chatInputClose' },
 		{ name: 'kick', chatInputRun: 'chatInputKick' },
-		{ name: 'cancel', chatInputRun: 'chatInputCancel' }
+		{ name: 'cancel', chatInputRun: 'chatInputCancel' },
+		{ name: 'claim', chatInputRun: 'chatInputClaim' }
 	]
 })
 export class InscriptionCommand extends Subcommand {
@@ -62,6 +63,11 @@ export class InscriptionCommand extends Subcommand {
 					sub //
 						.setName('cancel')
 						.setDescription('Annule les inscriptions en cours.')
+				)
+				.addSubcommand((sub) =>
+					sub //
+						.setName('claim')
+						.setDescription('Récupère la partie en cours.')
 				)
 		);
 	}
@@ -122,7 +128,7 @@ export class InscriptionCommand extends Subcommand {
 				});
 			}
 			game = createResponse.data;
-			statusMessage = `Une nouvelle partie a été créée. `;
+			statusMessage = `Une nouvelle partie a été créée.\n`;
 		}
 
 		const closeTimestamp = remainingTime ? Math.floor(Date.now() / 1000) + remainingTime * 60 : null;
@@ -328,12 +334,32 @@ export class InscriptionCommand extends Subcommand {
 		// 5. Retirer les rôles du joueur expulsé
 		try {
 			const member = await interaction.guild?.members.fetch(player.id).catch(() => null);
+
 			if (member) {
+				// retire roles game
 				if (config.playerRoleId) await member.roles.remove(config.playerRoleId);
-				if (config.deadPlayerRoleId) await member.roles.remove(config.deadPlayerRoleId); // Retrait du rôle spectateur
+				if (config.deadPlayerRoleId) await member.roles.remove(config.deadPlayerRoleId);
+
+				// 🔥 RESTORE STAFF ROLES
+				const rolesResponse = await container.usersService.getRoles(player.id);
+
+				if (rolesResponse.success && rolesResponse.data) {
+					const roleMap: Record<string, string | undefined> = {
+						ROLE_MJ: process.env.MJ_ROLE,
+						ROLE_DEV: process.env.DEV_ROLE,
+						ROLE_ADMIN: process.env.ADMIN_ROLE
+					};
+
+					for (const perm of rolesResponse.data) {
+						const roleId = roleMap[perm];
+						if (roleId) {
+							await member.roles.add(roleId).catch(() => null);
+						}
+					}
+				}
 			}
 		} catch (error) {
-			console.error(`Impossible de retirer les rôles de ${player.tag} lors du kick:`, error);
+			console.error(`Impossible de sync les rôles pour ${player.tag}:`, error);
 		}
 
 		// 6. Mettre à jour le message public d'inscription
@@ -502,6 +528,143 @@ export class InscriptionCommand extends Subcommand {
 					Embeds.errorEmbed({
 						title: 'Erreur critique',
 						message: `Une erreur inattendue s'est produite: ${error instanceof Error ? error.message : 'Erreur inconnue'}`
+					})
+				]
+			});
+		}
+	}
+
+	public async chatInputClaim(interaction: Subcommand.ChatInputCommandInteraction) {
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+		const member = interaction.member as GuildMember;
+
+		try {
+			// 1. CHECK ROLE MJ
+			const mjRoleId = process.env.MJ_ROLE;
+
+			if (!mjRoleId) {
+				return interaction.editReply({
+					embeds: [
+						Embeds.errorEmbed({
+							title: 'Erreur de config',
+							message: 'MJ_ROLE manquant dans le .env'
+						})
+					]
+				});
+			}
+
+			// 2. Communication avec l'API
+			const response = await container.inscriptionService.giveGame(member.id);
+
+			if (!response.success) {
+				return interaction.editReply({
+					embeds: [
+						Embeds.errorEmbed({
+							title: 'Erreur API',
+							message: response.error
+						})
+					]
+				});
+			}
+
+			const game = response.data;
+
+			// 3. CONFIG SERVEUR
+			const configResponse = await container.serverConfigService.getConfig(interaction.guildId!);
+
+			if (!configResponse.success) {
+				return interaction.editReply({
+					embeds: [
+						Embeds.errorEmbed({
+							title: 'Erreur config',
+							message: configResponse.error
+						})
+					]
+				});
+			}
+
+			const { inscriptionChannelId, gameMjChannelId, inscriptionVoiceChannelId: vocalId } = configResponse.data;
+
+			let targetChannel = interaction.channel as GuildTextBasedChannel;
+
+			if (!targetChannel || !vocalId) {
+				return interaction.editReply({
+					embeds: [Embeds.errorEmbed({ title: 'Erreur de config', message: "Salon d'inscription ou Vocal manquant !" })]
+				});
+			}
+
+			if (inscriptionChannelId) {
+				const fetched = await interaction.guild?.channels.fetch(inscriptionChannelId).catch(() => null);
+				if (fetched?.isTextBased() && fetched.isSendable()) {
+					targetChannel = fetched;
+				}
+			}
+
+			let mjChannel: GuildTextBasedChannel | null = null;
+
+			if (gameMjChannelId) {
+				const fetchedMj = await interaction.guild?.channels.fetch(gameMjChannelId).catch(() => null);
+				if (fetchedMj?.isTextBased() && fetchedMj.isSendable()) {
+					mjChannel = fetchedMj;
+				}
+			}
+
+			// 4. UPDATE INSCRIPTION MESSAGE
+			let inscriptionMessage: Message | null = null;
+
+			if (game.inscriptionMessageId) {
+				try {
+					const existing = await targetChannel.messages.fetch(game.inscriptionMessageId);
+
+					inscriptionMessage = await existing.edit(InscriptionMessageBuilder.buildOpened(game, vocalId, null, null));
+				} catch {
+					// ignore
+				}
+			}
+
+			// 5. UPDATE COMPO MESSAGE
+			let compoMessage: Message | null = null;
+
+			const compoData = await container.inscriptionService.getCompo(game.id);
+
+			if (mjChannel && compoData.success && game.compoMessageId) {
+				try {
+					const existing = await mjChannel.messages.fetch(game.compoMessageId);
+
+					compoMessage = await existing.edit({
+						...InscriptionMessageBuilder.buildCompo(game, compoData.data),
+						flags: MessageFlags.IsComponentsV2
+					});
+				} catch {
+					// ignore
+				}
+			}
+
+			// 6. UPDATE BACKEND
+			await container.inscriptionService.updateMessages(
+				game.id,
+				inscriptionMessage?.id || game.inscriptionMessageId || '',
+				compoMessage?.id || game.compoMessageId || ''
+			);
+
+			// 7. RESPONSE
+			return interaction.editReply({
+				embeds: [
+					Embeds.successEmbed({
+						title: 'Transfert réussi',
+						message: `La partie a été transférée avec succès à <@${member.id}>.`
+					})
+				]
+			});
+		} catch (err) {
+			console.error(err);
+
+			return interaction.editReply({
+				embeds: [
+					Embeds.errorEmbed({
+						title: 'Crash command',
+						message: String(err)
 					})
 				]
 			});
