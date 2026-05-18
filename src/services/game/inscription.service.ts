@@ -15,8 +15,17 @@ export class InscriptionService {
 	 * Crée une nouvelle partie
 	 */
 	async create(gameMasterId: string): Promise<ApiResponse<GameData>> {
-		return await this.api.post<GameData>('/games/create', {
+		return await this.api.post<GameData>('/inscription/create', {
 			gameMasterId
+		});
+	}
+
+	/**
+	 * Donne une partie à un autre animateur
+	 */
+	async giveGame(discordId: string): Promise<ApiResponse<GameData>> {
+		return await this.api.post<GameData>(`/inscription/give`, {
+			discordId
 		});
 	}
 
@@ -24,21 +33,21 @@ export class InscriptionService {
 	 * Récupère la partie en attente d'inscription sur le serveur
 	 */
 	async getWaitingGame(): Promise<ApiResponse<GameData>> {
-		return await this.api.get<GameData>('/games/waiting');
+		return await this.api.get<GameData>('/inscription/waiting');
 	}
 
 	/**
 	 * Récupère une partie par son ID
 	 */
 	async getGameById(gameId: number): Promise<ApiResponse<GameData>> {
-		return await this.api.get<GameData>(`/games/${gameId}`);
+		return await this.api.get<GameData>(`/inscription/${gameId}`);
 	}
 
 	/**
 	 * Met à jour les IDs des messages d'interface (Inscription et Compo)
 	 */
 	async updateMessages(gameId: number, inscriptionMessageId: string, compoMessageId: string): Promise<ApiResponse<any>> {
-		return await this.api.patch<any>(`/games/messages/${gameId}`, {
+		return await this.api.patch<any>(`/inscription/messages/${gameId}`, {
 			inscriptionMessageId,
 			compoMessageId
 		});
@@ -49,7 +58,7 @@ export class InscriptionService {
 	 * action: 'join' | 'leave' | 'spectate'
 	 */
 	async inscription(gameId: number, discordId: string, action: 'join' | 'leave' | 'spectate'): Promise<ApiResponse<GameData>> {
-		return await this.api.post<GameData>(`/games/inscription/${gameId}`, {
+		return await this.api.post<GameData>(`/inscription/inscription/${gameId}`, {
 			discordId,
 			action
 		});
@@ -59,7 +68,7 @@ export class InscriptionService {
 	 * Annule et supprime une partie en attente
 	 */
 	async cancelGame(gameId: number): Promise<ApiResponse<{ message: string }>> {
-		return await this.api.delete<{ message: string }>(`/games/cancel/${gameId}`);
+		return await this.api.delete<{ message: string }>(`/inscription/cancel/${gameId}`);
 	}
 
 	/**

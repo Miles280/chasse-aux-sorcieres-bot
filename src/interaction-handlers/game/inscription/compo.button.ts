@@ -237,7 +237,7 @@ export class CompositionButtonHandler extends InteractionHandler {
 				if (labels.length >= 5) break;
 
 				const chunk = category.roles.slice(i, i + chunkSize);
-				const partSuffix = category.roles.length > chunkSize ? ` (Partie ${Math.floor(i / chunkSize) + 1})` : '';
+				const partSuffix = category.roles.length > chunkSize ? ` - Partie ${Math.floor(i / chunkSize) + 1}` : '';
 
 				// Formatage des options pour ce chunk
 				const options = chunk.map((role) => ({

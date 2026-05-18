@@ -32,7 +32,7 @@ export class InscriptionMessageBuilder {
 			.setColor(colors.purpleWitch)
 			.setTitle(`${emojis.purplecheck} Inscriptions ouvertes !`)
 			.setDescription(
-				`Le brouillard se lève sur Nistrium... Inscrira-tu ton nom au registre ou préféreras-tu observer le chaos depuis les ombres ?\n\n` +
+				`Le brouillard se lève sur Nistrium... Inscriras-tu ton nom au registre ou préféreras-tu observer le chaos depuis les ombres ?\n\n` +
 					`__Animateur__ : <@${game.gameMasterId}>\n` +
 					`__Vocal d'attente__ : <#${inscriptionVocId}>\n` +
 					`\u200B`
