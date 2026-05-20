@@ -2,7 +2,12 @@
 FROM node:20-slim AS builder
 WORKDIR /app
 
-# On installe les outils de build ET les libs de dev pour canvas
+# On active corepack pour forcer l'utilisation de la version de Yarn définie dans le projet
+RUN corepack enable && corepack prepare yarn@4.10.3 --activate
+
+# Limiter la mémoire de Node.js pendant le build
+ENV NODE_OPTIONS="--max-old-space-size=450"
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libcairo2-dev \
@@ -15,7 +20,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY package.json yarn.lock .yarnrc.yml ./
 COPY .yarn ./.yarn
 
-RUN yarn install --immutable
+# Installation avec Yarn v4 (grâce à corepack)
+RUN yarn install --immutable --network-timeout 100000
+
 COPY . .
 RUN yarn build
 
@@ -23,7 +30,8 @@ RUN yarn build
 FROM node:20-slim
 WORKDIR /app
 
-# On installe UNIQUEMENT les runtimes graphiques (sans build-essential, bcp plus léger)
+RUN corepack enable && corepack prepare yarn@4.10.3 --activate
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libcairo2 \
     libpango-1.0-0 \
@@ -33,7 +41,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# On récupère uniquement ce qui est nécessaire depuis l'étape "builder"
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist 
 COPY package.json ./

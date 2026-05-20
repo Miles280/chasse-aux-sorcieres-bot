@@ -11,9 +11,15 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          timeout: 40m
           script: |
             cd ~/chasse-aux-sorcieres/bot
             git pull origin main
             cd ..
-            docker compose up -d --build bot
+
+            # 1. On build d'abord (sécurisé par la limite de RAM dans le Dockerfile)
+            docker compose build bot
+            # 2. On applique le changement instantanément
+            docker compose up -d bot
+            # 3. Nettoyage
             docker image prune -f
