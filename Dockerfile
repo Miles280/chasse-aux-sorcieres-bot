@@ -2,7 +2,10 @@
 FROM node:20-slim AS builder
 WORKDIR /app
 
-# Limiter la mémoire de Node.js pendant le build pour éviter le crash du VPS
+# On active corepack pour forcer l'utilisation de la version de Yarn définie dans le projet
+RUN corepack enable && corepack prepare yarn@4.10.3 --activate
+
+# Limiter la mémoire de Node.js pendant le build
 ENV NODE_OPTIONS="--max-old-space-size=450"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -17,7 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY package.json yarn.lock .yarnrc.yml ./
 COPY .yarn ./.yarn
 
-# On force Yarn à ne pas consommer trop de CPU/RAM en parallèle
+# Installation avec Yarn v4 (grâce à corepack)
 RUN yarn install --immutable --network-timeout 100000
 
 COPY . .
@@ -26,6 +29,8 @@ RUN yarn build
 # --- Étape 2 : Image finale de production ---
 FROM node:20-slim
 WORKDIR /app
+
+RUN corepack enable && corepack prepare yarn@4.10.3 --activate
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libcairo2 \

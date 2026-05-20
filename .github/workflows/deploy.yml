@@ -11,6 +11,7 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          timeout: 40m
           script: |
             cd ~/chasse-aux-sorcieres/bot
             git pull origin main
