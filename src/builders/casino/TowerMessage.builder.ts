@@ -34,7 +34,7 @@ export class TowerMessageBuilder {
 
 			if (playedIndex === undefined) {
 				// Étages non joués → cases noires
-				line += '⬛ ⬛ ⬛';
+				line += '⬛⬛⬛';
 			} else {
 				// Étages joués → on montre le chemin et la bombe
 				const tiles = [0, 1, 2].map((pos) => {
@@ -42,11 +42,11 @@ export class TowerMessageBuilder {
 					if (pos === bombPos) return '💣'; // bombe
 					return '🟩'; // autre case
 				});
-				line += tiles.join(' ');
+				line += tiles.join('');
 			}
 
 			// Marqueur de la position actuelle
-			if (i === game.currentFloor) line += ' 📍';
+			if (i === game.currentFloor) line += '📍';
 
 			towerVisual += line + '\n';
 		}
@@ -61,7 +61,9 @@ export class TowerMessageBuilder {
 				{ name: 'Gain actuel :', value: `> \`${currentGain}\` ${emojis.rubies}`, inline: true },
 				{ name: 'Prochain gain :', value: `> \`${nextGain}\` ${emojis.rubies}`, inline: true }
 			)
-			.setDescription(`__Mise de départ__ : \`${game.bet}\` ${emojis.rubies}\n\`\`\`\n${towerVisual}\`\`\``);
+			.setDescription(
+				`__Mise de départ__ : \`${game.bet}\` ${emojis.rubies}\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\n\`\`\`\n${towerVisual}\`\`\``
+			);
 	}
 
 	/**
@@ -86,23 +88,25 @@ export class TowerMessageBuilder {
 				return '🟩'; // autre case
 			});
 
-			line += tiles.join(' ');
+			line += tiles.join('');
 
 			// Marqueur 📍 selon le résultat
-			if (reason === 'lose' && i === game.currentFloor) line += ' 📍';
-			else if ((reason === 'cashout' || reason === 'win') && i === game.currentFloor - 1) line += ' 📍';
+			if (reason === 'lose' && i === game.currentFloor) line += '📍';
+			else if ((reason === 'cashout' || reason === 'win') && i === game.currentFloor - 1) line += '📍';
 
 			towerVisual += line + '\n';
 		}
 
 		const color = reason === 'lose' ? colors.fail : colors.success;
 		const title = reason === 'lose' ? `${emojis.redcheck} La Tour de la Fortune` : `${emojis.greencheck} La Tour de la Fortune`;
-		const desc = reason === 'lose' ? '> Vous repartez les mains vides.' : `> Vous repartez avec \`${winAmount}\` ${emojis.rubies} !`;
+		const desc = reason === 'lose' ? 'Vous repartez les mains vides.' : `Vous repartez avec \`${winAmount}\` ${emojis.rubies} !`;
 
 		return new EmbedBuilder()
 			.setColor(color)
 			.setTitle(title)
-			.setDescription(`__Mise de départ__ : \`${game.bet}\` ${emojis.rubies}\n\`\`\`\n${towerVisual}\`\`\`\n${desc}`);
+			.setDescription(
+				`__Mise de départ__ : \`${game.bet}\` ${emojis.rubies}\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\n\`\`\`\n${towerVisual}\`\`\`\n${desc}`
+			);
 	}
 
 	/**
