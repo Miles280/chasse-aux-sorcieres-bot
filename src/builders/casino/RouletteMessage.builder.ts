@@ -191,7 +191,7 @@ export class RouletteMessageBuilder {
 
 			text += `__${typeLabel}__ :\n`;
 
-			const userStrings = Array.from(userMap.entries()).map(([userId, totalAmount]) => `1. <@${userId}> : \`${totalAmount}\` ${emojis.rubies}`);
+			const userStrings = Array.from(userMap.entries()).map(([userId, totalAmount]) => `- <@${userId}> : \`${totalAmount}\` ${emojis.rubies}`);
 
 			text += userStrings.join(',\n') + '\n\n';
 		}
