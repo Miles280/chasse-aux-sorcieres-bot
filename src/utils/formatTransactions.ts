@@ -57,7 +57,7 @@ export function formatTransactions(transactions: Transaction[]): string {
 					description = `❔ Transaction inconnue : **${tx.amount} ${currencyEmoji}**.`;
 			}
 
-			return `1. ${date} : ${description}`;
+			return `- ${date} : ${description}`;
 		})
 		.join('\n');
 }
