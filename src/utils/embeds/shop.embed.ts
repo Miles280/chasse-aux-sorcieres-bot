@@ -68,7 +68,7 @@ export function inventoryEmbed({ member, inventory }: { member: GuildMember; inv
 		inventory.items.length > 0
 			? inventory.items
 					// On déstructure "item" (les infos de l'objet) et "quantity" (le nombre possédé)
-					.map(({ item, quantity }) => `> - ${item.name}  \`x${quantity}\``)
+					.map(({ item, quantity }) => `1. ${item.name}  \`x${quantity}\``)
 					.join('\n')
 			: "> Aucun item dans l'inventaire.";
 

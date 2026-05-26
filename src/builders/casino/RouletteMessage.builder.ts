@@ -98,7 +98,7 @@ export class RouletteMessageBuilder {
 		return new EmbedBuilder()
 			.setTitle(`${emojis.yellowcheck} La Roulette`)
 			.setColor(colors.goldCasino)
-			.setDescription(`**Les jeux sont faits !**\n` + `Le tirage a commencé... \n\n` + this.formatBets(game.bets));
+			.setDescription(`**Les jeux sont faits !**\n` + `Le tirage a commencé...\u2800\u2800\u2800\n\n` + this.formatBets(game.bets));
 	}
 
 	/**
@@ -189,11 +189,11 @@ export class RouletteMessageBuilder {
 			// Déterminer le label pour l'affichage
 			const typeLabel = typeof type === 'number' ? `Numéro ${type}` : BET_OPTIONS[type as BetType].label;
 
-			text += `__${typeLabel}__ :\n> `;
+			text += `__${typeLabel}__ :\n`;
 
-			const userStrings = Array.from(userMap.entries()).map(([userId, totalAmount]) => `<@${userId}> : \`${totalAmount}\` ${emojis.rubies}`);
+			const userStrings = Array.from(userMap.entries()).map(([userId, totalAmount]) => `1. <@${userId}> : \`${totalAmount}\` ${emojis.rubies}`);
 
-			text += userStrings.join(', ') + '\n\n';
+			text += userStrings.join(',\n') + '\n\n';
 		}
 
 		return text.trim();
