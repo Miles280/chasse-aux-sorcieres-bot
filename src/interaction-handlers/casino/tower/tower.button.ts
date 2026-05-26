@@ -67,7 +67,7 @@ export class TowerButtonHandler extends InteractionHandler {
 
 			// 1.6 Envoyer un nouveau message pour la partie
 			const newMessage = await interaction.followUp({
-				content: `**Joueur :** <@${userId}>`,
+				content: `**__Joueur :__** <@${userId}>`,
 				embeds: [embed],
 				components
 			});
@@ -108,7 +108,7 @@ export class TowerButtonHandler extends InteractionHandler {
 
 		// 7. Mettre à jour le message
 		await interaction.update({
-			content: `**Joueur :** <@${userId}>`,
+			content: `**__Joueur :__** <@${userId}>`,
 			embeds: [embed],
 			components
 		});

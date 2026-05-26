@@ -168,7 +168,7 @@ export function conversionRateEmbed(member: GuildMember, data: ConversionRates):
 				// Sécurité sur r.rate également
 				const rRate = (r.rate ?? 0).toLocaleString();
 
-				const rateText = `> \`1\` ${emojis.gems} = \`${rRate}\` ${emojis.rubies} ⟶ ${roleMention}`;
+				const rateText = `- \`1\` ${emojis.gems} = \`${rRate}\` ${emojis.rubies} ⟶ ${roleMention}`;
 
 				return r.isCurrent ? `${rateText} *(votre rang actuel)*` : rateText;
 			})
