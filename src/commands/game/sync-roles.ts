@@ -68,7 +68,6 @@ export class SyncRolesCommand extends Command {
 			}
 
 			// 2e critère : Nom du rôle (Alphabétique Croissant : A-Z)
-			// On utilise localeCompare pour gérer correctement les accents (ex: Sorcière)
 			return b.name.localeCompare(a.name);
 		});
 

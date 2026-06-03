@@ -25,3 +25,8 @@ export interface GameData {
 export interface CompoData {
 	composition: RoleInterface[];
 }
+
+export interface RoleDistribution {
+	discordId: string;
+	role: RoleInterface;
+}

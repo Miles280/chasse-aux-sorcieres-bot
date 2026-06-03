@@ -139,7 +139,7 @@ export class InscriptionMessageBuilder {
 			.setDescription(
 				`Le portail de Nistrium s'est refermé. Le sort en est jeté, et les joueurs sont désormais scellés dans cette partie.\n\n` +
 					`__Animateur__ : <@${game.gameMasterId}>\n` +
-					`__Status __ : **Partie en cours...**\n` +
+					`__Status__ : Partie en cours...\n` +
 					`\u200B`
 			)
 			.setThumbnail(
