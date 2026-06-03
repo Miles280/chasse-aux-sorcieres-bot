@@ -106,7 +106,6 @@ export class CompositionButtonHandler extends InteractionHandler {
 
 	private async handleAddRole(interaction: ButtonInteraction, gameId: number, camp: Camp) {
 		// 1. Récupération simultanée des rôles du camp ET de la compo actuelle
-		// On utilise Promise.all pour gagner du temps
 		const [rolesResponse, compoResponse] = await Promise.all([
 			container.rolesService.getRolesByCamp(camp),
 			container.inscriptionService.getCompo(gameId)
@@ -136,9 +135,7 @@ export class CompositionButtonHandler extends InteractionHandler {
 		}
 
 		// 2. Filtrage : On ne garde que les rôles qui ne sont PAS dans la compo
-		// On crée un Set des IDs déjà présents pour une recherche rapide
 		const existingRoleIds = new Set(compoResponse.data.composition.map((r) => r.id));
-
 		const filteredRoles = rolesResponse.data.filter((role) => !existingRoleIds.has(role.id));
 
 		// 3. Cas particulier : si tous les rôles sont déjà présents
@@ -154,14 +151,24 @@ export class CompositionButtonHandler extends InteractionHandler {
 			});
 		}
 
-		// 4. Formatage des données filtrées
-		const roleOptions = filteredRoles.map((role, index) => ({
-			label: role.name,
-			value: `${role.id}:${role.name}-${index}`, // On garde l'index pour la sécurité
-			description: role.alignments.map(getAlignmentLabel).join(', ').slice(0, 100)
-		}));
+		// 4. Formatage des données filtrées (Mis à jour à l'identique du Delete)
+		const roleOptions = filteredRoles.map((role, index) => {
+			// 1. On prépare les morceaux de la description
+			const minPlayersStr = `Min: ${role.minPlayer} joueurs`;
+			const alignmentsStr = role.alignments.map(getAlignmentLabel).join(', ');
 
-		// 5. Préparation de la Modal (le reste du code est identique)
+			// 2. On assemble le tout proprement (ex: "Min: 8 joueurs - Neutre, Cruel")
+			const fullDescription = alignmentsStr ? `${minPlayersStr} - ${alignmentsStr}` : minPlayersStr;
+
+			return {
+				label: role.name,
+				value: `${role.id}:${role.name}-${index}`, // On garde l'index pour la sécurité
+				// 3. Sécurité .slice(0, 100) pour éviter le rejet par Discord
+				description: fullDescription.slice(0, 100)
+			};
+		});
+
+		// 5. Préparation de la Modal
 		const modal = new ModalBuilder().setCustomId(`compo:modal:add`).setTitle(`Ajouter des rôles`);
 
 		const chunkSize = 10;
@@ -240,11 +247,21 @@ export class CompositionButtonHandler extends InteractionHandler {
 				const partSuffix = category.roles.length > chunkSize ? ` - Partie ${Math.floor(i / chunkSize) + 1}` : '';
 
 				// Formatage des options pour ce chunk
-				const options = chunk.map((role) => ({
-					label: role.name,
-					value: `${role.id}:${role.name}-${globalIndex++}`, // Unicité garantie
-					description: role.alignments.map(getAlignmentLabel).join(', ').slice(0, 100)
-				}));
+				const options = chunk.map((role) => {
+					// 1. On prépare les morceaux de la description
+					const minPlayersStr = `Min: ${role.minPlayer} joueurs`;
+					const alignmentsStr = role.alignments.map(getAlignmentLabel).join(', ');
+
+					// 2. On assemble le tout proprement (ex: "Min: 8 joueurs - Neutre, Cruel")
+					const fullDescription = alignmentsStr ? `${minPlayersStr} - ${alignmentsStr}` : minPlayersStr;
+
+					return {
+						label: role.name,
+						value: `${role.id}:${role.name}-${globalIndex++}`, // Unicité garantie
+						// 3. Sécurité .slice(0, 100) pour éviter que Discord ne rejette le select menu si c'est trop long
+						description: fullDescription.slice(0, 100)
+					};
+				});
 
 				const roleCheckboxes = new CheckboxGroupBuilder()
 					.setCustomId(`delete_group_${category.label}_${i}`)

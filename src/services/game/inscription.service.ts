@@ -198,7 +198,7 @@ export class InscriptionService {
 		};
 
 		return interaction.followUp({
-			embeds: [Embeds.successEmbed({ title: 'Action effectué', message: successMessages[action] })],
+			embeds: [Embeds.successEmbed({ title: 'Action effectuée', message: successMessages[action] })],
 			flags: MessageFlags.Ephemeral
 		});
 	}
