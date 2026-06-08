@@ -269,10 +269,12 @@ export class GameLauncherService {
 
 			const embed = RoleMessageBuilder.buildRoleEmbed(assignment.role);
 
-			await playerChannel.send({
+			const roleMessage = await playerChannel.send({
 				content: `<@${assignment.discordId}> Voici ton rôle : `,
 				embeds: [embed]
 			});
+
+			await roleMessage.pin();
 
 			const carnetThread = await playerChannel.threads.create({
 				name: `Carnet de ${playerName}`,
