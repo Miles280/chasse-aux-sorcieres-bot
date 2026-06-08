@@ -70,7 +70,7 @@ export class LancementCommand extends Command {
 				return interaction.editReply(message);
 			} else {
 				// --- PHASE 2 : FAST START (On délègue tout au service) ---
-				await container.gameLauncherService.processLaunch(interaction.guild!, game, [], interaction.user.id);
+				await container.gameLauncherService.processLaunch(interaction.guild!, game, []);
 
 				return interaction.editReply({
 					embeds: [

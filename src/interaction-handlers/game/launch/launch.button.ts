@@ -52,7 +52,7 @@ export class LaunchHandler extends InteractionHandler {
 				const distribution = container.gameLauncherService.getPreviewCache(gameId);
 
 				// Ce processLaunch peut être long (API + création de N salons), le deferUpdate le protège !
-				await container.gameLauncherService.processLaunch(interaction.guild!, game, distribution, interaction.user.id);
+				await container.gameLauncherService.processLaunch(interaction.guild!, game, distribution);
 
 				return interaction.editReply({
 					embeds: [

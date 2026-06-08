@@ -7,59 +7,59 @@ import { GameData, RoleDistribution } from '../../models/Game.interface';
 import { Alignment, getAlignmentLabel } from '../../enums/Alignment';
 import { RoleMessageBuilder } from '../../builders/game/RoleMessage.builder';
 import { InscriptionMessageBuilder } from '../../builders/game/InscriptionMessage.builder';
-// import * as Embeds from '../../utils/embeds';
 
 export class GameLauncherService {
 	constructor(private api: ApiClient) {}
 
-	// Cache temporaire pour les previews (Clé: gameId, Valeur: distribution)
 	private previewCache = new Map<number, RoleDistribution[]>();
 
-	// Permet de stocker la preview depuis la commande
 	public setPreviewCache(gameId: number, distribution: RoleDistribution[]): void {
 		this.previewCache.set(gameId, distribution);
 	}
 
-	// Permet de récupérer la preview (utile dans ton futur bouton de validation)
 	public getPreviewCache(gameId: number): RoleDistribution[] | undefined {
 		return this.previewCache.get(gameId);
 	}
 
-	// Pense à clean après le lancement !
 	public clearPreviewCache(gameId: number): void {
 		this.previewCache.delete(gameId);
 	}
 
-	/**
-	 * Récupère une distribution temporaire sans la sauvegarder (Reroll / Preview)
-	 */
 	async getPreview(gameId: number): Promise<ApiResponse<{ gameId: number; distribution: RoleDistribution[] }>> {
 		return await this.api.post<{ gameId: number; distribution: RoleDistribution[] }>(`/game/preview/${gameId}`, {});
 	}
 
-	/**
-	 * Démarre la partie côté API et sauvegarde la distribution
-	 */
 	async startGame(gameId: number, distribution: RoleDistribution[] = []): Promise<ApiResponse<{ distribution: RoleDistribution[] }>> {
-		return await this.api.post<{ distribution: RoleDistribution[] }>(`/game/start/${gameId}`, {
-			distribution
+		return await this.api.post<{ distribution: RoleDistribution[] }>(`/game/start/${gameId}`, { distribution });
+	}
+
+	/**
+	 * 👑 NOUVELLE MÉTHODE : Envoie les salons à l'API Symfony pour sauvegarde
+	 */
+	async updateGameChannels(
+		gameId: number,
+		gameChannels: Record<string, string>,
+		playersChannels: { discordId: string; channelId: string }[]
+	): Promise<ApiResponse<any>> {
+		// Si ton ApiClient ne gère pas le .patch(), tu peux le remplacer par .post() selon ton implémentation
+		return await this.api.patch(`/game/${gameId}/channels`, {
+			gameChannels,
+			playersChannels
 		});
 	}
 
 	/**
 	 * Le "Cerveau" qui orchestre le lancement complet (API + Actions Discord)
 	 */
-	async processLaunch(guild: Guild, game: GameData, validatedDistribution: RoleDistribution[] = [], gameMasterId: string): Promise<void> {
+	async processLaunch(guild: Guild, game: GameData, validatedDistribution: RoleDistribution[] = []): Promise<void> {
 		// 1. Appel API pour officialiser le lancement
 		const response = await this.startGame(game.id, validatedDistribution);
 
 		if (!response.success) {
-			// 🔥 AJOUTE CECI pour voir la vraie erreur Symfony dans ton terminal
 			console.error('🔥 RÉPONSE API SYMFONY :', response);
 			throw new Error(`L'API a refusé le lancement : ${response.error || 'Erreur inconnue'}`);
 		}
 
-		// Récupération de la configuration du serveur (pour les catégories parentes, rôles MJ, etc.)
 		const configResponse = await container.serverConfigService.getConfig(guild.id);
 		if (!configResponse.success) {
 			throw new Error('Configuration du serveur manquante.');
@@ -71,8 +71,6 @@ export class GameLauncherService {
 				const channel = await guild.channels.fetch(config.inscriptionChannelId);
 				if (channel?.isTextBased()) {
 					const existingMessage = await channel.messages.fetch(game.inscriptionMessageId);
-
-					// On reconstruit le message avec l'état lancé
 					const startedPayload = InscriptionMessageBuilder.buildStarted(game);
 					await existingMessage.edit(startedPayload);
 				}
@@ -83,34 +81,47 @@ export class GameLauncherService {
 
 		const finalDistribution = response.data.distribution;
 
-		// 2. Création des channels et des fils (publique et privés)
-		await this.setupGameChannels(guild, config, finalDistribution, gameMasterId); // <-- Ajout ici
+		// 2. 🟢 MODIFICATION : Récupération des salons créés par Discord
+		const { rolesForum, privateChannels } = await this.setupGameChannels(guild, config, finalDistribution);
 
-		// await this.movePlayersToVoiceChannels(guild, finalDistribution, config, gameChannels.voiceChannel);
+		// 3. 🟢 MODIFICATION : Formater les données pour l'API Symfony
+		const playersChannelsPayload: { discordId: string; channelId: string }[] = [];
+		privateChannels.forEach((channel, discordId) => {
+			playersChannelsPayload.push({
+				discordId: discordId,
+				channelId: channel.id
+			});
+		});
 
-		// await this.sendTrackingMessages(gameChannels.publicTextChannel, gameId);
+		// Salons globaux de la partie (tu pourras y ajouter des salons vocaux ou de vote plus tard)
+		const gameChannelsPayload = {
+			rolesForumId: rolesForum.id
+		};
+
+		// 4. Envoi global à l'API Symfony
+		const updateChannelsResponse = await this.updateGameChannels(game.id, gameChannelsPayload, playersChannelsPayload);
+
+		if (!updateChannelsResponse.success) {
+			console.error('🔥 ERREUR SAUVEGARDE SALONS SYMFONY :', updateChannelsResponse.error);
+			// Optionnel : tu peux lever une erreur ici si c'est bloquant pour la suite
+		}
+
+		// Une fois tout terminé, on nettoie le cache temporaire
+		this.clearPreviewCache(game.id);
 	}
 
 	// =========================================================================
-	// MÉTHODES PRIVÉES (Logique Discord)
+	// MÉTHODES PRIVÉES (Logique Discord) - Inchangées mais retournent les données
 	// =========================================================================
 
-	/**
-	 * Orchestre la création de tous les salons de la partie.
-	 */
-	private async setupGameChannels(guild: Guild, config: ServerConfig, distribution: RoleDistribution[], gameMasterId: string) {
-		console.log('Création des salons de la partie...');
-
+	private async setupGameChannels(guild: Guild, config: ServerConfig, distribution: RoleDistribution[]) {
 		const privateCategoryId = config.gamePrivateCategoryId;
 		if (!privateCategoryId) {
 			throw new Error("L'ID de la catégorie privée n'est pas configuré.");
 		}
 
-		// 1. Création du forum des rôles
 		const rolesForum = await this.setupRolesForum(guild, privateCategoryId, distribution, config);
-
-		// 2. Création des salons privés et distribution des rôles
-		const privateChannels = await this.setupPrivateChannelsAndDistribute(guild, privateCategoryId, config.mjRoleId, distribution, gameMasterId);
+		const privateChannels = await this.setupPrivateChannelsAndDistribute(guild, privateCategoryId, config.mjRoleId, distribution);
 
 		return {
 			rolesForum,
@@ -118,13 +129,7 @@ export class GameLauncherService {
 		};
 	}
 
-	/**
-	 * Gère la création du Forum et des posts descriptifs pour chaque rôle.
-	 */
 	private async setupRolesForum(guild: Guild, categoryId: string, distribution: RoleDistribution[], config: ServerConfig): Promise<ForumChannel> {
-		console.log('Création du forum des rôles...');
-
-		// 1. Préparation des tags
 		const forumTags: { name: string; emoji?: { name: string | null; id: string | null } }[] = [
 			{ name: 'Sorcières' },
 			{ name: 'Villageois' },
@@ -137,52 +142,45 @@ export class GameLauncherService {
 
 		const permissionOverwrites: any[] = [
 			{
-				// Par défaut, on cache le salon à tout le monde (@everyone)
 				id: guild.roles.everyone.id,
 				deny: [PermissionFlagsBits.ViewChannel]
 			}
 		];
 
-		// Rôles qui doivent LIRE UNIQUEMENT (Joueurs, Morts, Spectateurs)
-		const readOnlyRoles = [config.playerRoleId, config.deadPlayerRoleId, config.spectatorRoleId].filter(Boolean) as string[]; // Filtre pour enlever les variables potentiellement undefined
+		const readOnlyRoles = [config.playerRoleId, config.deadPlayerRoleId, config.spectatorRoleId].filter(Boolean) as string[];
 
 		for (const roleId of readOnlyRoles) {
 			permissionOverwrites.push({
 				id: roleId,
 				allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory],
-				deny: [
-					PermissionFlagsBits.SendMessages, // Impossible de répondre à un post
-					PermissionFlagsBits.CreatePublicThreads // Impossible de créer un nouveau post/rôle
-				]
+				deny: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.SendMessagesInThreads, PermissionFlagsBits.CreatePublicThreads]
 			});
 		}
 
-		// Permet au MJ d'avoir les pleins pouvoirs sur ce forum
 		if (config.mjRoleId) {
 			permissionOverwrites.push({
 				id: config.mjRoleId,
 				allow: [
 					PermissionFlagsBits.ViewChannel,
+					PermissionFlagsBits.ReadMessageHistory,
 					PermissionFlagsBits.SendMessages,
+					PermissionFlagsBits.SendMessagesInThreads,
 					PermissionFlagsBits.CreatePublicThreads,
-					PermissionFlagsBits.ManageThreads,
-					PermissionFlagsBits.ReadMessageHistory
+					PermissionFlagsBits.ManageThreads
 				]
 			});
 		}
 
-		// 2. Création du Forum
 		const rolesForum = await guild.channels.create({
 			name: '『📜』𝐑𝐨̂𝐥𝐞𝐬',
 			type: ChannelType.GuildForum,
 			parent: categoryId,
-			availableTags: forumTags
+			availableTags: forumTags,
+			permissionOverwrites: permissionOverwrites
 		});
 
-		// 3. Traitement des rôles (Uniques + Tri)
 		const uniqueRoles = Array.from(new Map(distribution.map((d) => [d.role.name, d.role])).values());
-
-		const campWeights: Record<string, number> = { witch: 1, villager: 2, independent: 3 };
+		const campWeights: Record<string, number> = { independent: 1, villagers: 2, witch: 3 };
 
 		const sortedRoles = uniqueRoles.sort((a, b) => {
 			const campA = a.camp?.toLowerCase() || 'villager';
@@ -191,20 +189,18 @@ export class GameLauncherService {
 			if (campWeights[campA] !== campWeights[campB]) {
 				return (campWeights[campA] || 99) - (campWeights[campB] || 99);
 			}
+
 			if (b.minPlayer !== a.minPlayer) {
 				return b.minPlayer - a.minPlayer;
 			}
-			return a.name.localeCompare(b.name);
+
+			return b.name.localeCompare(a.name);
 		});
 
-		sortedRoles.reverse();
-
-		// 4. Création des posts avec les tags
 		const tagsMap = new Map(rolesForum.availableTags.map((tag) => [tag.name, tag.id]));
 
 		for (const role of sortedRoles) {
 			const roleTagsIds: string[] = [];
-
 			const camp = role.camp?.toLowerCase();
 			let campTagName = 'Villageois';
 			if (camp === 'witch') campTagName = 'Sorcières';
@@ -232,18 +228,12 @@ export class GameLauncherService {
 		return rolesForum;
 	}
 
-	/**
-	 * Gère la création des salons privés des joueurs, leurs permissions, et l'annonce de leur rôle.
-	 */
 	private async setupPrivateChannelsAndDistribute(
 		guild: Guild,
 		categoryId: string,
 		mjRoleId: string | null | undefined,
-		distribution: RoleDistribution[],
-		gameMasterId: string
+		distribution: RoleDistribution[]
 	): Promise<Map<string, TextChannel>> {
-		console.log('Création des salons privés et distribution...');
-
 		const privateChannels = new Map<string, TextChannel>();
 
 		for (const assignment of distribution) {
@@ -252,14 +242,13 @@ export class GameLauncherService {
 
 			const playerName = member.user.displayName;
 
-			// 1. Configuration des permissions
 			const permissionOverwrites: OverwriteResolvable[] = [
 				{
-					id: guild.id, // @everyone
+					id: guild.id,
 					deny: [PermissionFlagsBits.ViewChannel]
 				},
 				{
-					id: member.id, // Le joueur
+					id: member.id,
 					allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.PinMessages]
 				}
 			];
@@ -271,7 +260,6 @@ export class GameLauncherService {
 				});
 			}
 
-			// 2. Création du salon textuel privé
 			const playerChannel = await guild.channels.create({
 				name: `📜・${playerName}`,
 				type: ChannelType.GuildText,
@@ -279,7 +267,6 @@ export class GameLauncherService {
 				permissionOverwrites
 			});
 
-			// 3. Distribution immédiate du rôle dans le salon
 			const embed = RoleMessageBuilder.buildRoleEmbed(assignment.role);
 
 			await playerChannel.send({
@@ -287,39 +274,21 @@ export class GameLauncherService {
 				embeds: [embed]
 			});
 
-			// 4. Création du Carnet (Thread public)
 			const carnetThread = await playerChannel.threads.create({
 				name: `Carnet de ${playerName}`,
 				type: ChannelType.PublicThread
 			});
 
-			// Envoi du message dans le fil
 			await carnetThread.send({
 				content:
 					`Salut <@${assignment.discordId}> !\n\n` +
-					`Voici ton espace personnel pour cette partie. Tu peux y noter tout ce que tu veux : tes réflexions, tes suspicions, ou tes brouillons de messages.\n` +
-					`-# Ton MJ pour cette partie est <@${gameMasterId}>.`
+					`Voici ton espace personnel pour cette partie. Tu peux y noter tout ce que tu veux : tes réflexions, tes suspicions, ou tes brouillons de messages.`
 			});
 
+			// On stocke le salon créé associé au discordId du joueur
 			privateChannels.set(assignment.discordId, playerChannel);
 		}
 
 		return privateChannels;
 	}
-
-	// private async movePlayersToVoiceChannels(guild: Guild, distribution: RoleDistribution[], config: ServerConfig, targetVoiceChannel: VoiceChannel) {
-	// 	console.log('Déplacement des joueurs...');
-
-	// 	for (const assignment of distribution) {
-	// 		const member = await guild.members.fetch(assignment.discordId).catch(() => null);
-	// 		if (member && member.voice.channelId) {
-	// 			await member.voice.setChannel(targetVoiceChannel);
-	// 		}
-	// 	}
-	// }
-
-	// private async sendTrackingMessages(publicChannel: TextChannel, gameId: number) {
-	// 	console.log('Envoi du message de suivi public...');
-	// 	// await publicChannel.send({ embeds: [Embeds.gameTrackerEmbed(gameId)] });
-	// }
 }
