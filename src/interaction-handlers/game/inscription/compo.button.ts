@@ -97,7 +97,7 @@ export class CompositionButtonHandler extends InteractionHandler {
 			embeds: [
 				Embeds.successEmbed({
 					member: interaction.member as GuildMember,
-					message: `Ajouté avec succès :\n> ${targetRoleName}`
+					message: `Ajouté avec succès :\n- ${targetRoleName}`
 				})
 			],
 			flags: MessageFlags.Ephemeral

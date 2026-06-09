@@ -69,7 +69,7 @@ export class CompositionModalHandler extends InteractionHandler {
 
 		// On sépare les IDs pour l'API et les noms pour l'affichage
 		const selectedIds = selectedData.map((d) => d.id);
-		const roleNames = selectedData.map((d) => `> ${d.name}`).join('\n');
+		const roleNames = selectedData.map((d) => `- ${d.name}`).join('\n');
 
 		// 2. Mise à jour en base de données
 		const response = await container.inscriptionService.addRolesToGame(game.id, selectedIds);

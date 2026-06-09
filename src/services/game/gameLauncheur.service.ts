@@ -34,7 +34,7 @@ export class GameLauncherService {
 	}
 
 	/**
-	 * 👑 NOUVELLE MÉTHODE : Envoie les salons à l'API Symfony pour sauvegarde
+	 * Envoie les salons à l'API Symfony pour sauvegarde
 	 */
 	async updateGameChannels(
 		gameId: number,
@@ -45,6 +45,16 @@ export class GameLauncherService {
 		return await this.api.patch(`/game/${gameId}/channels`, {
 			gameChannels,
 			playersChannels
+		});
+	}
+
+	/**
+	 * Sauvegarde les messages de suivi
+	 */
+	async updateGameTrackers(gameId: number, publicTrackerMessageId: string | null, mjTrackerMessageId: string | null): Promise<ApiResponse<any>> {
+		return await this.api.patch(`/game/${gameId}/trackersmessages`, {
+			publicTrackerMessageId,
+			mjTrackerMessageId
 		});
 	}
 
@@ -80,10 +90,27 @@ export class GameLauncherService {
 
 		const finalDistribution = response.data.distribution;
 
-		// 2. Récupération des salons créés par Discord
-		const { rolesForum, privateChannels } = await this.setupGameChannels(guild, config, finalDistribution);
+		// On vérifie qu'on a bien une catégorie parente
+		const categoryId = config.gameCategoryId;
+		if (!categoryId) throw new Error('Catégorie de jeu non configurée.');
 
-		// 3. Formater les données pour l'API Symfony
+		const spectatorIds: string[] = game.spectators || [];
+
+		const mjId: string = game.gameMasterId || '';
+
+		// 2. Création des vocaux et TP des joueurs ---
+		const voiceChannels = await this.setupVoiceChannels(guild, config, categoryId, finalDistribution, spectatorIds, mjId);
+
+		// 3. Récupération des salons privés et du forum créés par Discord
+		const { rolesForum, privateChannels } = await this.setupPrivateCategory(guild, config, finalDistribution);
+
+		// 4. Création des salons écrits de la game ---
+		const textChannels = await this.setupTextChannels(guild, config, categoryId, finalDistribution);
+
+		// 5. Envoi des messages de tracking
+		const trackingMessages = await this.sendTrackingMessages(guild, config, game.id, textChannels.votesChannel);
+
+		// 6. Formater les données pour l'API Symfony
 		const playersChannelsPayload: { discordId: string; channelId: string }[] = [];
 		privateChannels.forEach((channel, discordId) => {
 			playersChannelsPayload.push({
@@ -92,17 +119,33 @@ export class GameLauncherService {
 			});
 		});
 
-		// Salons globaux de la partie (tu pourras y ajouter des salons vocaux ou de vote plus tard)
-		const gameChannelsPayload = {
-			rolesForumId: rolesForum.id
+		// Salons globaux de la partie
+		const gameChannelsPayload: Record<string, string> = {
+			rolesForumId: rolesForum.id,
+			mainVoiceId: voiceChannels.mainVc.id,
+			deadVoiceId: voiceChannels.deadVc.id,
+			debatChannelId: textChannels.debatChannel.id,
+			votesChannelId: textChannels.votesChannel.id,
+			witchesChannelId: textChannels.witchesChannel.id,
+			graveyardChannelId: textChannels.graveyardChannel.id
 		};
 
-		// 4. Envoi global à l'API Symfony
+		// 4. Envoi des Channels à l'API Symfony
 		const updateChannelsResponse = await this.updateGameChannels(game.id, gameChannelsPayload, playersChannelsPayload);
 
 		if (!updateChannelsResponse.success) {
-			console.error('🔥 ERREUR SAUVEGARDE SALONS SYMFONY :', updateChannelsResponse.error);
-			// Optionnel : tu peux lever une erreur ici si c'est bloquant pour la suite
+			throw new Error("Channels non sauvegardés auprès de l'API.");
+		}
+
+		// 5. Envoi des Trackers à l'API Symfony (Nouvelle route !)
+		const updateTrackersResponse = await this.updateGameTrackers(
+			game.id,
+			trackingMessages.publicTrackerMessageId,
+			trackingMessages.mjTrackerMessageId
+		);
+
+		if (!updateTrackersResponse.success) {
+			throw new Error("⚠️ Les messages de suivis de partie n'ont pas pu être sauvegardés, mais la partie est lancée.");
 		}
 
 		// Une fois tout terminé, on nettoie le cache temporaire
@@ -111,7 +154,81 @@ export class GameLauncherService {
 
 	// =========================================================================
 
-	private async setupGameChannels(guild: Guild, config: ServerConfig, distribution: RoleDistribution[]) {
+	/**
+	 * Crée les vocaux et déplace les joueurs qui sont déjà en vocal sur le serveur
+	 */
+	private async setupVoiceChannels(
+		guild: Guild,
+		config: ServerConfig,
+		categoryId: string,
+		distribution: RoleDistribution[],
+		spectatorIds: string[],
+		mjId: string
+	) {
+		const everyoneId = guild.roles.everyone.id;
+		const playerRoleId = config.playerRoleId;
+		const deadRoleId = config.deadPlayerRoleId;
+		const specRoleId = config.spectatorRoleId;
+
+		// 1. Vocal Principal (Vivants parlent, Morts/Specs écoutent)
+		const mainVc = await guild.channels.create({
+			name: '『⛲』𝐏𝐥𝐚𝐜𝐞 𝐏𝐮𝐛𝐥𝐢𝐪𝐮𝐞',
+			type: ChannelType.GuildVoice,
+			parent: categoryId,
+			permissionOverwrites: [
+				{ id: everyoneId, deny: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect] },
+				{ id: playerRoleId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect, PermissionFlagsBits.Speak] },
+				{ id: deadRoleId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect], deny: [PermissionFlagsBits.Speak] },
+				{ id: specRoleId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect], deny: [PermissionFlagsBits.Speak] }
+			].filter(Boolean) as OverwriteResolvable[]
+		});
+
+		// 2. Vocal Cimetière (Morts/Specs parlent, Vivants bloqués)
+		const deadVc = await guild.channels.create({
+			name: `『👼』𝐋'𝐀𝐮-𝐝𝐞𝐥𝐚̀`,
+			type: ChannelType.GuildVoice,
+			parent: categoryId,
+			permissionOverwrites: [
+				{ id: everyoneId, deny: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect] },
+				{ id: playerRoleId, deny: [PermissionFlagsBits.Connect] }, // Ils peuvent voir qu'il existe, mais pas s'y co
+				{ id: deadRoleId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect, PermissionFlagsBits.Speak] },
+				{ id: specRoleId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect, PermissionFlagsBits.Speak] }
+			].filter(Boolean) as OverwriteResolvable[]
+		});
+
+		// --- Fonction utilitaire locale pour déplacer un membre ---
+		const moveMemberToVc = async (discordId: string, targetChannel: any) => {
+			const member = await guild.members.fetch(discordId).catch(() => null);
+			if (member && member.voice.channelId) {
+				try {
+					await member.voice.setChannel(targetChannel);
+				} catch (e) {
+					console.error(`Impossible de move ${member.user.tag} :`, e);
+				}
+			}
+		};
+
+		// 3. Déplacement des Joueurs -> Place Publique
+		for (const assignment of distribution) {
+			await moveMemberToVc(assignment.discordId, mainVc);
+		}
+
+		// 4. Déplacement des Spectateurs -> L'Au-delà (ou mainVc si tu préfères)
+		if (spectatorIds && spectatorIds.length > 0) {
+			for (const specId of spectatorIds) {
+				await moveMemberToVc(specId, deadVc);
+			}
+		}
+
+		// 5. Déplacement du MJ -> Place Publique
+		if (mjId) {
+			await moveMemberToVc(mjId, mainVc);
+		}
+
+		return { mainVc, deadVc };
+	}
+
+	private async setupPrivateCategory(guild: Guild, config: ServerConfig, distribution: RoleDistribution[]) {
 		const privateCategoryId = config.gamePrivateCategoryId;
 		if (!privateCategoryId) {
 			throw new Error("L'ID de la catégorie privée n'est pas configuré.");
@@ -124,6 +241,116 @@ export class GameLauncherService {
 			rolesForum,
 			privateChannels
 		};
+	}
+
+	/**
+	 * Crée les salons textuels (Débat, Votes, Sorcières, Cimetière) avec les permissions complexes
+	 */
+	private async setupTextChannels(guild: Guild, config: ServerConfig, categoryId: string, distribution: RoleDistribution[]) {
+		const everyoneId = guild.roles.everyone.id;
+		const playerRoleId = config.playerRoleId;
+		const deadRoleId = config.deadPlayerRoleId;
+		const specRoleId = config.spectatorRoleId;
+
+		// Permissions de base pour Débat et Votes (Tous voient, seuls Vivants écrivent)
+		const publicGameOverwrites: OverwriteResolvable[] = [
+			{ id: everyoneId, deny: [PermissionFlagsBits.ViewChannel] },
+			{ id: playerRoleId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
+			{ id: deadRoleId, allow: [PermissionFlagsBits.ViewChannel], deny: [PermissionFlagsBits.SendMessages] },
+			{ id: specRoleId, allow: [PermissionFlagsBits.ViewChannel], deny: [PermissionFlagsBits.SendMessages] }
+		].filter(Boolean) as OverwriteResolvable[];
+
+		const debatChannel = await guild.channels.create({
+			name: '『✒️』𝐃𝐞́𝐛𝐚𝐭-𝐄𝐜𝐫𝐢𝐭',
+			type: ChannelType.GuildText,
+			parent: categoryId,
+			permissionOverwrites: publicGameOverwrites
+		});
+
+		const votesChannel = await guild.channels.create({
+			name: '『📮』𝐕𝐨𝐭𝐞𝐬',
+			type: ChannelType.GuildText,
+			parent: categoryId,
+			permissionOverwrites: publicGameOverwrites
+		});
+
+		// Salon Sorcières
+		// On donne explicitement le droit de VOIR aux sorcières.
+		// Le droit d'écrire sera dicté par leur rôle global (Joueur = oui, Mort = non).
+		const witchesOverwrites: OverwriteResolvable[] = [
+			{ id: everyoneId, deny: [PermissionFlagsBits.ViewChannel] },
+			{ id: playerRoleId, allow: [PermissionFlagsBits.SendMessages] },
+			{ id: deadRoleId, deny: [PermissionFlagsBits.SendMessages] }
+		].filter(Boolean) as OverwriteResolvable[];
+
+		// On ajoute les sorcières dans les permissions
+		const witches = distribution.filter((d) => d.role.camp === 'witch');
+		for (const witch of witches) {
+			witchesOverwrites.push({
+				id: witch.discordId,
+				allow: [PermissionFlagsBits.ViewChannel]
+			});
+		}
+
+		const witchesChannel = await guild.channels.create({
+			name: '『🧙』𝐒𝐨𝐫𝐜𝐢𝐞̀𝐫𝐞𝐬',
+			type: ChannelType.GuildText,
+			parent: categoryId,
+			permissionOverwrites: witchesOverwrites
+		});
+
+		// Cimetière textuel (Seuls les morts voient et écrivent, specs peuvent lire)
+		const graveyardChannel = await guild.channels.create({
+			name: '『💀』𝐂𝐢𝐦𝐞𝐭𝐢𝐞̀𝐫𝐞',
+			type: ChannelType.GuildText,
+			parent: categoryId,
+			permissionOverwrites: [
+				{ id: everyoneId, deny: [PermissionFlagsBits.ViewChannel] },
+				{ id: playerRoleId, deny: [PermissionFlagsBits.ViewChannel] },
+				{ id: deadRoleId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
+				{ id: specRoleId, allow: [PermissionFlagsBits.ViewChannel], deny: [PermissionFlagsBits.SendMessages] }
+			].filter(Boolean) as OverwriteResolvable[]
+		});
+
+		return { debatChannel, votesChannel, witchesChannel, graveyardChannel };
+	}
+
+	/**
+	 * Envoie les messages de tracking public et MJ
+	 */
+	private async sendTrackingMessages(guild: Guild, config: ServerConfig, gameId: number, publicChannel: TextChannel) {
+		let publicTrackerMessageId: string | null = null;
+		let mjTrackerMessageId: string | null = null;
+
+		// 1. Message public (dans débat-écrit par exemple)
+		try {
+			// TODO: Remplacer par ton vrai builder de message public
+			const publicMsg = await publicChannel.send({
+				content: `La partie #${gameId} commence ! Voici le suivi public.`
+			});
+			publicTrackerMessageId = publicMsg.id;
+			publicMsg.pin();
+		} catch (e) {
+			console.error('Erreur envoi tracking public:', e);
+		}
+
+		// 2. Message MJ (dans le salon configuré)
+		if (config.gameMjChannelId) {
+			try {
+				const mjChannel = await guild.channels.fetch(config.gameMjChannelId);
+				if (mjChannel?.isTextBased()) {
+					// TODO: Remplacer par ton vrai builder de message MJ
+					const mjMsg = await mjChannel.send({
+						content: `[MJ] Suivi complet de la partie #${gameId}.`
+					});
+					mjTrackerMessageId = mjMsg.id;
+				}
+			} catch (e) {
+				console.error('Erreur envoi tracking MJ:', e);
+			}
+		}
+
+		return { publicTrackerMessageId, mjTrackerMessageId };
 	}
 
 	private async setupRolesForum(guild: Guild, categoryId: string, distribution: RoleDistribution[], config: ServerConfig): Promise<ForumChannel> {
