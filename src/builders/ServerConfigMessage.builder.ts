@@ -17,8 +17,6 @@ export class ServerConfigMessageBuilder {
 			{ id: 'deadPlayerRoleId', name: 'Rôle Joueur Mort', type: 'role' },
 			{ id: 'spectatorRoleId', name: 'Rôle Spectateur', type: 'role' },
 			{ id: 'inscriptionVoiceChannelId', name: 'Vocal Inscription', type: 'channel' },
-			{ id: 'gameVoiceChannelId', name: 'Vocal Partie', type: 'channel' },
-			{ id: 'deadVoiceChannelId', name: 'Vocal Morts', type: 'channel' },
 			{ id: 'inscriptionChannelId', name: 'Salon Inscription', type: 'channel' },
 			{ id: 'gameMjChannelId', name: 'Salon MJ', type: 'channel' },
 			{ id: 'gameCategoryId', name: 'Catégorie des parties', type: 'channel' },
@@ -29,7 +27,7 @@ export class ServerConfigMessageBuilder {
 			const field = fields[i];
 			const val = config[field.id as keyof ServerConfig];
 
-			// 1. Un séparateur au dessus du Rôle MJ (index 0)
+			// 1. Un séparateur au dessus du Rôle MJ
 			if (i === 0) {
 				container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
 			}
@@ -37,23 +35,18 @@ export class ServerConfigMessageBuilder {
 			// Ajout de la section actuelle
 			container.addSectionComponents(this.buildConfigSection(field.id, field.name, field.type, val as string));
 
-			// 2. Un en dessous de Rôle Joueur Mort (index 2)
+			// 2. Un en dessous de Rôle Joueur Mort
 			if (field.id === 'spectatorRoleId') {
 				container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
 			}
 
-			// 3. Un en dessous de Vocal Morts (index 5)
-			if (field.id === 'deadVoiceChannelId') {
-				container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
-			}
-
-			// 4. Un en dessous de Salon MJ (index 7)
+			// 3. Un en dessous de Salon MJ
 			if (field.id === 'gameMjChannelId') {
 				container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
 			}
 		}
 
-		// 5. Un dernier tout en bas
+		// 4. Un dernier tout en bas
 		container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
 
 		return { components: [container] };

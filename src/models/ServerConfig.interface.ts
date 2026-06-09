@@ -6,8 +6,6 @@ export interface ServerConfig {
 	deadPlayerRoleId?: string;
 	spectatorRoleId?: string;
 	inscriptionVoiceChannelId?: string;
-	gameVoiceChannelId?: string;
-	deadVoiceChannelId?: string;
 	inscriptionChannelId?: string;
 	gameMjChannelId?: string;
 	gameCategoryId?: string;

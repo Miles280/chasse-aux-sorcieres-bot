@@ -56,7 +56,6 @@ export class GameLauncherService {
 		const response = await this.startGame(game.id, validatedDistribution);
 
 		if (!response.success) {
-			console.error('🔥 RÉPONSE API SYMFONY :', response);
 			throw new Error(`L'API a refusé le lancement : ${response.error || 'Erreur inconnue'}`);
 		}
 
@@ -81,10 +80,10 @@ export class GameLauncherService {
 
 		const finalDistribution = response.data.distribution;
 
-		// 2. 🟢 MODIFICATION : Récupération des salons créés par Discord
+		// 2. Récupération des salons créés par Discord
 		const { rolesForum, privateChannels } = await this.setupGameChannels(guild, config, finalDistribution);
 
-		// 3. 🟢 MODIFICATION : Formater les données pour l'API Symfony
+		// 3. Formater les données pour l'API Symfony
 		const playersChannelsPayload: { discordId: string; channelId: string }[] = [];
 		privateChannels.forEach((channel, discordId) => {
 			playersChannelsPayload.push({
@@ -110,8 +109,6 @@ export class GameLauncherService {
 		this.clearPreviewCache(game.id);
 	}
 
-	// =========================================================================
-	// MÉTHODES PRIVÉES (Logique Discord) - Inchangées mais retournent les données
 	// =========================================================================
 
 	private async setupGameChannels(guild: Guild, config: ServerConfig, distribution: RoleDistribution[]) {
