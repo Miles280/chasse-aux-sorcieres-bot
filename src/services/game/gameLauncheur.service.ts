@@ -130,6 +130,14 @@ export class GameLauncherService {
 			graveyardChannelId: textChannels.graveyardChannel.id
 		};
 
+		const ogreNainVc = textChannels.roleChannels.get('ogreNain');
+		const fanatiqueVc = textChannels.roleChannels.get('fanatique');
+		const conspirateurVc = textChannels.roleChannels.get('conspirateur');
+
+		if (ogreNainVc) gameChannelsPayload.ogreNainChannelId = ogreNainVc.id;
+		if (fanatiqueVc) gameChannelsPayload.fanatiqueChannelId = fanatiqueVc.id;
+		if (conspirateurVc) gameChannelsPayload.conspirateurChannelId = conspirateurVc.id;
+
 		// 4. Envoi des Channels à l'API Symfony
 		const updateChannelsResponse = await this.updateGameChannels(game.id, gameChannelsPayload, playersChannelsPayload);
 
@@ -166,6 +174,7 @@ export class GameLauncherService {
 		mjId: string
 	) {
 		const everyoneId = guild.roles.everyone.id;
+		const mjRoleId = config.mjRoleId;
 		const playerRoleId = config.playerRoleId;
 		const deadRoleId = config.deadPlayerRoleId;
 		const specRoleId = config.spectatorRoleId;
@@ -176,10 +185,60 @@ export class GameLauncherService {
 			type: ChannelType.GuildVoice,
 			parent: categoryId,
 			permissionOverwrites: [
-				{ id: everyoneId, deny: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect] },
-				{ id: playerRoleId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect, PermissionFlagsBits.Speak] },
-				{ id: deadRoleId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect], deny: [PermissionFlagsBits.Speak] },
-				{ id: specRoleId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect], deny: [PermissionFlagsBits.Speak] }
+				{
+					id: everyoneId,
+					deny: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect]
+				},
+
+				{
+					id: playerRoleId,
+					allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect, PermissionFlagsBits.Speak],
+					deny: [
+						PermissionFlagsBits.SendMessages,
+						PermissionFlagsBits.Stream,
+						PermissionFlagsBits.UseSoundboard,
+						PermissionFlagsBits.UseEmbeddedActivities
+					]
+				},
+
+				{
+					id: deadRoleId,
+					allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect],
+					deny: [
+						PermissionFlagsBits.Speak,
+						PermissionFlagsBits.SendMessages,
+						PermissionFlagsBits.Stream,
+						PermissionFlagsBits.UseSoundboard,
+						PermissionFlagsBits.UseEmbeddedActivities
+					]
+				},
+
+				{
+					id: specRoleId,
+					allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect],
+					deny: [
+						PermissionFlagsBits.Speak,
+						PermissionFlagsBits.SendMessages,
+						PermissionFlagsBits.Stream,
+						PermissionFlagsBits.UseSoundboard,
+						PermissionFlagsBits.UseEmbeddedActivities
+					]
+				},
+
+				{
+					id: mjRoleId,
+					allow: [
+						PermissionFlagsBits.ViewChannel,
+						PermissionFlagsBits.Connect,
+						PermissionFlagsBits.Speak,
+						PermissionFlagsBits.ManageChannels,
+						PermissionFlagsBits.ManageRoles,
+						PermissionFlagsBits.MuteMembers,
+						PermissionFlagsBits.DeafenMembers,
+						PermissionFlagsBits.MoveMembers,
+						PermissionFlagsBits.PrioritySpeaker
+					]
+				}
 			].filter(Boolean) as OverwriteResolvable[]
 		});
 
@@ -189,10 +248,53 @@ export class GameLauncherService {
 			type: ChannelType.GuildVoice,
 			parent: categoryId,
 			permissionOverwrites: [
-				{ id: everyoneId, deny: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect] },
-				{ id: playerRoleId, deny: [PermissionFlagsBits.Connect] }, // Ils peuvent voir qu'il existe, mais pas s'y co
-				{ id: deadRoleId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect, PermissionFlagsBits.Speak] },
-				{ id: specRoleId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect, PermissionFlagsBits.Speak] }
+				{
+					id: everyoneId,
+					deny: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect]
+				},
+
+				{
+					id: playerRoleId,
+					allow: [PermissionFlagsBits.ViewChannel],
+					deny: [PermissionFlagsBits.Connect]
+				},
+
+				{
+					id: deadRoleId,
+					allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect, PermissionFlagsBits.Speak],
+					deny: [
+						PermissionFlagsBits.SendMessages,
+						PermissionFlagsBits.Stream,
+						PermissionFlagsBits.UseSoundboard,
+						PermissionFlagsBits.UseEmbeddedActivities
+					]
+				},
+
+				{
+					id: specRoleId,
+					allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect, PermissionFlagsBits.Speak],
+					deny: [
+						PermissionFlagsBits.SendMessages,
+						PermissionFlagsBits.Stream,
+						PermissionFlagsBits.UseSoundboard,
+						PermissionFlagsBits.UseEmbeddedActivities
+					]
+				},
+
+				{
+					id: mjRoleId,
+					allow: [
+						PermissionFlagsBits.ViewChannel,
+						PermissionFlagsBits.Connect,
+						PermissionFlagsBits.Speak,
+						PermissionFlagsBits.ManageChannels,
+						PermissionFlagsBits.ManageRoles,
+						PermissionFlagsBits.MuteMembers,
+						PermissionFlagsBits.DeafenMembers,
+						PermissionFlagsBits.MoveMembers,
+						PermissionFlagsBits.PrioritySpeaker
+					]
+				}
 			].filter(Boolean) as OverwriteResolvable[]
 		});
 
@@ -235,7 +337,7 @@ export class GameLauncherService {
 		}
 
 		const rolesForum = await this.setupRolesForum(guild, privateCategoryId, distribution, config);
-		const privateChannels = await this.setupPrivateChannelsAndDistribute(guild, privateCategoryId, config.mjRoleId, distribution);
+		const privateChannels = await this.setupPrivateChannelsAndDistribute(guild, privateCategoryId, config.mjRoleId!, distribution);
 
 		return {
 			rolesForum,
@@ -248,6 +350,7 @@ export class GameLauncherService {
 	 */
 	private async setupTextChannels(guild: Guild, config: ServerConfig, categoryId: string, distribution: RoleDistribution[]) {
 		const everyoneId = guild.roles.everyone.id;
+		const mjRoleId = config.mjRoleId;
 		const playerRoleId = config.playerRoleId;
 		const deadRoleId = config.deadPlayerRoleId;
 		const specRoleId = config.spectatorRoleId;
@@ -257,7 +360,18 @@ export class GameLauncherService {
 			{ id: everyoneId, deny: [PermissionFlagsBits.ViewChannel] },
 			{ id: playerRoleId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
 			{ id: deadRoleId, allow: [PermissionFlagsBits.ViewChannel], deny: [PermissionFlagsBits.SendMessages] },
-			{ id: specRoleId, allow: [PermissionFlagsBits.ViewChannel], deny: [PermissionFlagsBits.SendMessages] }
+			{ id: specRoleId, allow: [PermissionFlagsBits.ViewChannel], deny: [PermissionFlagsBits.SendMessages] },
+			{
+				id: mjRoleId,
+				allow: [
+					PermissionFlagsBits.ViewChannel,
+					PermissionFlagsBits.SendMessages,
+					PermissionFlagsBits.ManageChannels,
+					PermissionFlagsBits.ManageMessages,
+					PermissionFlagsBits.ManageRoles,
+					PermissionFlagsBits.PinMessages
+				]
+			}
 		].filter(Boolean) as OverwriteResolvable[];
 
 		const debatChannel = await guild.channels.create({
@@ -280,7 +394,18 @@ export class GameLauncherService {
 		const witchesOverwrites: OverwriteResolvable[] = [
 			{ id: everyoneId, deny: [PermissionFlagsBits.ViewChannel] },
 			{ id: playerRoleId, allow: [PermissionFlagsBits.SendMessages] },
-			{ id: deadRoleId, deny: [PermissionFlagsBits.SendMessages] }
+			{ id: deadRoleId, deny: [PermissionFlagsBits.SendMessages] },
+			{
+				id: mjRoleId,
+				allow: [
+					PermissionFlagsBits.ViewChannel,
+					PermissionFlagsBits.SendMessages,
+					PermissionFlagsBits.ManageChannels,
+					PermissionFlagsBits.ManageMessages,
+					PermissionFlagsBits.ManageRoles,
+					PermissionFlagsBits.PinMessages
+				]
+			}
 		].filter(Boolean) as OverwriteResolvable[];
 
 		// On ajoute les sorcières dans les permissions
@@ -299,6 +424,8 @@ export class GameLauncherService {
 			permissionOverwrites: witchesOverwrites
 		});
 
+		const roleChannels = await this.setupRoleSpecificChannels(guild, config, categoryId, distribution);
+
 		// Cimetière textuel (Seuls les morts voient et écrivent, specs peuvent lire)
 		const graveyardChannel = await guild.channels.create({
 			name: '『💀』𝐂𝐢𝐦𝐞𝐭𝐢𝐞̀𝐫𝐞',
@@ -308,11 +435,22 @@ export class GameLauncherService {
 				{ id: everyoneId, deny: [PermissionFlagsBits.ViewChannel] },
 				{ id: playerRoleId, deny: [PermissionFlagsBits.ViewChannel] },
 				{ id: deadRoleId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
-				{ id: specRoleId, allow: [PermissionFlagsBits.ViewChannel], deny: [PermissionFlagsBits.SendMessages] }
+				{ id: specRoleId, allow: [PermissionFlagsBits.ViewChannel], deny: [PermissionFlagsBits.SendMessages] },
+				{
+					id: mjRoleId,
+					allow: [
+						PermissionFlagsBits.ViewChannel,
+						PermissionFlagsBits.SendMessages,
+						PermissionFlagsBits.ManageChannels,
+						PermissionFlagsBits.ManageMessages,
+						PermissionFlagsBits.ManageRoles,
+						PermissionFlagsBits.PinMessages
+					]
+				}
 			].filter(Boolean) as OverwriteResolvable[]
 		});
 
-		return { debatChannel, votesChannel, witchesChannel, graveyardChannel };
+		return { debatChannel, votesChannel, witchesChannel, graveyardChannel, roleChannels };
 	}
 
 	/**
@@ -455,7 +593,7 @@ export class GameLauncherService {
 	private async setupPrivateChannelsAndDistribute(
 		guild: Guild,
 		categoryId: string,
-		mjRoleId: string | null | undefined,
+		mjRoleId: string,
 		distribution: RoleDistribution[]
 	): Promise<Map<string, TextChannel>> {
 		const privateChannels = new Map<string, TextChannel>();
@@ -474,15 +612,19 @@ export class GameLauncherService {
 				{
 					id: member.id,
 					allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.PinMessages]
+				},
+				{
+					id: mjRoleId,
+					allow: [
+						PermissionFlagsBits.ViewChannel,
+						PermissionFlagsBits.SendMessages,
+						PermissionFlagsBits.ManageChannels,
+						PermissionFlagsBits.ManageMessages,
+						PermissionFlagsBits.ManageRoles,
+						PermissionFlagsBits.PinMessages
+					]
 				}
 			];
-
-			if (mjRoleId) {
-				permissionOverwrites.push({
-					id: mjRoleId,
-					allow: [PermissionFlagsBits.ViewChannel]
-				});
-			}
 
 			const playerChannel = await guild.channels.create({
 				name: `📜・${playerName}`,
@@ -516,5 +658,130 @@ export class GameLauncherService {
 		}
 
 		return privateChannels;
+	}
+
+	private async setupRoleSpecificChannels(
+		guild: Guild,
+		config: ServerConfig,
+		categoryId: string,
+		distribution: RoleDistribution[]
+	): Promise<Map<string, TextChannel>> {
+		const everyoneId = guild.roles.everyone.id;
+		const mjRoleId = config.mjRoleId;
+		const playerRoleId = config.playerRoleId;
+		const deadRoleId = config.deadPlayerRoleId;
+
+		if (!playerRoleId || !deadRoleId || !mjRoleId) {
+			throw new Error("Impossible de créer les salons de rôles : Les rôles 'Joueur' ou 'Mort' ou 'Animateur' ne sont pas configurés.");
+		}
+
+		const createdChannels = new Map<string, TextChannel>();
+
+		const ogre = distribution.filter((d) => d.role.name === 'Ogre');
+		const nain = distribution.filter((d) => d.role.name === 'Nain');
+		const fanatique = distribution.filter((d) => d.role.name === 'Fanatique');
+		const conspirateur = distribution.filter((d) => d.role.name === 'Conspirateur');
+
+		// Cas A : Salon commun Ogre & Nain
+		if (ogre.length > 0 || nain.length > 0) {
+			const ogreNainOverwrites: OverwriteResolvable[] = [
+				{ id: everyoneId, deny: [PermissionFlagsBits.ViewChannel] },
+				{ id: playerRoleId, allow: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.PinMessages] },
+				{ id: deadRoleId, deny: [PermissionFlagsBits.SendMessages] },
+				{
+					id: mjRoleId,
+					allow: [
+						PermissionFlagsBits.ViewChannel,
+						PermissionFlagsBits.SendMessages,
+						PermissionFlagsBits.ManageChannels,
+						PermissionFlagsBits.ManageMessages,
+						PermissionFlagsBits.ManageRoles,
+						PermissionFlagsBits.PinMessages
+					]
+				}
+			];
+
+			[...ogre, ...nain].forEach((player) => {
+				ogreNainOverwrites.push({ id: player.discordId, allow: [PermissionFlagsBits.ViewChannel] });
+			});
+
+			// 🟢 ON STOCKE LE SALON ICI
+			const channel = await guild.channels.create({
+				name: '『👹⛏️』𝐎𝐠𝐫𝐞 & 𝐍𝐚𝐢𝐧',
+				type: ChannelType.GuildText,
+				parent: categoryId,
+				permissionOverwrites: ogreNainOverwrites
+			});
+
+			// 🟢 ET ON L'AJOUTE À LA MAP
+			createdChannels.set('ogreNain', channel);
+		}
+
+		// Cas B : Salon Fanatique
+		if (fanatique.length > 0) {
+			const fanatiqueOverwrites: OverwriteResolvable[] = [
+				{ id: everyoneId, deny: [PermissionFlagsBits.ViewChannel] },
+				{ id: deadRoleId, deny: [PermissionFlagsBits.SendMessages] },
+				{
+					id: mjRoleId,
+					allow: [
+						PermissionFlagsBits.ViewChannel,
+						PermissionFlagsBits.SendMessages,
+						PermissionFlagsBits.ManageChannels,
+						PermissionFlagsBits.ManageMessages,
+						PermissionFlagsBits.ManageRoles,
+						PermissionFlagsBits.PinMessages
+					]
+				}
+			];
+
+			fanatique.forEach((player) => {
+				fanatiqueOverwrites.push({ id: player.discordId, allow: [PermissionFlagsBits.ViewChannel] });
+			});
+
+			const channel = await guild.channels.create({
+				name: '『🏮』𝐂𝐮𝐥𝐭𝐞-𝐝𝐮-𝐅𝐚𝐧𝐚𝐭𝐢𝐪𝐮𝐞',
+				type: ChannelType.GuildText,
+				parent: categoryId,
+				permissionOverwrites: fanatiqueOverwrites
+			});
+
+			createdChannels.set('fanatique', channel);
+		}
+
+		// Cas C : Salon Conspirateur
+		if (conspirateur.length > 0) {
+			const conspirateurOverwrites: OverwriteResolvable[] = [
+				{ id: everyoneId, deny: [PermissionFlagsBits.ViewChannel] },
+				{ id: playerRoleId, allow: [PermissionFlagsBits.SendMessages] },
+				{ id: deadRoleId, deny: [PermissionFlagsBits.SendMessages] },
+				{
+					id: mjRoleId,
+					allow: [
+						PermissionFlagsBits.ViewChannel,
+						PermissionFlagsBits.SendMessages,
+						PermissionFlagsBits.ManageChannels,
+						PermissionFlagsBits.ManageMessages,
+						PermissionFlagsBits.ManageRoles,
+						PermissionFlagsBits.PinMessages
+					]
+				}
+			];
+
+			conspirateur.forEach((player) => {
+				conspirateurOverwrites.push({ id: player.discordId, allow: [PermissionFlagsBits.ViewChannel] });
+			});
+
+			const channel = await guild.channels.create({
+				name: '『📓』𝐔𝐫𝐧𝐞-𝐍𝐨𝐢𝐫',
+				type: ChannelType.GuildText,
+				parent: categoryId,
+				permissionOverwrites: conspirateurOverwrites
+			});
+
+			createdChannels.set('conspirateur', channel);
+		}
+
+		return createdChannels;
 	}
 }

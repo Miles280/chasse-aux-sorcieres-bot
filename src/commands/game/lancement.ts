@@ -86,7 +86,7 @@ export class LancementCommand extends Command {
 			return interaction.editReply({
 				embeds: [
 					Embeds.successEmbed({
-						message: `Une erreur inattendue est survenue : ${error.message}`
+						message: error.message
 					})
 				]
 			});

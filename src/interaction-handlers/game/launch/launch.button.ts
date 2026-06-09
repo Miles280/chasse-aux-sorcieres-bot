@@ -70,7 +70,7 @@ export class LaunchHandler extends InteractionHandler {
 			return interaction.editReply({
 				embeds: [
 					Embeds.errorEmbed({
-						message: `Une erreur inattendue est survenue : ${error.message}`
+						message: error.message
 					})
 				],
 				components: []
