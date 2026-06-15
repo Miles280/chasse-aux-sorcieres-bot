@@ -1,3 +1,4 @@
+import { UserInterface } from './ApiResponse.interface';
 import { RoleInterface } from './Role.interface';
 
 /**
@@ -5,21 +6,41 @@ import { RoleInterface } from './Role.interface';
  */
 export interface GameData {
 	id: number;
-	gameMasterId: string;
-	gameMode?: string;
-	status?: string;
-	inscriptionMessageId?: string;
-	compoMessageId?: string;
-	publicTrackerMessageId?: string;
-	mjTrackerMessageId?: string;
-	players: string[];
-	spectators: string[];
-	createdAt?: string;
-	startedAt?: string;
-	finishedAt?: string;
-	currentStep?: string;
-	dayNumber?: number;
-	winningCamp?: string;
+	gameMaster: UserInterface;
+	status: string;
+	gameMode: string | null;
+	winningCamp: string | null;
+	createdAt: string;
+	startedAt: string | null;
+	finishedAt: string | null;
+	currentStep: string;
+	dayNumber: number;
+	inscriptionMessageId: string | null;
+	compoMessageId: string | null;
+	publicTrackerMessageId: string | null;
+	mjTrackerMessageId: string | null;
+	discordChannels: DiscordChannelsInterface;
+	gamePlayers: GamePlayerInterface[];
+}
+
+export interface GamePlayerInterface {
+	id: number;
+	user: UserInterface;
+	isSpectator: boolean;
+	isAlive: boolean;
+	trueRole: RoleInterface | null;
+	revealedRole: RoleInterface | null;
+	discordChannelId: string | null;
+}
+
+export interface DiscordChannelsInterface {
+	deadVoiceId?: string;
+	mainVoiceId?: string;
+	rolesForumId?: string;
+	debatChannelId?: string;
+	votesChannelId?: string;
+	witchesChannelId?: string;
+	graveyardChannelId?: string;
 }
 
 export interface CompoData {

@@ -7,6 +7,7 @@ import { GameData, RoleDistribution } from '../../models/Game.interface';
 import { Alignment, getAlignmentLabel } from '../../enums/Alignment';
 import { RoleMessageBuilder } from '../../builders/game/RoleMessage.builder';
 import { InscriptionMessageBuilder } from '../../builders/game/InscriptionMessage.builder';
+import { GameTrackerMessageBuilder, TrackerPlayer } from '../../builders/game/GameTrackerBuilder';
 
 export class GameLauncherService {
 	constructor(private api: ApiClient) {}
@@ -94,9 +95,9 @@ export class GameLauncherService {
 		const categoryId = config.gameCategoryId;
 		if (!categoryId) throw new Error('Catégorie de jeu non configurée.');
 
-		const spectatorIds: string[] = game.spectators || [];
+		const mjId: string = game.gameMaster.discordId;
 
-		const mjId: string = game.gameMasterId || '';
+		const spectatorIds: string[] = game.gamePlayers.filter((player) => player.isSpectator).map((player) => player.user.discordId);
 
 		// 2. Création des vocaux et TP des joueurs ---
 		const voiceChannels = await this.setupVoiceChannels(guild, config, categoryId, finalDistribution, spectatorIds, mjId);
@@ -107,8 +108,27 @@ export class GameLauncherService {
 		// 4. Création des salons écrits de la game ---
 		const textChannels = await this.setupTextChannels(guild, config, categoryId, finalDistribution);
 
-		// 5. Envoi des messages de tracking
-		const trackingMessages = await this.sendTrackingMessages(guild, config, game.id, textChannels.votesChannel);
+		// 5. 🟢 ENVOI DES MESSAGES DE TRACKING (CORRIGÉ ICI)
+		// On convertit la distribution de l'API en objets TrackerPlayer
+		const trackerPlayers: TrackerPlayer[] = finalDistribution.map((p: any) => ({
+			discordId: p.discordId,
+			roleName: p.roleName, // ⚠️ Vérifie que ton API renvoie bien "roleName"
+			campKey: p.campKey, // ⚠️ Vérifie que ton API renvoie bien "campKey" (ex: 'witch')
+			campName: p.campName, // ⚠️ Vérifie que ton API renvoie bien "campName" (ex: 'Sorcières')
+			isAlive: true, // Au lancement, tout le monde respire
+			isRevealed: false // Au lancement, les rôles restent secrets
+		}));
+
+		// On passe maintenant TOUS les bons arguments à la méthode
+		const trackingMessages = await this.sendTrackingMessages(
+			guild,
+			config,
+			game.id,
+			mjId,
+			trackerPlayers,
+			textChannels.votesChannel,
+			game.compoMessageId
+		);
 
 		// 6. Formater les données pour l'API Symfony
 		const playersChannelsPayload: { discordId: string; channelId: string }[] = [];
@@ -138,14 +158,14 @@ export class GameLauncherService {
 		if (fanatiqueVc) gameChannelsPayload.fanatiqueChannelId = fanatiqueVc.id;
 		if (conspirateurVc) gameChannelsPayload.conspirateurChannelId = conspirateurVc.id;
 
-		// 4. Envoi des Channels à l'API Symfony
+		// 7. Envoi des Channels à l'API Symfony
 		const updateChannelsResponse = await this.updateGameChannels(game.id, gameChannelsPayload, playersChannelsPayload);
 
 		if (!updateChannelsResponse.success) {
 			throw new Error("Channels non sauvegardés auprès de l'API.");
 		}
 
-		// 5. Envoi des Trackers à l'API Symfony (Nouvelle route !)
+		// 8. Envoi des Trackers à l'API Symfony
 		const updateTrackersResponse = await this.updateGameTrackers(
 			game.id,
 			trackingMessages.publicTrackerMessageId,
@@ -189,7 +209,6 @@ export class GameLauncherService {
 					id: everyoneId,
 					deny: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect]
 				},
-
 				{
 					id: playerRoleId,
 					allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect, PermissionFlagsBits.Speak],
@@ -200,7 +219,6 @@ export class GameLauncherService {
 						PermissionFlagsBits.UseEmbeddedActivities
 					]
 				},
-
 				{
 					id: deadRoleId,
 					allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect],
@@ -212,7 +230,6 @@ export class GameLauncherService {
 						PermissionFlagsBits.UseEmbeddedActivities
 					]
 				},
-
 				{
 					id: specRoleId,
 					allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect],
@@ -224,7 +241,6 @@ export class GameLauncherService {
 						PermissionFlagsBits.UseEmbeddedActivities
 					]
 				},
-
 				{
 					id: mjRoleId,
 					allow: [
@@ -252,13 +268,11 @@ export class GameLauncherService {
 					id: everyoneId,
 					deny: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect]
 				},
-
 				{
 					id: playerRoleId,
 					allow: [PermissionFlagsBits.ViewChannel],
 					deny: [PermissionFlagsBits.Connect]
 				},
-
 				{
 					id: deadRoleId,
 					allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect, PermissionFlagsBits.Speak],
@@ -269,7 +283,6 @@ export class GameLauncherService {
 						PermissionFlagsBits.UseEmbeddedActivities
 					]
 				},
-
 				{
 					id: specRoleId,
 					allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect, PermissionFlagsBits.Speak],
@@ -280,7 +293,6 @@ export class GameLauncherService {
 						PermissionFlagsBits.UseEmbeddedActivities
 					]
 				},
-
 				{
 					id: mjRoleId,
 					allow: [
@@ -456,18 +468,30 @@ export class GameLauncherService {
 	/**
 	 * Envoie les messages de tracking public et MJ
 	 */
-	private async sendTrackingMessages(guild: Guild, config: ServerConfig, gameId: number, publicChannel: TextChannel) {
+	private async sendTrackingMessages(
+		guild: Guild,
+		config: ServerConfig,
+		gameId: number,
+		mjId: string, // 🟢 Ajouté pour le builder
+		players: TrackerPlayer[], // 🟢 Ajouté pour le builder
+		publicChannel: TextChannel,
+		oldMessageIdToDelete: string | null = null
+	) {
 		let publicTrackerMessageId: string | null = null;
 		let mjTrackerMessageId: string | null = null;
+		console.log(gameId);
 
 		// 1. Message public (dans débat-écrit par exemple)
 		try {
-			// TODO: Remplacer par ton vrai builder de message public
+			// 🟢 Génération du contenu textuel pour les joueurs
+			const publicContent = GameTrackerMessageBuilder.buildPlayerTrackerMessage(mjId, players);
+
 			const publicMsg = await publicChannel.send({
-				content: `La partie #${gameId} commence ! Voici le suivi public.`
+				content: publicContent
 			});
+
 			publicTrackerMessageId = publicMsg.id;
-			publicMsg.pin();
+			await publicMsg.pin(); // C'est mieux d'attendre la fin du pin avec await
 		} catch (e) {
 			console.error('Erreur envoi tracking public:', e);
 		}
@@ -476,11 +500,24 @@ export class GameLauncherService {
 		if (config.gameMjChannelId) {
 			try {
 				const mjChannel = await guild.channels.fetch(config.gameMjChannelId);
+
 				if (mjChannel?.isTextBased()) {
-					// TODO: Remplacer par ton vrai builder de message MJ
+					if (oldMessageIdToDelete) {
+						try {
+							const oldMessage = await mjChannel.messages.fetch(oldMessageIdToDelete);
+							await oldMessage.delete();
+						} catch (e) {
+							console.warn(`Ancien message de compo (${oldMessageIdToDelete}) introuvable ou déjà supprimé.`);
+						}
+					}
+
+					// 🟢 Génération du contenu textuel complet pour le MJ
+					const mjContent = GameTrackerMessageBuilder.buildMJTrackerMessage(mjId, players);
+
 					const mjMsg = await mjChannel.send({
-						content: `[MJ] Suivi complet de la partie #${gameId}.`
+						content: mjContent
 					});
+
 					mjTrackerMessageId = mjMsg.id;
 				}
 			} catch (e) {

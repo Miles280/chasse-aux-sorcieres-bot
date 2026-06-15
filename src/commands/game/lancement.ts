@@ -63,7 +63,7 @@ export class LancementCommand extends Command {
 
 				const distribution = previewRes.data.distribution;
 
-				const message = GameMessageBuilder.buildPreview(game.id, gameMode, distribution);
+				const message = GameMessageBuilder.buildPreviewDistribution(game.id, gameMode, distribution);
 
 				container.gameLauncherService.setPreviewCache(game.id, distribution);
 

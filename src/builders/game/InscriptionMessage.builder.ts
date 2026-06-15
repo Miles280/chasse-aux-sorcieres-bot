@@ -17,23 +17,29 @@ import { RoleInterface } from '../../models/Role.interface';
 import { Alignment, getAlignmentLabel } from '../../enums/Alignment';
 
 export class InscriptionMessageBuilder {
+	/**
+	 * Construit le message d'inscription ouvert
+	 */
 	public static buildOpened(game: GameData, inscriptionVocId: string, maxPlayers: number | null, closeTimestamp: number | null) {
+		// Filtrage des joueurs et spectateurs depuis la nouvelle structure gamePlayers
+		const activePlayers = game.gamePlayers?.filter((p) => !p.isSpectator) || [];
+		const spectators = game.gamePlayers?.filter((p) => p.isSpectator) || [];
+
 		// Formatage du compteur max
 		const limitText = maxPlayers ? `/${maxPlayers}` : '';
 
 		// Listes (avec fallback si vide)
-		const playersList = game.players?.length > 0 ? game.players.map((id) => `> <@${id}>`).join('\n') : '> *Aucun inscrit*';
+		const playersList = activePlayers.length > 0 ? activePlayers.map((p) => `> <@${p.user.discordId}>`).join('\n') : '> *Aucun inscrit*';
 
-		// On suppose que l'API renvoie un tableau de spectateurs
-		const hasSpectators = game.spectators && game.spectators.length > 0;
-		const spectatorsList = hasSpectators ? game.spectators.map((id) => `> <@${id}>`).join('\n') : null;
+		const hasSpectators = spectators.length > 0;
+		const spectatorsList = hasSpectators ? spectators.map((p) => `> <@${p.user.discordId}>`).join('\n') : null;
 
 		const embed = new EmbedBuilder()
 			.setColor(colors.purpleWitch)
 			.setTitle(`${emojis.purplecheck} Inscriptions ouvertes !`)
 			.setDescription(
 				`Le brouillard se lève sur Nistrium... Inscriras-tu ton nom au registre ou préféreras-tu observer le chaos depuis les ombres ?\n\n` +
-					`__Animateur__ : <@${game.gameMasterId}>\n` +
+					`__Animateur__ : <@${game.gameMaster.discordId}>\n` +
 					`__Vocal d'attente__ : <#${inscriptionVocId}>\n` +
 					`\u200B`
 			)
@@ -42,7 +48,7 @@ export class InscriptionMessageBuilder {
 			)
 			.addFields({
 				name: `Liste des joueurs :`,
-				value: `${playersList}\n${game.players?.length || 0}${limitText} inscrit${game.players?.length > 1 ? 's' : ''}`,
+				value: `${playersList}\n${activePlayers.length}${limitText} inscrit${activePlayers.length > 1 ? 's' : ''}`,
 				inline: true
 			});
 
@@ -56,7 +62,7 @@ export class InscriptionMessageBuilder {
 				},
 				{
 					name: `Spectateurs :`,
-					value: `${spectatorsList}\n${game.spectators.length} spectateur${game.spectators.length > 1 ? 's' : ''}`,
+					value: `${spectatorsList}\n${spectators.length} spectateur${spectators.length > 1 ? 's' : ''}`,
 					inline: true
 				}
 			);
@@ -76,19 +82,20 @@ export class InscriptionMessageBuilder {
 	 * Construit le message d'inscription fermé
 	 */
 	public static buildClosed(game: GameData, inscriptionVocId: string) {
-		// Listes (avec fallback si vide)
-		const playersList = game.players?.length > 0 ? game.players.map((id) => `> <@${id}>`).join('\n') : '> *Aucun inscrit*';
+		const activePlayers = game.gamePlayers?.filter((p) => !p.isSpectator) || [];
+		const spectators = game.gamePlayers?.filter((p) => p.isSpectator) || [];
 
-		// On suppose que l'API renvoie un tableau de spectateurs
-		const hasSpectators = game.spectators && game.spectators.length > 0;
-		const spectatorsList = hasSpectators ? game.spectators.map((id) => `> <@${id}>`).join('\n') : null;
+		const playersList = activePlayers.length > 0 ? activePlayers.map((p) => `> <@${p.user.discordId}>`).join('\n') : '> *Aucun inscrit*';
+
+		const hasSpectators = spectators.length > 0;
+		const spectatorsList = hasSpectators ? spectators.map((p) => `> <@${p.user.discordId}>`).join('\n') : null;
 
 		const embed = new EmbedBuilder()
 			.setColor(colors.orange)
 			.setTitle(`${emojis.orangecheck} Inscriptions fermées !`)
 			.setDescription(
 				`Le portail de Nistrium s'est refermé. Le sort en est jeté, et les joueurs sont désormais scellés dans cette partie.\n\n` +
-					`__Animateur__ : <@${game.gameMasterId}>\n` +
+					`__Animateur__ : <@${game.gameMaster.discordId}>\n` +
 					`__Vocal d'attente__ : <#${inscriptionVocId}>\n` +
 					`\u200B`
 			)
@@ -97,11 +104,10 @@ export class InscriptionMessageBuilder {
 			)
 			.addFields({
 				name: `Liste des joueurs :`,
-				value: `${playersList}\n${game.players?.length || 0} inscrit${game.players?.length > 1 ? 's' : ''}`,
+				value: `${playersList}\n${activePlayers.length} inscrit${activePlayers.length > 1 ? 's' : ''}`,
 				inline: true
 			});
 
-		// On n'ajoute les colonnes s'il y a des spectateurs
 		if (hasSpectators && spectatorsList) {
 			embed.addFields(
 				{
@@ -111,7 +117,7 @@ export class InscriptionMessageBuilder {
 				},
 				{
 					name: `Spectateurs :`,
-					value: `${spectatorsList}\n${game.spectators.length} spectateur${game.spectators.length > 1 ? 's' : ''}`,
+					value: `${spectatorsList}\n${spectators.length} spectateur${spectators.length > 1 ? 's' : ''}`,
 					inline: true
 				}
 			);
@@ -123,22 +129,23 @@ export class InscriptionMessageBuilder {
 	}
 
 	/**
-	 * Construit le message d'inscription quand la partie est lancé
+	 * Construit le message d'inscription quand la partie est lancée
 	 */
 	public static buildStarted(game: GameData) {
-		// Listes (avec fallback si vide)
-		const playersList = game.players?.length > 0 ? game.players.map((id) => `> <@${id}>`).join('\n') : '> *Aucun inscrit*';
+		const activePlayers = game.gamePlayers?.filter((p) => !p.isSpectator) || [];
+		const spectators = game.gamePlayers?.filter((p) => p.isSpectator) || [];
 
-		// On suppose que l'API renvoie un tableau de spectateurs
-		const hasSpectators = game.spectators && game.spectators.length > 0;
-		const spectatorsList = hasSpectators ? game.spectators.map((id) => `> <@${id}>`).join('\n') : null;
+		const playersList = activePlayers.length > 0 ? activePlayers.map((p) => `> <@${p.user.discordId}>`).join('\n') : '> *Aucun inscrit*';
+
+		const hasSpectators = spectators.length > 0;
+		const spectatorsList = hasSpectators ? spectators.map((p) => `> <@${p.user.discordId}>`).join('\n') : null;
 
 		const embed = new EmbedBuilder()
 			.setColor(colors.orange)
 			.setTitle(`${emojis.orangecheck} Inscriptions fermées !`)
 			.setDescription(
 				`Le portail de Nistrium s'est refermé. Le sort en est jeté, et les joueurs sont désormais scellés dans cette partie.\n\n` +
-					`__Animateur__ : <@${game.gameMasterId}>\n` +
+					`__Animateur__ : <@${game.gameMaster.discordId}>\n` +
 					`__Status__ : Partie en cours...\n` +
 					`\u200B`
 			)
@@ -147,11 +154,10 @@ export class InscriptionMessageBuilder {
 			)
 			.addFields({
 				name: `Liste des joueurs :`,
-				value: `${playersList}\n${game.players?.length || 0} inscrit${game.players?.length > 1 ? 's' : ''}`,
+				value: `${playersList}\n${activePlayers.length} inscrit${activePlayers.length > 1 ? 's' : ''}`,
 				inline: true
 			});
 
-		// On n'ajoute les colonnes s'il y a des spectateurs
 		if (hasSpectators && spectatorsList) {
 			embed.addFields(
 				{
@@ -161,7 +167,7 @@ export class InscriptionMessageBuilder {
 				},
 				{
 					name: `Spectateurs :`,
-					value: `${spectatorsList}\n${game.spectators.length} spectateur${game.spectators.length > 1 ? 's' : ''}`,
+					value: `${spectatorsList}\n${spectators.length} spectateur${spectators.length > 1 ? 's' : ''}`,
 					inline: true
 				}
 			);
@@ -223,14 +229,16 @@ export class InscriptionMessageBuilder {
 		const villageois = roles.filter((r) => r.camp === 'villagers');
 		const independants = roles.filter((r) => r.camp === 'independent');
 
+		const activePlayers = game.gamePlayers?.filter((p) => !p.isSpectator) || [];
+
 		const container = new ContainerBuilder()
 			.setAccentColor(colors.purpleWitch)
 			.addTextDisplayComponents(
 				new TextDisplayBuilder().setContent(`### ${emojis.purplecheck} Préparation de la partie`),
 				new TextDisplayBuilder().setContent(
 					`Voici ton panneau de contrôle pour préparer la partie à venir.\n\n` +
-						`__Animateur__ : <@${game.gameMasterId}>\n` +
-						`__Joueurs__ : ${game.players?.length || 0} inscrit${(game.players?.length || 0) > 1 ? 's' : ''}\n\n` +
+						`__Animateur__ : <@${game.gameMaster.discordId}>\n` +
+						`__Joueurs__ : ${activePlayers.length} inscrit${activePlayers.length > 1 ? 's' : ''}\n\n` +
 						`**__Composition__** *(${roles.length} rôle${roles.length > 1 ? 's' : ''})* :`
 				)
 			);
@@ -334,7 +342,6 @@ export class InscriptionMessageBuilder {
 
 		// 3. Formatage du récapitulatif
 		const summaryEntries = Object.entries(alignmentCounts).map(([align, count]) => {
-			// Ici aussi, on utilise la fonction globale
 			const label = getAlignmentLabel(align as Alignment);
 			return `**${count}** ${count > 1 ? label + 's' : label}`;
 		});
@@ -347,7 +354,7 @@ export class InscriptionMessageBuilder {
 	/**
 	 * Boutons en bas du message
 	 */
-	private static buildButtons(gameId: Number): ActionRowBuilder<ButtonBuilder> {
+	private static buildButtons(gameId: number): ActionRowBuilder<ButtonBuilder> {
 		return new ActionRowBuilder<ButtonBuilder>().addComponents(
 			new ButtonBuilder().setCustomId(`compo:button:add:${gameId}:witch`).setEmoji(emojisV2.witch).setStyle(ButtonStyle.Success),
 			new ButtonBuilder().setCustomId(`compo:button:add:${gameId}:villagers`).setEmoji(emojisV2.villagers).setStyle(ButtonStyle.Success),

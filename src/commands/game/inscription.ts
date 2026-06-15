@@ -301,7 +301,7 @@ export class InscriptionCommand extends Subcommand {
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		const player = interaction.options.getUser('joueur', true);
-		const guildId = interaction.guildId!; // Correction : il manquait la définition du guildId
+		const guildId = interaction.guildId!;
 
 		// 1. Récupérer la partie en attente
 		const gameResponse = await container.inscriptionService.getWaitingGame();
@@ -314,11 +314,10 @@ export class InscriptionCommand extends Subcommand {
 
 		const game = gameResponse.data;
 
-		// 2. Vérifier que le joueur est bien inscrit (joueur ou spectateur)
-		const isPlayer = game.players?.includes(player.id);
-		const isSpectator = game.spectators?.includes(player.id);
+		// 🟢 2. Vérifier que le joueur est bien inscrit via gamePlayers
+		const isRegistered = game.gamePlayers?.some((p) => p.user.discordId === player.id);
 
-		if (!isPlayer && !isSpectator) {
+		if (!isRegistered) {
 			return interaction.editReply({
 				embeds: [Embeds.errorEmbed({ title: 'Action refusée', message: `<@${player.id}> n'est pas inscrit à cette partie.` })]
 			});
@@ -410,7 +409,10 @@ export class InscriptionCommand extends Subcommand {
 					if (!compoData.success) return;
 
 					const compoPayload = InscriptionMessageBuilder.buildCompo(updatedGame, compoData.data);
-					await compoMsg.edit(compoPayload);
+					await compoMsg.edit({
+						...compoPayload,
+						flags: MessageFlags.IsComponentsV2
+					});
 				}
 			} catch (error) {
 				console.error('Erreur lors de la mise à jour du message de compo MJ (Kick):', error);
@@ -461,15 +463,19 @@ export class InscriptionCommand extends Subcommand {
 			}
 			const config = configResponse.data;
 
+			// 🟢 Extraction des vrais joueurs et spectateurs depuis la nouvelle interface
+			const actualPlayers = game.gamePlayers?.filter((p) => !p.isSpectator) || [];
+			const actualSpectators = game.gamePlayers?.filter((p) => p.isSpectator) || [];
+
 			// 3. Enlever les rôles aux joueurs et spectateurs (en parallèle)
 			const removeRolesPromises: Promise<any>[] = [];
 
 			// Retrait du rôle Joueur
-			if (config.playerRoleId && game.players && game.players.length > 0) {
-				for (const playerId of game.players) {
+			if (config.playerRoleId && actualPlayers.length > 0) {
+				for (const p of actualPlayers) {
 					removeRolesPromises.push(
 						interaction.guild?.members
-							.fetch(playerId)
+							.fetch(p.user.discordId)
 							.then((member) => member.roles.remove(config.playerRoleId!))
 							.catch(() => null) // Ignore les erreurs (ex: membre a quitté le serveur)
 					);
@@ -477,11 +483,11 @@ export class InscriptionCommand extends Subcommand {
 			}
 
 			// Retrait du rôle Spectateur
-			if (config.spectatorRoleId && game.spectators && game.spectators.length > 0) {
-				for (const spectatorId of game.spectators) {
+			if (config.spectatorRoleId && actualSpectators.length > 0) {
+				for (const p of actualSpectators) {
 					removeRolesPromises.push(
 						interaction.guild?.members
-							.fetch(spectatorId)
+							.fetch(p.user.discordId)
 							.then((member) => member.roles.remove(config.spectatorRoleId!))
 							.catch(() => null)
 					);
@@ -492,7 +498,7 @@ export class InscriptionCommand extends Subcommand {
 			await Promise.allSettled(removeRolesPromises);
 
 			// 4. Supprimer les messages (Inscription & Compo MJ)
-			const deleteMessage = async (channelId?: string, messageId?: string) => {
+			const deleteMessage = async (channelId?: string | null, messageId?: string | null) => {
 				if (!channelId || !messageId) return;
 				try {
 					const channel = await interaction.guild?.channels.fetch(channelId);

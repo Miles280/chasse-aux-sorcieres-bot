@@ -42,7 +42,7 @@ export class LaunchHandler extends InteractionHandler {
 				}
 
 				const distribution = previewRes.data.distribution;
-				const message = GameMessageBuilder.buildPreview(gameId, gameMode, distribution);
+				const message = GameMessageBuilder.buildPreviewDistribution(gameId, gameMode, distribution);
 
 				container.gameLauncherService.setPreviewCache(gameId, distribution);
 

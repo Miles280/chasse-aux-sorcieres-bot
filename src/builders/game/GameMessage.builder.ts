@@ -7,7 +7,7 @@ export class GameMessageBuilder {
 	/**
 	 * Construit le message de preview de lancement
 	 */
-	public static buildPreview(gameId: number, gameMode: string, distribution: RoleDistribution[]) {
+	public static buildPreviewDistribution(gameId: number, gameMode: string, distribution: RoleDistribution[]) {
 		const modeMapping: Record<string, string> = {
 			classic: 'Classique',
 			hidden: 'Compo Cachée',
