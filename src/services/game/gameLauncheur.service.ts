@@ -362,7 +362,7 @@ export class GameLauncherService {
 		const publicGameOverwrites: OverwriteResolvable[] = [
 			{ id: everyoneId, deny: [PermissionFlagsBits.ViewChannel] },
 			{ id: playerRoleId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
-			{ id: deadRoleId, allow: [PermissionFlagsBits.ViewChannel], deny: [PermissionFlagsBits.SendMessages] },
+			{ id: deadRoleId, allow: [PermissionFlagsBits.ViewChannel], deny: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.AddReactions] },
 			{ id: specRoleId, allow: [PermissionFlagsBits.ViewChannel], deny: [PermissionFlagsBits.SendMessages] },
 			{
 				id: mjRoleId,
@@ -397,7 +397,7 @@ export class GameLauncherService {
 		const witchesOverwrites: OverwriteResolvable[] = [
 			{ id: everyoneId, deny: [PermissionFlagsBits.ViewChannel] },
 			{ id: playerRoleId, allow: [PermissionFlagsBits.SendMessages] },
-			{ id: deadRoleId, deny: [PermissionFlagsBits.SendMessages] },
+			{ id: deadRoleId, deny: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.AddReactions] },
 			{
 				id: mjRoleId,
 				allow: [
@@ -708,7 +708,7 @@ export class GameLauncherService {
 			const ogreNainOverwrites: OverwriteResolvable[] = [
 				{ id: everyoneId, deny: [PermissionFlagsBits.ViewChannel] },
 				{ id: playerRoleId, allow: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.PinMessages] },
-				{ id: deadRoleId, deny: [PermissionFlagsBits.SendMessages] },
+				{ id: deadRoleId, deny: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.AddReactions] },
 				{
 					id: mjRoleId,
 					allow: [
@@ -742,7 +742,7 @@ export class GameLauncherService {
 		if (fanatique.length > 0) {
 			const fanatiqueOverwrites: OverwriteResolvable[] = [
 				{ id: everyoneId, deny: [PermissionFlagsBits.ViewChannel] },
-				{ id: deadRoleId, deny: [PermissionFlagsBits.SendMessages] },
+				{ id: deadRoleId, deny: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.AddReactions] },
 				{
 					id: mjRoleId,
 					allow: [
@@ -775,7 +775,7 @@ export class GameLauncherService {
 			const conspirateurOverwrites: OverwriteResolvable[] = [
 				{ id: everyoneId, deny: [PermissionFlagsBits.ViewChannel] },
 				{ id: playerRoleId, allow: [PermissionFlagsBits.SendMessages] },
-				{ id: deadRoleId, deny: [PermissionFlagsBits.SendMessages] },
+				{ id: deadRoleId, deny: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.AddReactions] },
 				{
 					id: mjRoleId,
 					allow: [
