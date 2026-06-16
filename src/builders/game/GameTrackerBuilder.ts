@@ -1,46 +1,53 @@
+import { EmbedBuilder } from 'discord.js';
+import { GameData } from '../../models/Game.interface';
 import { emojis } from '../../utils/emojis';
+import { colors } from '../../utils/customColors';
 
 export class GameTrackerMessageBuilder {
-	/**
-	 * Construit le message de suivi de partie pour les JOUEURS (Groupé par camp, rôles visibles, pseudos masqués si vivants)
-	 */
-	public static buildPlayerTrackerMessage(mjId: string, players: TrackerPlayer[]): string {
+	private static readonly CAMP_ORDER: Record<string, { name: string; emoji: string }> = {
+		witch: { name: 'Sorcières', emoji: emojis.witch },
+		villagers: { name: 'Villageois', emoji: emojis.villagers },
+		independent: { name: 'Indépendants', emoji: emojis.independent }
+	};
+
+	public static buildPlayerTrackerMessage(game: GameData): string {
 		const lines: string[] = [];
-		const totalAlive = players.filter((p) => p.isAlive).length;
+		const activePlayers = game.gamePlayers?.filter((p) => !p.isSpectator) || [];
 
-		const allMentions = players.map((p) => `<@${p.discordId}>`).join(' ; ');
+		const alivePlayers = activePlayers.filter((p) => p.isAlive);
+		const allMentionsAlivePlayers = alivePlayers.map((p) => `<@${p.user.discordId}>`).join(' ; ');
 
-		// 1. EN-TÊTE DU MESSAGE
-		lines.push(`## __Chasse aux Sorcières de Nistrium__`);
-		lines.push(`${emojis.crown} **Maître du Jeu** : <@${mjId}>`);
-		lines.push(`${emojis.alive} **Joueurs en vie** (${totalAlive}/${players.length}) : ${allMentions}`);
+		// 1. EN-TÊTE
+		lines.push(`# __Chasse aux Sorcières de Nistrium__`);
+		lines.push(`${emojis.crown} **Maître du Jeu** : <@${game.gameMaster.discordId}>`);
+		lines.push('');
+		lines.push(
+			`${emojis.alive} **Joueurs en vie** (${activePlayers.filter((p) => p.isAlive).length}/${activePlayers.length}) : ${allMentionsAlivePlayers}`
+		);
 		lines.push('');
 
-		// 2. GROUPEMENT ET AFFICHAGE PAR CAMP
-		const campKeys = Array.from(new Set(players.map((p) => p.campKey)));
+		// 2. GROUPEMENT PAR ORDRE FIXE
+		let globalIndex = 1;
 
-		for (const key of campKeys) {
-			const campPlayers = players.filter((p) => p.campKey === key);
-			const campName = campPlayers[0].campName;
-			const campAlive = campPlayers.filter((p) => p.isAlive).length;
+		for (const [campKey, config] of Object.entries(this.CAMP_ORDER)) {
+			const campPlayers = activePlayers.filter((p) => p.trueRole?.camp === campKey);
+			if (campPlayers.length === 0) continue;
 
-			lines.push(`### ━━ ${campName} (${campAlive} / ${campPlayers.length}) ━━`);
+			const aliveCount = campPlayers.filter((p) => p.isAlive).length;
+			lines.push(`## ${config.emoji} ${config.name} (${aliveCount}/${campPlayers.length}) :`);
 
-			campPlayers.forEach((player, index) => {
-				const num = String(index + 1).padStart(2, '0');
+			campPlayers.forEach((player) => {
+				const num = String(globalIndex).padStart(2, '0');
+				globalIndex++;
+
 				const statusEmoji = player.isAlive ? emojis.alive : emojis.dead;
+				const roleName = player.trueRole?.name || 'Rôle inconnu';
+				const isRevealed = player.revealedRole !== null;
 
 				if (player.isAlive) {
-					if (player.isRevealed) {
-						// Cas où le joueur est en vie mais son rôle est publiquement connu (ex: Capitaine/Maire)
-						lines.push(`${num}. ${statusEmoji} ${player.roleName} — <@${player.discordId}>`);
-					} else {
-						// Cas normal : On sait que le rôle est en jeu, mais on ne sait pas qui le possède
-						lines.push(`${num}. ${statusEmoji} ${player.roleName}`);
-					}
+					lines.push(`${num}. ${statusEmoji} ${isRevealed ? `${roleName} — <@${player.user.discordId}>` : roleName}`);
 				} else {
-					// Le joueur est mort : On barre le rôle et on affiche son identité
-					lines.push(`${num}. ${statusEmoji} ~~${player.roleName}~~ — <@${player.discordId}>`);
+					lines.push(`${num}. ${statusEmoji} ~~${roleName}~~ — <@${player.user.discordId}>`);
 				}
 			});
 			lines.push('');
@@ -49,56 +56,45 @@ export class GameTrackerMessageBuilder {
 		return lines.join('\n');
 	}
 
-	/**
-	 * Construit le message de suivi de partie pour le MJ (Groupé par camp, tout est visible)
-	 */
-	public static buildMJTrackerMessage(mjId: string, players: TrackerPlayer[]): string {
+	public static buildMJTrackerMessage(game: GameData): EmbedBuilder {
+		const activePlayers = game.gamePlayers?.filter((p) => !p.isSpectator) || [];
+		const alivePlayers = activePlayers.filter((p) => p.isAlive);
+		const allMentionsAlivePlayers = alivePlayers.map((p) => `<@${p.user.discordId}>`).join(' ; ');
+
 		const lines: string[] = [];
-		const totalAlive = players.filter((p) => p.isAlive).length;
 
-		const allMentions = players.map((p) => `<@${p.discordId}>`).join(' ; ');
-
-		// 1. EN-TÊTE DU MESSAGE
-		lines.push(`## MAÎTRE DU JEU (MJ)`);
-		lines.push(`${emojis.crown} **Maître du Jeu** : <@${mjId}>`);
-		lines.push(`${emojis.alive} **Joueurs en vie** (${totalAlive}/${players.length}) : ${allMentions}`);
+		// 1. EN-TÊTE (Dans la description)
+		lines.push(`${emojis.crown} **Maître du Jeu** : <@${game.gameMaster.discordId}>`);
+		lines.push('');
+		lines.push(`${emojis.alive} **Joueurs en vie** (${alivePlayers.length}/${activePlayers.length}) : ${allMentionsAlivePlayers}`);
 		lines.push('');
 
-		// 2. GROUPEMENT ET AFFICHAGE PAR CAMP
-		const campKeys = Array.from(new Set(players.map((p) => p.campKey)));
+		let globalIndex = 1;
 
-		for (const key of campKeys) {
-			const campPlayers = players.filter((p) => p.campKey === key);
-			const campName = campPlayers[0].campName;
-			const campAlive = campPlayers.filter((p) => p.isAlive).length;
+		// 2. BOUCLE DES CAMPS
+		for (const [campKey, config] of Object.entries(this.CAMP_ORDER)) {
+			const campPlayers = activePlayers.filter((p) => p.trueRole?.camp === campKey);
+			if (campPlayers.length === 0) continue;
 
-			lines.push(`### ━━ ${campName} (${campAlive} / ${campPlayers.length}) ━━`);
+			const aliveCount = campPlayers.filter((p) => p.isAlive).length;
 
-			campPlayers.forEach((player, index) => {
-				const num = String(index + 1).padStart(2, '0');
+			// Titre du camp stylisé en Markdown
+			lines.push(`${config.emoji} **__${config.name}__ (${aliveCount}/${campPlayers.length}) :**`);
+
+			campPlayers.forEach((player) => {
+				const num = String(globalIndex).padStart(2, '0');
+				globalIndex++;
+
 				const statusEmoji = player.isAlive ? emojis.alive : emojis.dead;
+				const roleText = player.isAlive ? player.trueRole?.name : `~~${player.trueRole?.name}~~`;
 
-				// Indicateur pour que le MJ sache si les joueurs voient actuellement le pseudo (🔓) ou pas (🔒)
-				const revealIndicator = !player.isAlive || player.isRevealed ? '🔓' : '🔒';
-
-				if (player.isAlive) {
-					lines.push(`${num}. ${statusEmoji} ${player.roleName} — <@${player.discordId}> ${revealIndicator}`);
-				} else {
-					lines.push(`${num}. ${statusEmoji} ~~${player.roleName}~~ — <@${player.discordId}> ${revealIndicator}`);
-				}
+				lines.push(`${num}. ${statusEmoji} ${roleText} — <@${player.user.discordId}>`);
 			});
-			lines.push('');
+
+			lines.push(''); // 🟢 Un seul saut de ligne propre après chaque camp
 		}
 
-		return lines.join('\n');
+		// On génère l'embed final avec notre bloc de texte parfait
+		return new EmbedBuilder().setTitle(`${emojis.purplecheck} __PANNEAU DE CONTRÔLE__`).setColor(colors.witch).setDescription(lines.join('\n'));
 	}
-}
-
-export interface TrackerPlayer {
-	discordId: string;
-	roleName: string;
-	campKey: string; // ex: 'witch', 'village'
-	campName: string; // ex: 'Sorcières', 'Villageois'
-	isAlive: boolean;
-	isRevealed: boolean; // true si le rôle doit être visible par tout le monde (ex: joueur mort, ou reveal public)
 }
