@@ -2,9 +2,16 @@ import { EmbedBuilder, GuildMember } from 'discord.js';
 import { emojis } from '../emojis';
 import { formatTransactions } from '../formatTransactions';
 import { formatTransactionLabel } from '../transactionLabels';
-import { ConversionData, ConversionRates, DailyReward, EconomyAction, EconomyEmbedOptions, TransactionHistory } from '../../models/Economy.interface';
 import { colors } from '../customColors';
 import { getRandomDailyMessage } from '../dailyMessages';
+import {
+	ConversionData,
+	ConversionRates,
+	DailyReward,
+	EconomyAction,
+	EconomyEmbedOptions,
+	TransactionHistory
+} from '../../models/economy-core/Economy.interface';
 
 export function bourseEmbed(member: GuildMember, gems: number, rubies: number, transactionsText: string): EmbedBuilder {
 	return new EmbedBuilder()
@@ -87,11 +94,7 @@ function formatActiveFilters(types: string[]) {
 	return `**Filtres actifs :** ${types.map((t) => `\`${formatTransactionLabel(t)}\``).join(' + ')}`;
 }
 
-export function buildHistoryEmbed(
-	member: GuildMember,
-	history: TransactionHistory, // On utilise maintenant l'interface propre
-	types: string[]
-): EmbedBuilder {
+export function buildHistoryEmbed(member: GuildMember, history: TransactionHistory, types: string[]): EmbedBuilder {
 	// 1. On extrait les données pour plus de lisibilité
 	const { items, pagination } = history;
 

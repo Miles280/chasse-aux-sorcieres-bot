@@ -1,9 +1,9 @@
 import { EmbedBuilder } from 'discord.js';
-import { Power, RoleInterface } from '../../models/Role.interface';
 import { Camp } from '../../enums/Camp';
 import { getAlignmentLabel } from '../../enums/Alignment';
 import { emojis } from '../../utils/emojis';
 import { colors } from '../../utils/customColors';
+import { Power, RoleInterface } from '../../models/game/Role.interface';
 
 export class RoleMessageBuilder {
 	/**

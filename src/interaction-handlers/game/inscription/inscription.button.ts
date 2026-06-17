@@ -1,7 +1,7 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { container, InteractionHandler, InteractionHandlerTypes } from '@sapphire/framework';
 import { ButtonInteraction, MessageFlags } from 'discord.js';
-import { GameState, InscriptionAction, InscriptionInteractionContext } from '../../../models/Inscription.interface';
+import { GameState, InscriptionAction, InscriptionInteractionContext } from '../../../models/game/Inscription.interface';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.Button

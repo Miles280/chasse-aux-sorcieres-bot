@@ -3,11 +3,11 @@ import { ApiResponse } from '../../models/ApiResponse.interface';
 import { Guild, TextChannel, ChannelType, PermissionFlagsBits, OverwriteResolvable, ForumChannel } from 'discord.js';
 import { container } from '@sapphire/framework';
 import { ServerConfig } from '../../models/ServerConfig.interface';
-import { GameData, RoleDistribution } from '../../models/Game.interface';
 import { Alignment, getAlignmentLabel } from '../../enums/Alignment';
 import { RoleMessageBuilder } from '../../builders/game/RoleMessage.builder';
 import { InscriptionMessageBuilder } from '../../builders/game/InscriptionMessage.builder';
 import { GameTrackerMessageBuilder } from '../../builders/game/GameTrackerBuilder';
+import { GameData, RoleDistribution } from '../../models/game/Game.interface';
 
 export class GameLauncherService {
 	constructor(private api: ApiClient) {}

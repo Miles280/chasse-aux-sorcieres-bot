@@ -10,11 +10,11 @@ import {
 	SeparatorBuilder,
 	SectionBuilder
 } from 'discord.js';
-import { CompoData, GameData } from '../../models/Game.interface';
 import { colors } from '../../utils/customColors';
 import { emojis, emojisV2 } from '../../utils/emojis';
-import { RoleInterface } from '../../models/Role.interface';
 import { Alignment, getAlignmentLabel } from '../../enums/Alignment';
+import { CompoData, GameData } from '../../models/game/Game.interface';
+import { RoleInterface } from '../../models/game/Role.interface';
 
 export class InscriptionMessageBuilder {
 	/**

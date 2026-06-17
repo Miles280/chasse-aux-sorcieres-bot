@@ -1,6 +1,6 @@
 import { emojis } from './emojis';
 import { TransactionType } from '../enums/TransactionType';
-import { Transaction } from '../models/Economy.interface';
+import { Transaction } from '../models/economy-core/Economy.interface';
 
 export function formatTransactions(transactions: Transaction[]): string {
 	if (!transactions.length) return 'Aucune transaction récente.';

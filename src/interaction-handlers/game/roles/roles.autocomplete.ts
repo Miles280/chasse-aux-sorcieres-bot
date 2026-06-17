@@ -1,7 +1,7 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes, container } from '@sapphire/framework';
 import type { AutocompleteInteraction } from 'discord.js';
-import { RoleInterface } from '../../../models/Role.interface';
+import { RoleInterface } from '../../../models/game/Role.interface';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.Autocomplete

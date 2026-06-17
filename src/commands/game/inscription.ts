@@ -3,8 +3,8 @@ import { container } from '@sapphire/framework';
 import { GuildMember, GuildTextBasedChannel, InteractionContextType, Message, MessageFlags, PermissionFlagsBits } from 'discord.js';
 import { Subcommand } from '@sapphire/plugin-subcommands';
 import { InscriptionMessageBuilder } from '../../builders/game/InscriptionMessage.builder';
-import { GameData } from '../../models/Game.interface';
 import * as Embeds from '../../utils/embeds';
+import { GameData } from '../../models/game/Game.interface';
 
 @ApplyOptions<Subcommand.Options>({
 	name: 'inscription',

@@ -1,7 +1,7 @@
 import { EmbedBuilder } from 'discord.js';
-import { GameData } from '../../models/Game.interface';
 import { emojis } from '../../utils/emojis';
 import { colors } from '../../utils/customColors';
+import { GameData } from '../../models/game/Game.interface';
 
 export class GameTrackerMessageBuilder {
 	private static readonly CAMP_ORDER: Record<string, { name: string; emoji: string }> = {

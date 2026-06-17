@@ -1,7 +1,7 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from 'discord.js';
-import { RoleDistribution } from '../../models/Game.interface';
 import { emojis } from '../../utils/emojis';
 import { colors } from '../../utils/customColors';
+import { RoleDistribution } from '../../models/game/Game.interface';
 
 export class GameMessageBuilder {
 	/**

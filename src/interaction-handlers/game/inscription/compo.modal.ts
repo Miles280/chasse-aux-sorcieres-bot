@@ -2,8 +2,8 @@ import { container, InteractionHandler, InteractionHandlerTypes } from '@sapphir
 import { ApplyOptions } from '@sapphire/decorators';
 import { GuildMember, MessageFlags, ModalSubmitInteraction } from 'discord.js';
 import { InscriptionMessageBuilder } from '../../../builders/game/InscriptionMessage.builder';
-import { GameData } from '../../../models/Game.interface';
 import * as Embeds from '../../../utils/embeds';
+import { GameData } from '../../../models/game/Game.interface';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.ModalSubmit

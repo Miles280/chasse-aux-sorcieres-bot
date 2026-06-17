@@ -1,7 +1,7 @@
 import { ApiClient } from './../apiClient.service';
 import { ApiResponse } from '../../models/ApiResponse.interface';
-import { RoleInterface } from '../../models/Role.interface';
 import { Camp } from '../../enums/Camp';
+import { RoleInterface } from '../../models/game/Role.interface';
 
 export class RolesService {
 	constructor(private api: ApiClient) {}

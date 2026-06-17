@@ -1,4 +1,4 @@
-import { UserInterface } from './ApiResponse.interface';
+import { UserInterface } from './../ApiResponse.interface';
 import { RoleInterface } from './Role.interface';
 
 /**
