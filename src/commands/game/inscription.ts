@@ -463,45 +463,61 @@ export class InscriptionCommand extends Subcommand {
 			}
 			const config = configResponse.data;
 
-			// 🟢 Extraction des vrais joueurs et spectateurs depuis la nouvelle interface
-			const actualPlayers = game.gamePlayers?.filter((p) => !p.isSpectator) || [];
-			const actualSpectators = game.gamePlayers?.filter((p) => p.isSpectator) || [];
-
-			// 3. Enlever les rôles aux joueurs et spectateurs (en parallèle)
+			// 3. Traiter tous les participants (retrait rôles de jeu + restitution permissions)
 			const removeRolesPromises: Promise<any>[] = [];
+			const allParticipants = game.gamePlayers || [];
 
-			// Retrait du rôle Joueur
-			if (config.playerRoleId && actualPlayers.length > 0) {
-				for (const p of actualPlayers) {
-					removeRolesPromises.push(
-						interaction.guild?.members
-							.fetch(p.user.discordId)
-							.then((member) => member.roles.remove(config.playerRoleId!))
-							.catch(() => null) // Ignore les erreurs (ex: membre a quitté le serveur)
-					);
-				}
+			for (const p of allParticipants) {
+				const discordId = p.user.discordId;
+
+				removeRolesPromises.push(
+					(async () => {
+						try {
+							const member = await guild.members.fetch(discordId).catch(() => null);
+							if (!member) return; // Si le membre a quitté le serveur, on ignore
+
+							// A. Retrait des rôles de partie
+							if (!p.isSpectator && config.playerRoleId) {
+								await member.roles.remove(config.playerRoleId).catch(() => null);
+							}
+							if (p.isSpectator && config.spectatorRoleId) {
+								await member.roles.remove(config.spectatorRoleId).catch(() => null);
+							}
+							if (config.deadPlayerRoleId) {
+								await member.roles.remove(config.deadPlayerRoleId).catch(() => null);
+							}
+
+							// B. Restitution des rôles globaux (MJ, DEV, ADMIN)
+							const rolesResponse = await container.usersService.getRoles(discordId);
+							if (rolesResponse.success && rolesResponse.data) {
+								const roleMap: Record<string, string | undefined> = {
+									ROLE_MJ: process.env.MJ_ROLE,
+									ROLE_DEV: process.env.DEV_ROLE,
+									ROLE_ADMIN: process.env.ADMIN_ROLE
+								};
+
+								for (const perm of rolesResponse.data) {
+									const roleId = roleMap[perm];
+									if (roleId) {
+										await member.roles.add(roleId).catch(() => null);
+									}
+								}
+							}
+						} catch (error) {
+							console.error(`Erreur lors de la synchro des rôles pour ${discordId}:`, error);
+						}
+					})()
+				);
 			}
 
-			// Retrait du rôle Spectateur
-			if (config.spectatorRoleId && actualSpectators.length > 0) {
-				for (const p of actualSpectators) {
-					removeRolesPromises.push(
-						interaction.guild?.members
-							.fetch(p.user.discordId)
-							.then((member) => member.roles.remove(config.spectatorRoleId!))
-							.catch(() => null)
-					);
-				}
-			}
-
-			// Exécution de tous les retraits de rôles en même temps
+			// Exécution de tous les retraits/ajouts de rôles en parallèle
 			await Promise.allSettled(removeRolesPromises);
 
 			// 4. Supprimer les messages (Inscription & Compo MJ)
 			const deleteMessage = async (channelId?: string | null, messageId?: string | null) => {
 				if (!channelId || !messageId) return;
 				try {
-					const channel = await interaction.guild?.channels.fetch(channelId);
+					const channel = await guild.channels.fetch(channelId);
 					if (channel?.isTextBased()) {
 						const message = await channel.messages.fetch(messageId).catch(() => null);
 						if (message) await message.delete();
@@ -535,7 +551,7 @@ export class InscriptionCommand extends Subcommand {
 				embeds: [
 					Embeds.successEmbed({
 						title: 'Annulation réussie',
-						message: 'Les inscriptions ont été annulées, les rôles retirés, les messages supprimés et la partie effacée.'
+						message: 'Les inscriptions ont été annulées, les rôles retirés/restaurés, les messages supprimés et la partie effacée.'
 					})
 				]
 			});
