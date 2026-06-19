@@ -1,4 +1,4 @@
-import { EmbedBuilder } from 'discord.js';
+import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { emojis } from '../../utils/emojis';
 import { colors } from '../../utils/customColors';
 import { GameData } from '../../models/game/Game.interface';
@@ -17,9 +17,16 @@ export class GameTrackerMessageBuilder {
 		const alivePlayers = activePlayers.filter((p) => p.isAlive);
 		const allMentionsAlivePlayers = alivePlayers.map((p) => `<@${p.user.discordId}>`).join(' ; ');
 
+		// On récupère la transition actuelle (fallback sur 'night' si la phase est inconnue au lancement)
+		const currentStep = game.currentStep || 'night';
+
+		// Traduction simple pour l'affichage de la phase actuelle dans l'embed
+		const phaseNames: Record<string, string> = { night: 'Nuit 🌙', dawn: 'Aube 🌅', day: 'Jour ☀️', dusk: 'Crépuscule 🌇' };
+
 		// 1. EN-TÊTE
 		lines.push(`# __Chasse aux Sorcières de Nistrium__`);
 		lines.push(`${emojis.crown} **Maître du Jeu** : <@${game.gameMaster.discordId}>`);
+		lines.push(`📅 **Temps actuel** : Jour ${game.dayNumber || 1} — Phase : \`${phaseNames[currentStep] || currentStep}\``);
 		lines.push('');
 		lines.push(
 			`${emojis.alive} **Joueurs en vie** (${activePlayers.filter((p) => p.isAlive).length}/${activePlayers.length}) : ${allMentionsAlivePlayers}`
@@ -56,15 +63,32 @@ export class GameTrackerMessageBuilder {
 		return lines.join('\n');
 	}
 
-	public static buildMJTrackerMessage(game: GameData): EmbedBuilder {
+	public static buildMJTrackerMessage(game: GameData) {
 		const activePlayers = game.gamePlayers?.filter((p) => !p.isSpectator) || [];
 		const alivePlayers = activePlayers.filter((p) => p.isAlive);
 		const allMentionsAlivePlayers = alivePlayers.map((p) => `<@${p.user.discordId}>`).join(' ; ');
 
 		const lines: string[] = [];
 
-		// 1. EN-TÊTE (Dans la description)
+		// --- MAPPING DES PHASES ---
+		// Permet de savoir quelle est la prochaine étape + style du bouton
+		const phaseTransitions: Record<string, { next: string; label: string; style: ButtonStyle; emoji: string }> = {
+			night: { next: 'dawn', label: "Passer à l'Aube", style: ButtonStyle.Primary, emoji: '🌅' },
+			dawn: { next: 'day', label: 'Passer au Jour', style: ButtonStyle.Primary, emoji: '☀️' },
+			day: { next: 'dusk', label: 'Passer au Crépuscule', style: ButtonStyle.Primary, emoji: '🌇' },
+			dusk: { next: 'night', label: 'Passer à la Nuit', style: ButtonStyle.Primary, emoji: '🌙' }
+		};
+
+		// On récupère la transition actuelle (fallback sur 'night' si la phase est inconnue au lancement)
+		const currentStep = game.currentStep || 'night';
+		const transition = phaseTransitions[currentStep] || phaseTransitions['night'];
+
+		// Traduction simple pour l'affichage de la phase actuelle dans l'embed
+		const phaseNames: Record<string, string> = { night: 'Nuit 🌙', dawn: 'Aube 🌅', day: 'Jour ☀️', dusk: 'Crépuscule 🌇' };
+
+		// 1. EN-TÊTE (Avec ajout du Jour et de la Phase actuelle)
 		lines.push(`${emojis.crown} **Maître du Jeu** : <@${game.gameMaster.discordId}>`);
+		lines.push(`📅 **Temps actuel** : Jour ${game.dayNumber || 1} — Phase : \`${phaseNames[currentStep] || currentStep}\``);
 		lines.push('');
 		lines.push(`${emojis.alive} **Joueurs en vie** (${alivePlayers.length}/${activePlayers.length}) : ${allMentionsAlivePlayers}`);
 		lines.push('');
@@ -78,7 +102,6 @@ export class GameTrackerMessageBuilder {
 
 			const aliveCount = campPlayers.filter((p) => p.isAlive).length;
 
-			// Titre du camp stylisé en Markdown
 			lines.push(`${config.emoji} **__${config.name}__ (${aliveCount}/${campPlayers.length}) :**`);
 
 			campPlayers.forEach((player) => {
@@ -91,10 +114,28 @@ export class GameTrackerMessageBuilder {
 				lines.push(`${num}. ${statusEmoji} ${roleText} — <@${player.user.discordId}>`);
 			});
 
-			lines.push(''); // 🟢 Un seul saut de ligne propre après chaque camp
+			lines.push('');
 		}
 
-		// On génère l'embed final avec notre bloc de texte parfait
-		return new EmbedBuilder().setTitle(`${emojis.purplecheck} __PANNEAU DE CONTRÔLE__`).setColor(colors.witch).setDescription(lines.join('\n'));
+		// 3. CRÉATION DE L'EMBED
+		const embed = new EmbedBuilder()
+			.setTitle(`${emojis.purplecheck} __PANNEAU DE CONTRÔLE__`)
+			.setColor(colors.witch)
+			.setDescription(lines.join('\n'));
+
+		// 4. CRÉATION DU BOUTON INTERACTIF
+		const phaseButton = new ButtonBuilder()
+			.setCustomId(`change-phase:button:${game.id}:${transition.next}`)
+			.setLabel(transition.label)
+			.setStyle(transition.style)
+			.setEmoji(transition.emoji);
+
+		const row = new ActionRowBuilder<ButtonBuilder>().addComponents(phaseButton);
+
+		// On retourne la structure complète attendue par Discord
+		return {
+			embeds: [embed],
+			components: [row]
+		};
 	}
 }

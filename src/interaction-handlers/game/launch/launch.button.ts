@@ -13,7 +13,6 @@ export class LaunchHandler extends InteractionHandler {
 	}
 
 	public override async run(interaction: ButtonInteraction) {
-		// 🔥 FIX : On prévient Discord qu'on prend en charge le clic, ça donne jusqu'à 15 minutes au bot pour répondre !
 		await interaction.deferUpdate();
 
 		// 1. Extraction des données du customId
@@ -37,7 +36,7 @@ export class LaunchHandler extends InteractionHandler {
 				if (!previewRes.success) {
 					return interaction.editReply({
 						embeds: [Embeds.errorEmbed({ title: 'Erreur', message: previewRes.error || 'Erreur API' })],
-						components: [] // Optionnel : retire les boutons si erreur
+						components: []
 					});
 				}
 
@@ -51,7 +50,6 @@ export class LaunchHandler extends InteractionHandler {
 				// --- PHASE 2 : FAST START (On délègue tout au service) ---
 				const distribution = container.gameLauncherService.getPreviewCache(gameId);
 
-				// Ce processLaunch peut être long (API + création de N salons), le deferUpdate le protège !
 				await container.gameLauncherService.processLaunch(interaction.guild!, game, distribution);
 
 				return interaction.editReply({
@@ -66,7 +64,6 @@ export class LaunchHandler extends InteractionHandler {
 			}
 		} catch (error: any) {
 			console.error(error);
-			// On utilise errorEmbed ici plutôt que successEmbed pour une erreur
 			return interaction.editReply({
 				embeds: [
 					Embeds.errorEmbed({

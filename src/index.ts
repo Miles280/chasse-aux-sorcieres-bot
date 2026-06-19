@@ -17,6 +17,7 @@ import { ServerConfigService } from './services/serverConfig.service';
 import { InscriptionService } from './services/game/inscription.service';
 import { UsersService } from './services/users.service';
 import { GameLauncherService } from './services/game/gameLauncheur.service';
+import { InGameService } from './services/game/inGame.service';
 
 const client = new SapphireClient({
 	defaultPrefix: ',',
@@ -46,6 +47,7 @@ container.serverConfigService = new ServerConfigService(container.apiClient);
 container.rolesService = new RolesService(container.apiClient);
 container.inscriptionService = new InscriptionService(container.apiClient);
 container.gameLauncherService = new GameLauncherService(container.apiClient);
+container.inGameService = new InGameService(container.apiClient);
 
 const main = async () => {
 	try {

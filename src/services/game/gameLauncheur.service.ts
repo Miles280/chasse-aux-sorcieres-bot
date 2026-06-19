@@ -46,7 +46,6 @@ export class GameLauncherService {
 		gameChannels: Record<string, string>,
 		playersChannels: { discordId: string; channelId: string }[]
 	): Promise<ApiResponse<any>> {
-		// Si ton ApiClient ne gère pas le .patch(), tu peux le remplacer par .post() selon ton implémentation
 		return await this.api.patch(`/game/${gameId}/channels`, {
 			gameChannels,
 			playersChannels
@@ -462,7 +461,7 @@ export class GameLauncherService {
 	private async sendTrackingMessages(
 		guild: Guild,
 		config: ServerConfig,
-		game: GameData, // 🟢 Utilisation de GameData
+		game: GameData,
 		publicChannel: TextChannel,
 		oldMessageIdToDelete: string | null = null
 	) {
@@ -497,10 +496,8 @@ export class GameLauncherService {
 					}
 
 					// APRÈS
-					const mjEmbed = GameTrackerMessageBuilder.buildMJTrackerMessage(game);
-					const mjMsg = await mjChannel.send({
-						embeds: [mjEmbed]
-					});
+					const mjMessagePayload = GameTrackerMessageBuilder.buildMJTrackerMessage(game);
+					const mjMsg = await mjChannel.send(mjMessagePayload);
 
 					mjTrackerMessageId = mjMsg.id;
 				}
