@@ -90,6 +90,33 @@ export class ChangePhaseHandler extends InteractionHandler {
 			}
 		}
 
+		// 5. MESSAGES D'AMBIANCE RP (Channel Sorcières)
+		if (interaction.guild && game.discordChannels['witchesChannelId'] && (step === 'night' || step === 'dawn')) {
+			try {
+				const witchesChannelId = game.discordChannels['witchesChannelId'];
+				const witchesChannel = await interaction.guild.channels.fetch(witchesChannelId);
+
+				if (witchesChannel?.isTextBased()) {
+					// 🟢 FIX ICI : On utilise bien la structure de ton JSON
+					const aliveWitches = game.gamePlayers.filter((p: any) => p.isAlive === true && p.trueRole?.camp === 'witches');
+
+					if (aliveWitches.length > 0) {
+						// 🟢 FIX ICI : On récupère l'ID via p.user.discordId
+						const pings = aliveWitches.map((p: any) => `<@${p.user.discordId}>`).join(', ');
+
+						const rpMessage =
+							step === 'night'
+								? `La nuit tombe, vous vous retrouvez toutes dans votre antre...\n${pings}`
+								: `L'aube se lève, vous vous séparez... Jusqu'à ce soir.\n${pings}`;
+
+						await witchesChannel.send(rpMessage);
+					}
+				}
+			} catch (error) {
+				console.error("Erreur lors de l'envoi du message d'ambiance aux sorcières :", error);
+			}
+		}
+
 		return;
 	}
 }
