@@ -97,11 +97,9 @@ export class ChangePhaseHandler extends InteractionHandler {
 				const witchesChannel = await interaction.guild.channels.fetch(witchesChannelId);
 
 				if (witchesChannel?.isTextBased()) {
-					// 🟢 FIX ICI : On utilise bien la structure de ton JSON
-					const aliveWitches = game.gamePlayers.filter((p: any) => p.isAlive === true && p.trueRole?.camp === 'witches');
+					const aliveWitches = game.gamePlayers.filter((p: any) => p.isAlive === true && p.trueRole?.camp === 'witch');
 
 					if (aliveWitches.length > 0) {
-						// 🟢 FIX ICI : On récupère l'ID via p.user.discordId
 						const pings = aliveWitches.map((p: any) => `<@${p.user.discordId}>`).join(', ');
 
 						const rpMessage =
