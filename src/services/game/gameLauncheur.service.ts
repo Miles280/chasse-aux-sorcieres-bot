@@ -426,6 +426,34 @@ export class GameLauncherService {
 			permissionOverwrites: witchesOverwrites
 		});
 
+		// --- ENVOI DU MESSAGE ET PING DES SORCIÈRES ---
+		const witchesMentions = witches.map((witch) => `<@${witch.discordId}>`).join(', ');
+
+		const witchesRulesMessage = `${witchesMentions}\n
+# Règles chez les sorcières 🔥
+
+⚠️ Vous n’avez pas le droit de parler dans ce salon pendant la journée ! ☀️
+
+Durant la première nuit, vous ne choisissez pas votre victime : la Main du Destin (l’aléatoire) décide à votre place.
+⚠️ Vous pouvez contester la Main du Destin si vous avez une raison valable.
+*Exemple : vous avez utilisé votre pouvoir sur la victime désignée…*
+
+Lors des nuits suivantes, vous devrez décider de votre victime, mais aussi choisir laquelle d’entre vous ira la tuer.
+La sorcière chargée du meurtre ne peut pas utiliser son pouvoir cette nuit-là, sauf si elle est la dernière sorcière encore en vie.
+
+Vous pouvez attaquer votre victime de deux manières :
+• **Meurtre** → fonctionne uniquement sur les personnes ayant le __flux villageois__.
+• **Rituel** → fonctionne uniquement sur les personnes ayant le __flux indépendant__.
+
+Quand le Maître du Jeu vous appelle, même si vous allez tuer, répondez dans votre salon que vous n’utilisez pas votre pouvoir.
+
+__Trivia :__
+Vous pouvez choisir de ne pas attaquer, ou même vous attaquer entre vous si la situation l’exige.
+Le meurtre des sorcières est considéré comme un déplacement.`;
+
+		await witchesChannel.send({ content: witchesRulesMessage });
+		// ----------------------------------------------
+
 		const roleChannels = await this.setupRoleSpecificChannels(guild, config, categoryId, distribution);
 
 		// Cimetière textuel (Seuls les morts voient et écrivent, specs peuvent lire)
