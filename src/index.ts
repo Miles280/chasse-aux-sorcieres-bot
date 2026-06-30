@@ -18,6 +18,7 @@ import { InscriptionService } from './services/game/inscription.service';
 import { UsersService } from './services/users.service';
 import { GameLauncherService } from './services/game/gameLauncheur.service';
 import { InGameService } from './services/game/inGame.service';
+import { ChestService } from './services/casino/chest.service';
 
 const client = new SapphireClient({
 	defaultPrefix: ',',
@@ -31,6 +32,7 @@ const client = new SapphireClient({
 
 container.discordService = new DiscordService();
 container.apiClient = new ApiClient(process.env.API_URL!, process.env.BOT_SECRET_KEY!);
+container.serverConfigService = new ServerConfigService(container.apiClient);
 container.usersService = new UsersService(container.apiClient);
 
 container.economyService = new EconomyService(container.apiClient);
@@ -42,7 +44,7 @@ container.towerService = new TowerService();
 container.rouletteService = new RouletteService();
 container.moreOrLessService = new MoreOrLessService();
 container.blackjackService = new BlackjackService();
-container.serverConfigService = new ServerConfigService(container.apiClient);
+container.chestService = new ChestService();
 
 container.rolesService = new RolesService(container.apiClient);
 container.inscriptionService = new InscriptionService(container.apiClient);

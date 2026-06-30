@@ -14,6 +14,7 @@ import { InscriptionService } from '../services/game/inscription.service';
 import { UsersService } from '../services/users.service';
 import { GameLauncherService } from '../services/game/gameLauncheur.service';
 import { InGameService } from '../services/game/inGame.service';
+import { ChestService } from '../services/casino/chest.service';
 
 declare module '@sapphire/pieces' {
 	interface Container {
@@ -33,5 +34,6 @@ declare module '@sapphire/pieces' {
 		usersService: UsersService;
 		gameLauncherService: GameLauncherService;
 		inGameService: InGameService;
+		chestService: ChestService;
 	}
 }
