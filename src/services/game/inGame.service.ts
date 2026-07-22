@@ -1,13 +1,30 @@
-import { TextChannel, VoiceChannel } from 'discord.js';
+import { Guild, TextChannel, VoiceChannel } from 'discord.js';
+import { container } from '@sapphire/framework';
 import { ApiResponse } from '../../models/ApiResponse.interface';
-import { GameData } from '../../models/game/Game.interface';
+import { GameData, NightDeathPlayer } from '../../models/game/Game.interface';
 import { ApiClient } from '../apiClient.service';
+import { GameTrackerMessageBuilder } from '../../builders/game/GameTrackerBuilder';
 
 export class InGameService {
 	constructor(private api: ApiClient) {}
 
+	async getActiveGame(): Promise<ApiResponse<GameData>> {
+		return await this.api.get<GameData>(`/game/active`);
+	}
+
 	async updateStep(gameId: number, step: string): Promise<ApiResponse<GameData>> {
 		return await this.api.patch<GameData>(`/game/${gameId}/step`, { step });
+	}
+
+	async killPlayer(
+		gameId: number,
+		data: { discordId: string; deathCause: string; hideRole: boolean; fakeRoleId: number | null }
+	): Promise<ApiResponse<GameData>> {
+		return await this.api.post<GameData>(`/game/${gameId}/kill`, { ...data });
+	}
+
+	async getNightDeaths(gameId: number): Promise<ApiResponse<NightDeathPlayer[]>> {
+		return await this.api.get<NightDeathPlayer[]>(`/game/${gameId}/night-deaths`);
 	}
 
 	/**
@@ -48,6 +65,68 @@ export class InGameService {
 				await setSpeakPermission(channels.debatChannelId, false);
 				// Le salon de vote reste ouvert implicitement
 				break;
+		}
+	}
+
+	public async updateTrackers(guild: Guild, game: any): Promise<void> {
+		// --- 0. RÉCUPÉRATION DE LA CONFIG SERVEUR ---
+		const configResponse = await container.serverConfigService.getConfig(guild.id);
+		const mjChannelId = configResponse.success ? configResponse.data.gameMjChannelId : null;
+
+		// --- 1. MISE À JOUR DU PANEL MJ ---
+		const mjPayload = GameTrackerMessageBuilder.buildMJTrackerMessage(game);
+
+		if (mjChannelId && game.mjTrackerMessageId) {
+			try {
+				const mjChannel = await guild.channels.fetch(mjChannelId);
+
+				if (mjChannel?.isTextBased()) {
+					const mjMessage = await mjChannel.messages.fetch(game.mjTrackerMessageId);
+					await mjMessage.edit(mjPayload);
+				}
+			} catch (mjError) {
+				console.error(`[Game ${game.id}] Erreur fetch message MJ :`, mjError);
+			}
+		}
+
+		// --- 2. MISE À JOUR DU TRACKER PUBLIC (Salon de Partie / Débat) ---
+		if (game.discordChannels && game.discordChannels['votesChannelId']) {
+			const publicChannelId = game.discordChannels['votesChannelId'];
+
+			try {
+				const publicChannel = await guild.channels.fetch(publicChannelId);
+
+				if (publicChannel?.isTextBased()) {
+					const publicContent = GameTrackerMessageBuilder.buildPlayerTrackerMessage(game);
+					const isEmbed = typeof publicContent !== 'string';
+					const messagePayload = isEmbed ? { content: '', embeds: [publicContent] } : { content: publicContent };
+
+					if (game.publicTrackerMessageId) {
+						try {
+							const publicMsg = await publicChannel.messages.fetch(game.publicTrackerMessageId);
+							await publicMsg.edit(messagePayload);
+						} catch (fetchError: any) {
+							// Si le message a été supprimé manuellement, on le recrée
+							if (fetchError.code === 10008) {
+								console.warn(`[Game ${game.id}] Message public introuvable. Recréation...`);
+								const newPublicMsg = await publicChannel.send(messagePayload);
+								await newPublicMsg.pin();
+
+								await container.gameLauncherService.updateGameTrackers(game.id, newPublicMsg.id, game.mjTrackerMessageId);
+							} else {
+								throw fetchError;
+							}
+						}
+					} else {
+						const newPublicMsg = await publicChannel.send(messagePayload);
+						await newPublicMsg.pin();
+
+						await container.gameLauncherService.updateGameTrackers(game.id, newPublicMsg.id, game.mjTrackerMessageId);
+					}
+				}
+			} catch (publicError) {
+				console.error(`[Game ${game.id}] Erreur lors de la gestion du tracker public :`, publicError);
+			}
 		}
 	}
 }

@@ -81,10 +81,9 @@ export class InscriptionCommand extends Subcommand {
 		try {
 			const configResponse = await container.serverConfigService.getConfig(interaction.guildId!);
 			if (!configResponse.success) {
-				await interaction.editReply({
+				return interaction.editReply({
 					embeds: [Embeds.errorEmbed({ title: 'Erreur de récupération des config', message: configResponse.error })]
 				});
-				return;
 			}
 
 			const { inscriptionChannelId, inscriptionVoiceChannelId: vocalId, gameMjChannelId } = configResponse.data;

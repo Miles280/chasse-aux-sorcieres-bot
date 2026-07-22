@@ -51,3 +51,20 @@ export interface RoleDistribution {
 	discordId: string;
 	role: RoleInterface;
 }
+
+export interface NightDeathPlayer {
+	id: number;
+	game: {
+		id: number;
+	};
+	user: {
+		id: number;
+		discordId: string;
+	};
+	isSpectator: boolean;
+	isAlive: boolean;
+	trueRole: RoleInterface | null;
+	revealedRole: RoleInterface | null;
+	gemsWon: number | null;
+	discordChannelId: string;
+}
