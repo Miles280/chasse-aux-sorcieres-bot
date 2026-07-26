@@ -2,6 +2,7 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { Command, container } from '@sapphire/framework';
 import { ChatInputCommandInteraction, InteractionContextType, MessageFlags } from 'discord.js';
 import * as Embeds from '../../utils/embeds';
+import { emojis } from '../../utils/emojis';
 
 @ApplyOptions<Command.Options>({
 	name: 'kill',
@@ -128,20 +129,32 @@ export class KillCommand extends Command {
 			if (voteChannelId) {
 				const voteChannel = await interaction.guild?.channels.fetch(voteChannelId);
 				if (voteChannel && voteChannel.isTextBased()) {
-					// On récupère le joueur concerné dans les données de la partie mise à jour
-					// (Adapte selon la structure exacte de ton updatedGame.gamePlayers)
 					const deadPlayerData = updatedGame.gamePlayers?.find((p: any) => p.user.discordId === targetUser.id);
 
 					let roleText = '';
 					if (hideRole) {
 						roleText = 'Son rôle reste **secret**...';
 					} else if (deadPlayerData?.revealedRole) {
-						roleText = `Il était **${deadPlayerData.revealedRole.name}**.`;
+						roleText = `Son rôle était **${deadPlayerData.revealedRole.name}**.`;
+					} else {
+						roleText = 'Son rôle est inconnu.';
 					}
 
-					// Message textuel brut, propre et aéré
+					// --- PERSONNALISATION DE LA PHRASE SELON LA CAUSE ---
+					let title = '## ⚰️ Une tragédie a frappé le village...';
+					let actionText = `${targetUser.toString()} a rendu l'âme`;
+
+					if (cause === 'village_vote') {
+						title = '## 🗳️ Le village a tranché !';
+						actionText = `${targetUser.toString()} a été brûlé par le village`;
+					} else if (cause === 'divine_lightning') {
+						title = "## ⚡ La colère divine s'est abattue !";
+						actionText = `${targetUser.toString()} a été foudroyé par les dieux`;
+					}
+
+					// Envoi de l'annonce
 					await voteChannel.send({
-						content: `## Une tragédie a frappé le village...\n${targetUser.toString()} a rendu l'âme.\n${roleText}`
+						content: `${title}\n> ${emojis.dead} __${actionText} :__ ${roleText}`
 					});
 				}
 			}

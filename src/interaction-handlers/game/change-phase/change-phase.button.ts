@@ -2,6 +2,8 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes, container } from '@sapphire/framework';
 import { ButtonInteraction, MessageFlags } from 'discord.js';
 import * as Embeds from '../../../utils/embeds';
+import { emojis } from '../../../utils/emojis';
+import { NightDeathPlayer } from '../../../models/game/Game.interface';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.Button
@@ -87,29 +89,57 @@ export class ChangePhaseHandler extends InteractionHandler {
 					const deathsResponse = await container.inGameService.getNightDeaths(gameId);
 
 					if (deathsResponse.success) {
-						const nightVictims = deathsResponse.data; // Tableau de GamePlayerInterface
+						const nightVictims = deathsResponse.data as NightDeathPlayer[];
 
-						let announceMessage = `**Le soleil se lève sur le village (Jour ${currentDay})...**\n`;
+						let announceMessage = `## ☀️ __Jour ${currentDay}__ : Le soleil se lève sur le village\n`;
 
 						if (nightVictims.length > 0) {
-							announceMessage += `La nuit a été agitée et les esprits rôdent. Nous déplorons des pertes :\n\n`;
+							announceMessage += `La nuit a été agitée et ${nightVictims.length > 1 ? 'des cadavres ont été retrouvés :' : 'un cadavre a été retrouvé :'}\n\n`;
 
 							for (const victim of nightVictims) {
-								// LOGIQUE DU RÔLE CACHÉ
+								// --- 1. CONSTRUCTION DU MESSAGE D'ANNONCE ---
 								let roleText = '';
 								if (!victim.revealedRole && victim.trueRole) {
-									roleText = 'Son rôle reste **secret**... 🎭';
+									roleText = 'Son rôle reste **secret**...';
 								} else if (victim.revealedRole) {
-									roleText = `Il était **${victim.revealedRole.name}** 🔍`;
+									roleText = `Son rôle était **${victim.revealedRole.name}**.`;
 								} else {
 									roleText = 'Son rôle est inconnu.';
 								}
 
-								announceMessage += `• 💀 <@${victim.user.discordId}> a été éliminé. (${roleText})\n`;
+								announceMessage += `> ${emojis.dead} __<@${victim.user.discordId}> a rendu l'âme :__ ${roleText}\n`;
+
+								// Récupération de la config serveur
+								const configResponse = await container.serverConfigService.getConfig(interaction.guildId!);
+								if (!configResponse.success) {
+									return interaction.editReply({
+										embeds: [Embeds.errorEmbed({ title: 'Erreur Config', message: configResponse.error })]
+									});
+								}
+								const config = configResponse.data;
+
+								// --- 2. GESTION DES RÔLES & VOCAL DISCORD ---
+								try {
+									const member = await interaction.guild.members.fetch(victim.user.discordId);
+
+									if (member) {
+										// A. Swap des rôles (Vivant -> Mort)
+										if (config.playerRoleId && config.deadPlayerRoleId) {
+											await member.roles.remove(config.playerRoleId).catch(console.error);
+											await member.roles.add(config.deadPlayerRoleId).catch(console.error);
+										}
+
+										// B. Move dans le channel vocal de l'Au-delà (Si en vocal)
+										if (member.voice.channelId && game.discordChannels['deadVoiceId']) {
+											await member.voice.setChannel(game.discordChannels['deadVoiceId']).catch(console.error);
+										}
+									}
+								} catch (memberError) {
+									console.error(`Impossible de mettre à jour le joueur Discord ${victim.user.discordId} :`, memberError);
+								}
 							}
-							announceMessage += `\n💬 Place aux débats ! Vous devez maintenant désigner un coupable.`;
 						} else {
-							announceMessage += `\n🍀 Miracle ! La nuit a été particulièrement calme. **Personne n'est mort cette nuit !**\n\n💬 Profitez-en pour débusquer les ennemis. Le vote est ouvert !`;
+							announceMessage += `\nLa nuit a été particulièrement calme. **Personne n'est mort cette nuit !**`;
 						}
 
 						// Envoi de l'annonce textuelle
