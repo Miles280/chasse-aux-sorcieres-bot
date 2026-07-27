@@ -142,19 +142,22 @@ export class KillCommand extends Command {
 
 					// --- PERSONNALISATION DE LA PHRASE SELON LA CAUSE ---
 					let title = '## ⚰️ Une tragédie a frappé le village...';
+					let loreText = `Nistrium perd un membre aujourd'hui, une bien triste nouvelle.`;
 					let actionText = `${targetUser.toString()} a rendu l'âme`;
 
 					if (cause === 'village_vote') {
 						title = '## 🗳️ Le village a tranché !';
+						loreText = `Après moulte débat, vous avez décidez d'agir :`;
 						actionText = `${targetUser.toString()} a été brûlé par le village`;
 					} else if (cause === 'divine_lightning') {
 						title = "## ⚡ La colère divine s'est abattue !";
+						loreText = `Il faut savoir être sage ici, les dieux n'ont aucune pitié pour vous.`;
 						actionText = `${targetUser.toString()} a été foudroyé par les dieux`;
 					}
 
 					// Envoi de l'annonce
 					await voteChannel.send({
-						content: `${title}\n> ${emojis.dead} __${actionText} :__ ${roleText}`
+						content: `${title}\n${loreText}\n\n> ${emojis.dead} __${actionText} :__ ${roleText}`
 					});
 				}
 			}

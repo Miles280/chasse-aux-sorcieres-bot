@@ -17,44 +17,80 @@ export class GameTrackerMessageBuilder {
 		const alivePlayers = activePlayers.filter((p) => p.isAlive);
 		const allMentionsAlivePlayers = alivePlayers.map((p) => `<@${p.user.discordId}>`).join(' ; ');
 
-		// On récupère la transition actuelle (fallback sur 'night' si la phase est inconnue au lancement)
 		const currentStep = game.currentStep || 'night';
-
-		// Traduction simple pour l'affichage de la phase actuelle dans l'embed
 		const phaseNames: Record<string, string> = { night: 'Nuit 🌙', dawn: 'Aube 🌅', day: 'Jour ☀️', dusk: 'Crépuscule 🌇' };
 
-		// 1. EN-TÊTE
 		lines.push(`# __Chasse aux Sorcières de Nistrium__`);
 		lines.push(`${emojis.crown} **Maître du Jeu** : <@${game.gameMaster.discordId}>`);
 		lines.push(`📅 **Temps actuel** : Jour ${game.dayNumber} — Phase : \`${phaseNames[currentStep] || currentStep}\``);
 		lines.push('');
-		lines.push(
-			`${emojis.alive} **Joueurs en vie** (${activePlayers.filter((p) => p.isAlive).length}/${activePlayers.length}) : ${allMentionsAlivePlayers}`
-		);
+		lines.push(`${emojis.alive} **Joueurs en vie** (${alivePlayers.length}/${activePlayers.length}) : ${allMentionsAlivePlayers}`);
 		lines.push('');
 
-		// 2. GROUPEMENT PAR ORDRE FIXE
+		interface RoleSlot {
+			camp: string;
+			roleName: string;
+			occupants: Array<{
+				player: (typeof activePlayers)[0];
+				isAlive: boolean;
+			}>;
+		}
+
+		const displaySlots: RoleSlot[] = activePlayers.map((p) => ({
+			camp: p.trueRole?.camp!,
+			roleName: p.trueRole?.name!,
+			occupants: []
+		}));
+
+		// On assigne chaque joueur révélé (vrai ou faux rôle) à son slot de rôle correspondant
+		for (const player of activePlayers) {
+			if (player.revealedRole !== null) {
+				const targetRoleName = player.revealedRole.name;
+				let slot = displaySlots.find((s) => s.roleName === targetRoleName);
+
+				if (!slot) {
+					slot = {
+						camp: player.revealedRole.camp!,
+						roleName: targetRoleName,
+						occupants: []
+					};
+					displaySlots.push(slot);
+				}
+
+				slot.occupants.push({
+					player,
+					isAlive: player.isAlive
+				});
+			}
+		}
+
 		let globalIndex = 1;
 
 		for (const [campKey, config] of Object.entries(this.CAMP_ORDER)) {
-			const campPlayers = activePlayers.filter((p) => p.trueRole?.camp === campKey);
-			if (campPlayers.length === 0) continue;
+			const campSlots = displaySlots.filter((s) => s.camp === campKey);
+			if (campSlots.length === 0) continue;
 
-			const aliveCount = campPlayers.filter((p) => p.isAlive).length;
-			lines.push(`## ${config.emoji} ${config.name} (${aliveCount}/${campPlayers.length}) :`);
+			const apparentAliveCount = campSlots.filter((slot) => {
+				return slot.occupants.length === 0 || slot.occupants.some((o) => o.isAlive);
+			}).length;
 
-			campPlayers.forEach((player) => {
+			lines.push(`## ${config.emoji} ${config.name} (${apparentAliveCount}/${campSlots.length}) :`);
+
+			campSlots.forEach((slot) => {
 				const num = String(globalIndex).padStart(2, '0');
 				globalIndex++;
 
-				const statusEmoji = player.isAlive ? emojis.alive : emojis.dead;
-				const roleName = player.trueRole?.name || 'Rôle inconnu';
-				const isRevealed = player.revealedRole !== null;
+				// Le slot est considéré mort si tous ses occupants le sont
+				const hasDeadOccupants = slot.occupants.length > 0 && slot.occupants.every((o) => !o.isAlive);
+				const statusEmoji = hasDeadOccupants ? emojis.dead : emojis.alive;
 
-				if (player.isAlive) {
-					lines.push(`${num}. ${statusEmoji} ${isRevealed ? `${roleName} — <@${player.user.discordId}>` : roleName}`);
+				if (slot.occupants.length === 0) {
+					// Personne n'est révélé sur ce slot, il reste anonyme
+					lines.push(`${num}. ${statusEmoji} ${slot.roleName}`);
 				} else {
-					lines.push(`${num}. ${statusEmoji} ~~${roleName}~~ — <@${player.user.discordId}>`);
+					// Un ou plusieurs joueurs occupent ce rôle (ex: le vrai + un faux)
+					const occupantsText = slot.occupants.map((o) => `<@${o.player.user.discordId}>`).join(' ; ');
+					lines.push(`${num}. ${statusEmoji} ${slot.roleName} — ${occupantsText}`);
 				}
 			});
 			lines.push('');
