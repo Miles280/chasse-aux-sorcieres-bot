@@ -50,7 +50,6 @@ export class KillCommand extends Command {
 
 	public override async chatInputRun(interaction: ChatInputCommandInteraction) {
 		// 1. On diffère la réponse en éphémère (visible que par le MJ)
-		// Indispensable car les requêtes API + modifications de rôles prennent du temps
 		await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
 
 		// 2. Récupération des arguments de la commande
@@ -69,7 +68,7 @@ export class KillCommand extends Command {
 			}
 			const game = activeGameResponse.data;
 
-			// 4. Appel à ton API Symfony pour enregistrer le kill
+			// 4. Appel à l'API Symfony pour enregistrer le kill
 			const killResponse = await container.inGameService.killPlayer(game.id, {
 				discordId: targetUser.id,
 				deathCause: cause,

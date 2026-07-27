@@ -107,7 +107,7 @@ export class ChangePhaseHandler extends InteractionHandler {
 									roleText = 'Son rôle est inconnu.';
 								}
 
-								announceMessage += `> ${emojis.dead} __<@${victim.user.discordId}> a rendu l'âme :__ ${roleText}\n`;
+								announceMessage += `> ${emojis.dead} __<@${victim.user.discordId}> a rendu l'âme__ : ${roleText}\n`;
 
 								// Récupération de la config serveur
 								const configResponse = await container.serverConfigService.getConfig(interaction.guildId!);
