@@ -36,12 +36,12 @@ export class KillCommand extends Command {
 				)
 				.addBooleanOption((opt) =>
 					opt //
-						.setName('role_cacher')
+						.setName('cacher')
 						.setDescription('Si le rôle doit être masquer aux joueurs ou non.')
 				)
 				.addStringOption((opt) =>
 					opt //
-						.setName('faux_role')
+						.setName('fake')
 						.setDescription('Le nom du faux rôle à donner au joueur au moment de sa mort.')
 						.setAutocomplete(true)
 				)
@@ -56,8 +56,8 @@ export class KillCommand extends Command {
 		// 2. Récupération des arguments de la commande
 		const targetUser = interaction.options.getUser('joueur', true);
 		const cause = interaction.options.getString('cause', true);
-		const hideRole = interaction.options.getBoolean('role_cacher') ?? false;
-		const fakeRoleId = interaction.options.getString('faux_role');
+		const hideRole = interaction.options.getBoolean('cacher') ?? false;
+		const fakeRoleId = interaction.options.getString('fake');
 
 		try {
 			// 3. Récupérer la partie en cours pour ce serveur
