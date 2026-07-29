@@ -1,7 +1,7 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from 'discord.js';
 import { emojis } from '../../utils/emojis';
 import { colors } from '../../utils/customColors';
-import { RoleDistribution } from '../../models/game/Game.interface';
+import { GamePlayerInterface, RoleDistribution } from '../../models/game/Game.interface';
 
 export class GameMessageBuilder {
 	/**
@@ -84,7 +84,7 @@ export class GameMessageBuilder {
 	/**
 	 * Construit le message de fin de partie avec le récapitulatif et le bouton de nettoyage.
 	 */
-	public static buildFinishMessage(gameId: number, winningCampName: string, players: any[]) {
+	public static buildFinishMessage(gameId: number, winningCampName: string, players: GamePlayerInterface[]) {
 		const embed = new EmbedBuilder()
 			.setTitle(`🏆 Fin de la Partie #${gameId}`)
 			.setDescription(`Le camp **${winningCampName}** a remporté la victoire !`)
@@ -93,6 +93,8 @@ export class GameMessageBuilder {
 		let summary = '';
 		if (players.length > 0) {
 			for (const player of players) {
+				if (player.isSpectator) continue;
+
 				const userMention = player.user?.discordId ? `<@${player.user.discordId}>` : 'Joueur inconnu';
 				const roleName = player.trueRole?.name ?? 'Rôle non défini';
 				const status = player.isAlive ? emojis.alive : emojis.dead;
