@@ -22,8 +22,8 @@ export class FinishGameCommand extends Command {
 						.setDescription('Le camp qui a remporté la partie.')
 						.setRequired(true)
 						.addChoices(
-							{ name: 'Villageois', value: 'villagers' },
 							{ name: 'Sorcières', value: 'witch' },
+							{ name: 'Villageois', value: 'villagers' },
 							{ name: 'Indépendant', value: 'independent' }
 						)
 				)
@@ -71,11 +71,24 @@ export class FinishGameCommand extends Command {
 			// Déplacement du MJ (celui qui clique)
 			await container.discordService.moveMemberToVc(interaction.guild!, interaction.user.id, config.inscriptionVoiceChannelId);
 
-			// Déplacement des joueurs
-			for (const playerToMove of game.gamePlayers) {
-				const discordId = playerToMove.user?.discordId;
+			// Déplacement et demute des joueurs
+			for (const targetPlayer of game.gamePlayers) {
+				const discordId = targetPlayer.user?.discordId;
 				if (discordId) {
 					await container.discordService.moveMemberToVc(interaction.guild!, discordId, config.inscriptionVoiceChannelId);
+
+					try {
+						// Force la récupération fraîche du membre depuis l'API Discord
+						const guild = interaction.guild!;
+						const member = await guild.members.fetch(discordId);
+
+						// On vérifie qu'il est bien dans un salon vocal
+						if (member && member.voice.channelId) {
+							await member.voice.setMute(false, 'Fin de la partie');
+						}
+					} catch (error) {
+						console.error(`[Mute Error] Impossible de demute le joueur ${discordId}:`, error);
+					}
 				}
 			}
 		}
