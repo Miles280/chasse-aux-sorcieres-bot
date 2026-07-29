@@ -61,12 +61,9 @@ export class CleanGameCommand extends Command {
 			}
 
 			// --- B. NETTOYAGE DES RÔLES ---
-			const rolesToRemove = [
-				config.playerRoleId,
-				config.deadPlayerRoleId,
-				config.spectatorRoleId,
-				config.invulnerabilityRoleId // Remplace par ta vraie clé de configuration
-			].filter(Boolean) as string[];
+			const rolesToRemove = [config.playerRoleId, config.deadPlayerRoleId, config.spectatorRoleId, config.invulnerabilityRoleId].filter(
+				Boolean
+			) as string[];
 
 			const members = await guild.members.fetch();
 
@@ -84,7 +81,6 @@ export class CleanGameCommand extends Command {
 				const deadPlayers = firstNightDeathsRes.data;
 
 				for (const player of deadPlayers) {
-					// Assure-toi que player.user.discordId correspond à la structure renvoyée par ton API
 					const member = members.get(player.user.discordId);
 					if (member) {
 						await member.roles.add(config.invulnerabilityRoleId, 'Mort Nuit 1 - Invulnérabilité accordée').catch(() => null);
