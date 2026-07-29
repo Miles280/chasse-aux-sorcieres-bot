@@ -80,4 +80,36 @@ export class GameMessageBuilder {
 
 		return { embeds: [embed], components: [buttons] };
 	}
+
+	/**
+	 * Construit le message de fin de partie avec le récapitulatif et le bouton de nettoyage.
+	 */
+	public static buildFinishMessage(gameId: number, winningCampName: string, players: any[]) {
+		const embed = new EmbedBuilder()
+			.setTitle(`🏆 Fin de la Partie #${gameId}`)
+			.setDescription(`Le camp **${winningCampName}** a remporté la victoire !`)
+			.setColor(colors.purpleWitch);
+
+		let summary = '';
+		if (players.length > 0) {
+			for (const player of players) {
+				const userMention = player.user?.discordId ? `<@${player.user.discordId}>` : 'Joueur inconnu';
+				const roleName = player.trueRole?.name ?? 'Rôle non défini';
+				const status = player.isAlive ? emojis.alive : emojis.dead;
+
+				summary += `- ${status} ${userMention} : ${roleName}\n`;
+			}
+		} else {
+			summary += `*Aucun joueur trouvé pour cette partie.*`;
+		}
+
+		embed.addFields({ name: '📜 Récapitulatif des Joueurs :', value: summary });
+		embed.setFooter({ text: `Partie terminée en attente de nettoyage.` });
+
+		const actionRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+			new ButtonBuilder().setCustomId(`game:clean:button:${gameId}`).setLabel('Nettoyer la partie').setStyle(ButtonStyle.Danger).setEmoji('🧹')
+		);
+
+		return { embeds: [embed], components: [actionRow] };
+	}
 }

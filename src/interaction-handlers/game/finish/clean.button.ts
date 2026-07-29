@@ -1,42 +1,39 @@
 import { ApplyOptions } from '@sapphire/decorators';
-import { Command, container } from '@sapphire/framework';
-import { ChatInputCommandInteraction, InteractionContextType, MessageFlags, PermissionFlagsBits } from 'discord.js';
-import * as Embeds from '../../utils/embeds';
+import { InteractionHandler, InteractionHandlerTypes, container } from '@sapphire/framework';
+import { ButtonInteraction, EmbedBuilder } from 'discord.js';
+import * as Embeds from '../../../utils/embeds';
+import { colors } from '../../../utils/customColors';
 
-@ApplyOptions<Command.Options>({
-	name: 'clean-game',
-	description: 'Supprime tous les channels de la partie et réinitialise les rôles.'
+@ApplyOptions<InteractionHandler.Options>({
+	interactionHandlerType: InteractionHandlerTypes.Button
 })
-export class CleanGameCommand extends Command {
-	public override registerApplicationCommands(registry: Command.Registry) {
-		registry.registerChatInputCommand((builder) =>
-			builder
-				.setName(this.name)
-				.setDescription(this.description)
-				.setContexts([InteractionContextType.Guild])
-				.setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels | PermissionFlagsBits.ManageRoles)
-		);
+export class CleanGameHandler extends InteractionHandler {
+	public override parse(interaction: ButtonInteraction) {
+		return interaction.customId.startsWith('game:clean:button:') ? this.some() : this.none();
 	}
 
-	public override async chatInputRun(interaction: ChatInputCommandInteraction) {
-		await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
+	public override async run(interaction: ButtonInteraction) {
+		await interaction.deferUpdate();
 
+		const [, , , gameId] = interaction.customId.split(':');
 		const guild = interaction.guild!;
 
-		// 1. Récupération de la configuration du serveur
+		// 1. Récupération de la configuration
 		const configResponse = await container.serverConfigService.getConfig(guild.id);
 		if (!configResponse.success) {
-			return interaction.editReply({
+			return interaction.followUp({
+				flags: ['Ephemeral'],
 				embeds: [Embeds.errorEmbed({ title: 'Erreur', message: 'Configuration introuvable.' })]
 			});
 		}
 		const config = configResponse.data;
 
-		// 2. Récupération de la partie active (avec ses joueurs)
-		const gameResponse = await container.inGameService.getActiveGame();
+		// 2. Récupération de la partie
+		const gameResponse = await container.inGameService.getGameById(gameId);
 		if (!gameResponse.success) {
-			return interaction.editReply({
-				embeds: [Embeds.errorEmbed({ title: 'Erreur', message: 'Aucune partie active trouvée.' })]
+			return interaction.followUp({
+				flags: ['Ephemeral'],
+				embeds: [Embeds.errorEmbed({ title: 'Erreur', message: 'Partie introuvable.' })]
 			});
 		}
 		const game = gameResponse.data;
@@ -65,14 +62,12 @@ export class CleanGameCommand extends Command {
 				Boolean
 			) as string[];
 
-			// Déclaration du mapping des rôles staff
 			const roleMap: Record<string, string | undefined> = {
 				ROLE_MJ: config.mjRoleId ?? process.env.MJ_ROLE,
 				ROLE_DEV: process.env.DEV_ROLE,
 				ROLE_ADMIN: process.env.ADMIN_ROLE
 			};
 
-			// On boucle sur les joueurs inscrits dans la partie
 			const gamePlayers = game.gamePlayers ?? [];
 
 			for (const gamePlayer of gamePlayers) {
@@ -82,17 +77,15 @@ export class CleanGameCommand extends Command {
 				const member = await guild.members.fetch(discordId).catch(() => null);
 				if (!member) continue;
 
-				// 1. Retrait des rôles de partie
 				const hasRoleToRemove = rolesToRemove.some((roleId) => member.roles.cache.has(roleId));
 				if (hasRoleToRemove) {
 					await member.roles.remove(rolesToRemove, 'Nettoyage de fin de partie').catch(() => null);
 				}
 
-				// 2. Restauration des rôles Staff pour ce joueur
 				const rolesResponse = await container.usersService.getRoles(member.id);
 
 				if (rolesResponse.success && rolesResponse.data) {
-					const memberPerms = rolesResponse.data; // ex: ['ROLE_MJ', 'ROLE_ADMIN']
+					const memberPerms = rolesResponse.data;
 
 					for (const perm of memberPerms) {
 						const discordRoleId = roleMap[perm];
@@ -103,7 +96,7 @@ export class CleanGameCommand extends Command {
 				}
 			}
 
-			// C. ATTRIBUTION DU RÔLE INVULNÉRABILITÉ NUIT 1
+			// C. ATTRIBUTION DE L'INVULNÉRABILITÉ NUIT 1
 			const firstNightDeathsRes = await container.inGameService.getFirstNightDeaths(game.id);
 
 			if (firstNightDeathsRes.success && config.invulnerabilityRoleId) {
@@ -116,25 +109,23 @@ export class CleanGameCommand extends Command {
 					}
 				}
 			}
+
+			// D. MISE À JOUR DU MESSAGE MJ
+			const originalEmbed = EmbedBuilder.from(interaction.message.embeds[0]);
+
+			originalEmbed.setColor(colors.success);
+			originalEmbed.setFooter({ text: `Partie terminée et nettoyée.` });
+
+			return interaction.editReply({
+				embeds: [originalEmbed],
+				components: []
+			});
 		} catch (error) {
 			container.logger.error(error);
-			return interaction.editReply({
-				embeds: [
-					Embeds.errorEmbed({
-						title: `Erreur`,
-						message: 'Une erreur est survenue lors de la suppression des salons ou des rôles.'
-					})
-				]
+			return interaction.followUp({
+				flags: ['Ephemeral'],
+				embeds: [Embeds.errorEmbed({ title: `Erreur`, message: 'Une erreur est survenue lors de la suppression des salons ou des rôles.' })]
 			});
 		}
-
-		return interaction.editReply({
-			embeds: [
-				Embeds.successEmbed({
-					title: `Nettoyage terminé !`,
-					message: 'Les channels ont été supprimés et les rôles des joueurs ont été réinitialisés.'
-				})
-			]
-		});
 	}
 }

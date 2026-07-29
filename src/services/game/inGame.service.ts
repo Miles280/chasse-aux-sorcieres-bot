@@ -12,6 +12,10 @@ export class InGameService {
 		return await this.api.get<GameData>(`/game/active`);
 	}
 
+	async getGameById(gameId: string): Promise<ApiResponse<GameData>> {
+		return await this.api.get<GameData>(`/game/${gameId}`);
+	}
+
 	async updateStep(gameId: number, step: string): Promise<ApiResponse<GameData>> {
 		return await this.api.patch<GameData>(`/game/${gameId}/step`, { step });
 	}

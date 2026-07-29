@@ -64,4 +64,15 @@ export class DiscordService {
 	hasAnyRole(member: GuildMember, roleIds: string[]): boolean {
 		return member.roles.cache.some((role) => roleIds.includes(role.id));
 	}
+
+	moveMemberToVc = async (guild: Guild, discordId: string, targetChannel: any) => {
+		const member = await guild.members.fetch(discordId).catch(() => null);
+		if (member && member.voice.channelId) {
+			try {
+				await member.voice.setChannel(targetChannel);
+			} catch (e) {
+				console.error(`Impossible de move ${member.user.tag} :`, e);
+			}
+		}
+	};
 }

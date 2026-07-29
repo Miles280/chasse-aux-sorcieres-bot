@@ -300,33 +300,21 @@ export class GameLauncherService {
 			].filter(Boolean) as OverwriteResolvable[]
 		});
 
-		// --- Fonction utilitaire locale pour déplacer un membre ---
-		const moveMemberToVc = async (discordId: string, targetChannel: any) => {
-			const member = await guild.members.fetch(discordId).catch(() => null);
-			if (member && member.voice.channelId) {
-				try {
-					await member.voice.setChannel(targetChannel);
-				} catch (e) {
-					console.error(`Impossible de move ${member.user.tag} :`, e);
-				}
-			}
-		};
-
-		// 3. Déplacement des Joueurs -> Place Publique
+		// 3. Déplacement des Joueurs
 		for (const assignment of distribution) {
-			await moveMemberToVc(assignment.discordId, mainVc);
+			await container.discordService.moveMemberToVc(guild, assignment.discordId, mainVc);
 		}
 
-		// 4. Déplacement des Spectateurs -> L'Au-delà (ou mainVc si tu préfères)
+		// 4. Déplacement des Spectateurs
 		if (spectatorIds && spectatorIds.length > 0) {
 			for (const specId of spectatorIds) {
-				await moveMemberToVc(specId, deadVc);
+				await container.discordService.moveMemberToVc(guild, specId, mainVc);
 			}
 		}
 
-		// 5. Déplacement du MJ -> Place Publique
+		// 5. Déplacement du MJ
 		if (mjId) {
-			await moveMemberToVc(mjId, mainVc);
+			await container.discordService.moveMemberToVc(guild, mjId, mainVc);
 		}
 
 		return { mainVc, deadVc };
