@@ -130,9 +130,11 @@ export class ChangePhaseHandler extends InteractionHandler {
 										}
 
 										// B. Move dans le channel vocal de l'Au-delà (Si en vocal)
-										if (member.voice.channelId && game.discordChannels['deadVoiceId']) {
-											await member.voice.setChannel(game.discordChannels['deadVoiceId']).catch(console.error);
-										}
+										await container.discordService.moveMemberToVc(
+											interaction.guild!,
+											member.id,
+											game.discordChannels['deadVoiceId']
+										);
 									}
 								} catch (memberError) {
 									console.error(`Impossible de mettre à jour le joueur Discord ${victim.user.discordId} :`, memberError);

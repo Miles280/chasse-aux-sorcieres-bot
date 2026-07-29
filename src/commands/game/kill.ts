@@ -118,9 +118,7 @@ export class KillCommand extends Command {
 				}
 
 				// B. Move dans le channel vocal de l'Au-delà (Si le joueur est actuellement en vocal)
-				if (member.voice.channelId && game.discordChannels['deadVoiceId']) {
-					await member.voice.setChannel(game.discordChannels['deadVoiceId']);
-				}
+				await container.discordService.moveMemberToVc(interaction.guild!, member.id, game.discordChannels['deadVoiceId']);
 			}
 
 			// C. Annonce dans le channel de vote
