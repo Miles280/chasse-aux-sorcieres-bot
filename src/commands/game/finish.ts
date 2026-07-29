@@ -3,6 +3,7 @@ import { Command, container } from '@sapphire/framework';
 import { ChatInputCommandInteraction, InteractionContextType, MessageFlags, PermissionFlagsBits } from 'discord.js';
 import { GameMessageBuilder } from '../../builders/game/GameMessage.builder';
 import * as Embeds from '../../utils/embeds';
+import { DebateManager } from '../../services/game/inGame.service';
 
 @ApplyOptions<Command.Options>({
 	name: 'finish',
@@ -34,6 +35,8 @@ export class FinishGameCommand extends Command {
 		await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
 
 		const winningCamp = interaction.options.getString('camp', true);
+
+		DebateManager.stop(interaction.guild!.id);
 
 		// 1. Récupération de la partie active
 		const activeGameRes = await container.inGameService.getActiveGame();
@@ -82,10 +85,7 @@ export class FinishGameCommand extends Command {
 						const guild = interaction.guild!;
 						const member = await guild.members.fetch(discordId);
 
-						// On vérifie qu'il est bien dans un salon vocal
-						if (member && member.voice.channelId) {
-							await member.voice.setMute(false, 'Fin de la partie');
-						}
+						await member.voice.setMute(false, 'Fin de la partie');
 					} catch (error) {
 						console.error(`[Mute Error] Impossible de demute le joueur ${discordId}:`, error);
 					}

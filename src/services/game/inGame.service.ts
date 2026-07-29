@@ -152,119 +152,142 @@ export class InGameService {
 	 * Gère la chronologie du débat.
 	 */
 	public async runDebateTimeline(guild: any, voteChannel: TextChannel, players: GamePlayerInterface[], durationMinutes: number) {
+		const guildId = guild.id;
 		const endTimeUnix = Math.floor(Date.now() / 1000) + durationMinutes * 60;
+		let isCancelled = false;
 
-		// 1. Démute de tout le monde
-		for (const player of players) {
-			if (!player.isAlive || player.isSpectator) continue;
+		// On enregistre l'annulation pour ce serveur
+		DebateManager.register(guildId, () => {
+			isCancelled = true;
+		});
 
-			if (player.user?.discordId) {
+		// Fonction utilitaire de sleep interruptible
+		const interruptibleSleep = async (ms: number) => {
+			const start = Date.now();
+			while (Date.now() - start < ms) {
+				if (isCancelled) throw new Error('DEBATE_CANCELLED');
+				await sleep(5000); // Vérifie toutes les 5 secondes si on a annulé
+			}
+		};
+
+		try {
+			// 1. Démute de tout le monde
+			for (const player of players) {
+				if (!player.isAlive || player.isSpectator) continue;
+				if (!player.user?.discordId) continue;
+
 				try {
-					// Force la récupération fraîche du membre depuis l'API Discord
 					const member = await guild.members.fetch(player.user.discordId);
-
-					// On vérifie qu'il est bien dans un salon vocal
-					if (member && member.voice.channelId) {
-						await member.voice.setMute(false, 'Début du temps de débat');
-					}
+					await member.voice.setMute(false, 'Début du temps de débat');
 				} catch (error) {
-					console.error(`[Mute Error] Impossible de demute le joueur ${player.user.discordId}:`, error);
+					console.error(`[Mute Error] Échec pour ${player.user.discordId}:`, (error as Error).message);
 				}
 			}
-		}
 
-		// 2. Message de début (On sauvegarde le message dans une variable "startMsg")
-		let startMsg: any = null;
-		if (voteChannel) {
-			startMsg = await voteChannel
-				.send({
-					embeds: [
-						Embeds.successEmbed({
-							title: 'Le débat est ouvert !',
-							message: `Vous pouvez parler. Fin du temps imparti <t:${endTimeUnix}:R>.`
-						})
-					]
-				})
-				.catch(() => null);
-		}
-
-		// 3. Chrono et alerte éphémère la dernière minute
-		const durationMs = durationMinutes * 60 * 1000;
-		const oneMinuteMs = 60 * 1000;
-
-		if (durationMinutes > 1) {
-			const warningDelay = durationMs - oneMinuteMs;
-
-			// On attend jusqu'à la dernière minute
-			await sleep(warningDelay);
-
-			// Envoi de l'avertissement
+			// 2. Message de début
+			let startMsg: any = null;
 			if (voteChannel) {
-				const warningMsg = await voteChannel
+				startMsg = await voteChannel
 					.send({
-						content: "**Il ne reste plus qu'une minute de débat !**"
-					})
-					.catch(() => null);
-
-				// Auto-suppression après 10s
-				if (warningMsg) {
-					setTimeout(() => warningMsg.delete().catch(() => null), 10_000);
-				}
-			}
-
-			// On attend la dernière minute restante
-			await sleep(oneMinuteMs);
-		} else {
-			// Si le débat ne dure qu'une minute de base, on attend direct la fin
-			await sleep(durationMs);
-		}
-
-		// 4. Fin du débat et remute sécurisé
-		for (const player of players) {
-			if (!player.isAlive || player.isSpectator) continue;
-
-			if (player.user?.discordId) {
-				try {
-					// Force la récupération fraîche du membre depuis l'API Discord
-					const member = await guild.members.fetch(player.user.discordId);
-
-					// On vérifie qu'il est bien dans un salon vocal
-					if (member && member.voice.channelId) {
-						await member.voice.setMute(true, 'Fin du temps de débat');
-					}
-				} catch (error) {
-					console.error(`[Mute Error] Impossible de mute le joueur ${player.user.discordId}:`, error);
-				}
-			}
-		}
-
-		// 5. Modification de l'embed de départ ET petit message de fin
-		if (voteChannel) {
-			// On modifie l'embed de départ pour le transformer en message d'erreur rouge
-			if (startMsg) {
-				await startMsg
-					.edit({
 						embeds: [
-							Embeds.errorEmbed({
-								title: 'Fin du débat !',
-								message: "Il est l'heure de voter pour ceux ne l'ayant pas encore fait."
+							Embeds.successEmbed({
+								title: 'Le débat est ouvert !',
+								message: `Vous pouvez parler. Fin du temps imparti <t:${endTimeUnix}:R>.`
 							})
 						]
 					})
 					.catch(() => null);
 			}
 
-			// On envoie le petit ping rapide
-			const endPingMsg = await voteChannel
-				.send({
-					content: '**Le débat est terminé !** Place aux votes.'
-				})
-				.catch(() => null);
+			// 3. Chrono et alerte éphémère la dernière minute
+			const durationMs = durationMinutes * 60 * 1000;
+			const oneMinuteMs = 60 * 1000;
 
-			// Auto-suppression du petit message après 10 secondes
-			if (endPingMsg) {
-				setTimeout(() => endPingMsg.delete().catch(() => null), 10_000);
+			if (durationMinutes > 1) {
+				const warningDelay = durationMs - oneMinuteMs;
+				await interruptibleSleep(warningDelay);
+
+				if (isCancelled) return; // Sécurité
+
+				if (voteChannel) {
+					const warningMsg = await voteChannel.send({ content: "**Il ne reste plus qu'une minute de débat !**" }).catch(() => null);
+					if (warningMsg) setTimeout(() => warningMsg.delete().catch(() => null), 10_000);
+				}
+
+				await interruptibleSleep(oneMinuteMs);
+			} else {
+				await interruptibleSleep(durationMs);
 			}
+
+			if (isCancelled) return;
+
+			// 4. Fin du débat normale et remute
+			for (const player of players) {
+				if (!player.isAlive || player.isSpectator) continue;
+				if (!player.user?.discordId) continue;
+
+				try {
+					const member = await guild.members.fetch(player.user.discordId);
+					await member.voice.setMute(true, 'Fin du temps de débat');
+				} catch (error) {
+					console.error(`[Mute Error] Échec pour ${player.user.discordId}:`, (error as Error).message);
+				}
+			}
+
+			// 5. Modification de l'embed de fin
+			if (voteChannel) {
+				if (startMsg) {
+					await startMsg
+						.edit({
+							embeds: [
+								Embeds.errorEmbed({
+									title: 'Fin du débat !',
+									message: "Il est l'heure de voter pour ceux ne l'ayant pas encore fait."
+								})
+							]
+						})
+						.catch(() => null);
+				}
+
+				const endPingMsg = await voteChannel.send({ content: '**Le débat est terminé !** Place aux votes.' }).catch(() => null);
+				if (endPingMsg) setTimeout(() => endPingMsg.delete().catch(() => null), 10_000);
+			}
+		} catch (error: any) {
+			if (error.message === 'DEBATE_CANCELLED') {
+				console.log(`[Débat] Le débat sur le serveur ${guild.name} a été stoppé suite à la fin de la partie.`);
+			} else {
+				console.error('[Débat Error]', error);
+			}
+		} finally {
+			// Nettoyage de la map
+			DebateManager.clear(guildId);
 		}
 	}
 }
+
+// Une Map pour stocker les fonctions d'annulation par ID de guilde ou de partie
+const activeDebates = new Map<string, () => void>();
+
+export const DebateManager = {
+	// Enregistre un débat en cours avec sa fonction d'annulation
+	register(guildId: string, cancelFunction: () => void) {
+		// S'il y avait déjà un débat, on l'annule proprement avant
+		if (activeDebates.has(guildId)) {
+			activeDebates.get(guildId)!();
+		}
+		activeDebates.set(guildId, cancelFunction);
+	},
+
+	// Arrête le débat en cours (appelé par /finish)
+	stop(guildId: string) {
+		if (activeDebates.has(guildId)) {
+			activeDebates.get(guildId)!();
+			activeDebates.delete(guildId);
+		}
+	},
+
+	// Nettoie après la fin normale du débat
+	clear(guildId: string) {
+		activeDebates.delete(guildId);
+	}
+};

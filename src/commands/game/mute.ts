@@ -47,17 +47,14 @@ export class MuteCommand extends Command {
 		// 2. Application du mute/démute sur les joueurs vivants
 		for (const player of players) {
 			if (!player.isAlive || player.isSpectator) continue;
+			if (!player.user?.discordId) continue;
 
-			if (player.user?.discordId) {
-				try {
-					const member = await guild.members.fetch(player.user.discordId).catch(() => null);
-					if (member && member.voice.channelId) {
-						await member.voice.setMute(shouldMute, `Commande manuelle /mute par ${interaction.user.tag}`);
-						successCount++;
-					}
-				} catch (error) {
-					console.error(`[Mute Command] Erreur pour le joueur ${player.user.discordId}:`, error);
-				}
+			try {
+				const member = await guild.members.fetch(player.user.discordId);
+				await member.voice.setMute(shouldMute, `Commande manuelle /mute par ${interaction.user.tag}`);
+				successCount++;
+			} catch (error) {
+				console.error(`[Mute Command] Échec pour ${player.user.discordId}:`, (error as Error).message);
 			}
 		}
 
