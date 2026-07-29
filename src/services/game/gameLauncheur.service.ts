@@ -27,11 +27,11 @@ export class GameLauncherService {
 	}
 
 	async getPreview(gameId: number): Promise<ApiResponse<{ gameId: number; distribution: RoleDistribution[] }>> {
-		return await this.api.post<{ gameId: number; distribution: RoleDistribution[] }>(`/game/preview/${gameId}`, {});
+		return await this.api.post<{ gameId: number; distribution: RoleDistribution[] }>(`/game/${gameId}/preview`, {});
 	}
 
 	async startGame(gameId: number, distribution: RoleDistribution[] = []): Promise<ApiResponse<{ distribution: RoleDistribution[] }>> {
-		return await this.api.post<{ distribution: RoleDistribution[] }>(`/game/start/${gameId}`, { distribution });
+		return await this.api.post<{ distribution: RoleDistribution[] }>(`/game/${gameId}/start`, { distribution });
 	}
 
 	async viewGame(gameId: number): Promise<ApiResponse<GameData>> {

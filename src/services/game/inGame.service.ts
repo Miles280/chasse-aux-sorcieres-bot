@@ -31,6 +31,14 @@ export class InGameService {
 		return await this.api.get<NightDeathPlayer[]>(`/game/${gameId}/night-deaths`);
 	}
 
+	async getFirstNightDeaths(gameId: number): Promise<ApiResponse<NightDeathPlayer[]>> {
+		return await this.api.get<NightDeathPlayer[]>(`/game/${gameId}/first-night-deaths`);
+	}
+
+	async finishGame(gameId: number, winningCamp: string): Promise<ApiResponse<GameData>> {
+		return await this.api.post<GameData>(`/game/${gameId}/finish`, { winningCamp });
+	}
+
 	/**
 	 * Gère l'ouverture et la fermeture des salons selon la phase
 	 */
