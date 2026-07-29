@@ -1,6 +1,6 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { Command } from '@sapphire/framework';
-import { InteractionContextType, MessageFlags } from 'discord.js';
+import { InteractionContextType, MessageFlags, PermissionFlagsBits } from 'discord.js';
 import { container } from '@sapphire/framework';
 import * as Embeds from '../../utils/embeds';
 
@@ -15,6 +15,7 @@ export class RevealCommand extends Command {
 				.setName(this.name)
 				.setDescription(this.description)
 				.setContexts([InteractionContextType.Guild])
+				.setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
 				.addUserOption((opt) =>
 					opt //
 						.setName('joueur')

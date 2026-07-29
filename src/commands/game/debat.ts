@@ -14,7 +14,7 @@ export class DebateCommand extends Command {
 				.setName(this.name)
 				.setDescription(this.description)
 				.setContexts([InteractionContextType.Guild])
-				.setDefaultMemberPermissions(PermissionFlagsBits.MuteMembers) // Requis pour mute/démute
+				.setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
 				.addIntegerOption((option) =>
 					option.setName('temps').setDescription('Le temps du débat en minutes.').setRequired(true).setMinValue(1).setMaxValue(10)
 				)

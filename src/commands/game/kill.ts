@@ -1,6 +1,6 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { Command, container } from '@sapphire/framework';
-import { ChatInputCommandInteraction, InteractionContextType, MessageFlags } from 'discord.js';
+import { ChatInputCommandInteraction, InteractionContextType, MessageFlags, PermissionFlagsBits } from 'discord.js';
 import * as Embeds from '../../utils/embeds';
 import { emojis } from '../../utils/emojis';
 
@@ -15,6 +15,7 @@ export class KillCommand extends Command {
 				.setName(this.name)
 				.setDescription(this.description)
 				.setContexts([InteractionContextType.Guild])
+				.setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
 				.addUserOption((opt) =>
 					opt //
 						.setName('joueur')
