@@ -1,9 +1,9 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes, container } from '@sapphire/framework';
-import { ButtonInteraction, MessageFlags } from 'discord.js';
-import * as Embeds from '../../../utils/embeds';
+import { ButtonInteraction, MessageFlags, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, TextChannel } from 'discord.js';
 import { emojis } from '../../../utils/emojis';
 import { NightDeathPlayer } from '../../../models/game/Game.interface';
+import * as Embeds from '../../../utils/embeds';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.Button
@@ -14,16 +14,53 @@ export class ChangePhaseHandler extends InteractionHandler {
 	}
 
 	public override async run(interaction: ButtonInteraction) {
-		await interaction.deferUpdate();
-
 		const [, , gameIdRaw, step] = interaction.customId.split(':');
 		const gameId = Number(gameIdRaw);
+
+		let activeInteraction: any = interaction; // Permet de gérer la réponse sur la modale ou le bouton
+		let debateMinutes = 0;
+
+		// 0. Interception de la phase "jour" pour la modale
+		if (step === 'day') {
+			const modal = new ModalBuilder().setCustomId(`debate:modal:${interaction.id}`).setTitle('Lancement du Jour');
+
+			const timeInput = new TextInputBuilder()
+				.setCustomId('debateTime')
+				.setLabel('Temps de débat (en minutes)')
+				.setStyle(TextInputStyle.Short)
+				.setValue('5') // Valeur par défaut
+				.setRequired(true);
+
+			modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(timeInput));
+
+			// On affiche la modale AU LIEU de defer
+			await interaction.showModal(modal);
+
+			try {
+				// On attend la réponse du MJ (délai d'une minute max)
+				const modalSubmit = await interaction.awaitModalSubmit({
+					filter: (i) => i.customId === `debate:modal:${interaction.id}` && i.user.id === interaction.user.id,
+					time: 60_000
+				});
+
+				debateMinutes = parseInt(modalSubmit.fields.getTextInputValue('debateTime'), 10) || 5;
+
+				// On met à jour l'interaction active pour répondre dessus ensuite
+				activeInteraction = modalSubmit;
+				await activeInteraction.deferUpdate();
+			} catch (error) {
+				// Si le MJ ferme la modale sans valider ou prend plus d'une minute, on annule.
+				return;
+			}
+		} else {
+			await activeInteraction.deferUpdate();
+		}
 
 		// 1. Mise à jour de la phase via l'API Symfony
 		const response = await container.inGameService.updateStep(gameId, step);
 
 		if (!response.success) {
-			return interaction.followUp({
+			return activeInteraction.followUp({
 				embeds: [Embeds.errorEmbed({ title: 'Erreur', message: "L'API a rencontré un problème." })],
 				flags: [MessageFlags.Ephemeral]
 			});
@@ -31,9 +68,9 @@ export class ChangePhaseHandler extends InteractionHandler {
 
 		const game = response.data;
 
-		const responseConfig = await container.serverConfigService.getConfig(interaction.guildId!);
+		const responseConfig = await container.serverConfigService.getConfig(activeInteraction.guildId!);
 		if (!responseConfig.success) {
-			return interaction.followUp({
+			return activeInteraction.followUp({
 				embeds: [Embeds.errorEmbed({ title: 'Erreur', message: 'Erreur lors de la récupération des configs.' })],
 				flags: [MessageFlags.Ephemeral]
 			});
@@ -42,27 +79,26 @@ export class ChangePhaseHandler extends InteractionHandler {
 		const playerRoleId = responseConfig.data.playerRoleId;
 
 		// 2. GESTION DES PERMISSIONS DES SALONS SELON LA PHASE
-		if (interaction.guild && playerRoleId) {
-			await container.inGameService.updatePhasePermissions(interaction.guild, game.discordChannels, step, playerRoleId);
+		if (activeInteraction.guild && playerRoleId) {
+			await container.inGameService.updatePhasePermissions(activeInteraction.guild, game.discordChannels, step, playerRoleId);
 		}
 
 		// 3. MISE À JOUR DES TRACKERS
-		if (interaction.guild) {
-			await container.inGameService.updateTrackers(interaction.guild, game);
+		if (activeInteraction.guild) {
+			await container.inGameService.updateTrackers(activeInteraction.guild, game);
 		}
 
 		// 4. MESSAGES D'AMBIANCE RP (Channel Sorcières)
-		if (interaction.guild && game.discordChannels['witchesChannelId'] && (step === 'night' || step === 'dawn')) {
+		if (activeInteraction.guild && game.discordChannels['witchesChannelId'] && (step === 'night' || step === 'dawn')) {
 			try {
 				const witchesChannelId = game.discordChannels['witchesChannelId'];
-				const witchesChannel = await interaction.guild.channels.fetch(witchesChannelId);
+				const witchesChannel = await activeInteraction.guild.channels.fetch(witchesChannelId);
 
 				if (witchesChannel?.isTextBased()) {
 					const aliveWitches = game.gamePlayers.filter((p: any) => p.isAlive === true && p.trueRole?.camp === 'witch');
 
 					if (aliveWitches.length > 0) {
 						const pings = aliveWitches.map((p: any) => `<@${p.user.discordId}>`).join(', ');
-
 						const rpMessage =
 							step === 'night'
 								? `La nuit tombe, vous vous retrouvez toutes dans votre antre...\n${pings}`
@@ -77,27 +113,27 @@ export class ChangePhaseHandler extends InteractionHandler {
 		}
 
 		// 5. ANNONCE DU MATIN & OUVERTURE DES VOTES
-		if (interaction.guild && step === 'day' && game.discordChannels['votesChannelId']) {
+		let voteChannelTarget: TextChannel | null = null;
+
+		if (activeInteraction.guild && step === 'day' && game.discordChannels['votesChannelId']) {
 			try {
 				const voteChannelId = game.discordChannels['votesChannelId'];
-				const voteChannel = await interaction.guild.channels.fetch(voteChannelId);
+				const voteChannel = (await activeInteraction.guild.channels.fetch(voteChannelId)) as TextChannel;
 
-				if (voteChannel?.isTextBased()) {
+				if (voteChannel) {
+					voteChannelTarget = voteChannel;
 					const currentDay = game.dayNumber;
 
-					// Appel du nouvel endpoint pour récupérer les morts de la nuit
 					const deathsResponse = await container.inGameService.getNightDeaths(gameId);
 
 					if (deathsResponse.success) {
 						const nightVictims = deathsResponse.data as NightDeathPlayer[];
-
 						let announceMessage = `## ☀️ __Jour ${currentDay}__ : Le soleil se lève sur le village\n`;
 
 						if (nightVictims.length > 0) {
 							announceMessage += `La nuit a été agitée et ${nightVictims.length > 1 ? 'des cadavres ont été retrouvés :' : 'un cadavre a été retrouvé :'}\n\n`;
 
 							for (const victim of nightVictims) {
-								// --- 1. CONSTRUCTION DU MESSAGE D'ANNONCE ---
 								let roleText = '';
 								if (!victim.revealedRole && victim.trueRole) {
 									roleText = 'Son rôle reste **secret**...';
@@ -109,42 +145,30 @@ export class ChangePhaseHandler extends InteractionHandler {
 
 								announceMessage += `> ${emojis.dead} __<@${victim.user.discordId}> a rendu l'âme__ : ${roleText}\n`;
 
-								// Récupération de la config serveur
-								const configResponse = await container.serverConfigService.getConfig(interaction.guildId!);
-								if (!configResponse.success) {
-									return interaction.editReply({
-										embeds: [Embeds.errorEmbed({ title: 'Erreur Config', message: configResponse.error })]
-									});
-								}
-								const config = configResponse.data;
+								const config = responseConfig.data;
 
-								// --- 2. GESTION DES RÔLES & VOCAL DISCORD ---
 								try {
-									const member = await interaction.guild.members.fetch(victim.user.discordId);
-
+									const member = await activeInteraction.guild.members.fetch(victim.user.discordId);
 									if (member) {
-										// A. Swap des rôles (Vivant -> Mort)
 										if (config.playerRoleId && config.deadPlayerRoleId) {
 											await member.roles.remove(config.playerRoleId).catch(console.error);
 											await member.roles.add(config.deadPlayerRoleId).catch(console.error);
 										}
 
-										// B. Move dans le channel vocal de l'Au-delà (Si en vocal)
 										await container.discordService.moveMemberToVc(
-											interaction.guild!,
+											activeInteraction.guild!,
 											member.id,
 											game.discordChannels['deadVoiceId']
 										);
 									}
 								} catch (memberError) {
-									console.error(`Impossible de mettre à jour le joueur Discord ${victim.user.discordId} :`, memberError);
+									console.error(`Impossible de maj le joueur Discord ${victim.user.discordId} :`, memberError);
 								}
 							}
 						} else {
 							announceMessage += `\nLa nuit a été particulièrement calme. **Personne n'est mort cette nuit !**`;
 						}
 
-						// Envoi de l'annonce textuelle
 						await voteChannel.send({ content: announceMessage });
 					}
 				}
@@ -153,6 +177,9 @@ export class ChangePhaseHandler extends InteractionHandler {
 			}
 		}
 
-		return;
+		// 6. Lancement automatique du débat (S'il y en a un de paramétré via la modale)
+		if (step === 'day' && debateMinutes > 0 && voteChannelTarget && activeInteraction.guild) {
+			return container.inGameService.runDebateTimeline(activeInteraction.guild, voteChannelTarget, game.gamePlayers, debateMinutes);
+		}
 	}
 }
