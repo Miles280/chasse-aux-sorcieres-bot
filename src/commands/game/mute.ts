@@ -4,7 +4,7 @@ import { ChatInputCommandInteraction, InteractionContextType, MessageFlags, Perm
 import * as Embeds from '../../utils/embeds';
 
 @ApplyOptions<Command.Options>({
-	name: 'muet',
+	name: 'mute',
 	description: 'Permet de mute ou démute manuellement tous les joueurs vivants de la partie.'
 })
 export class MuteCommand extends Command {
