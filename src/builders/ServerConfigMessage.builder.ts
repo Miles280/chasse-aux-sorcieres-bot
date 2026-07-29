@@ -16,6 +16,7 @@ export class ServerConfigMessageBuilder {
 			{ id: 'playerRoleId', name: 'Rôle Joueur', type: 'role' },
 			{ id: 'deadPlayerRoleId', name: 'Rôle Joueur Mort', type: 'role' },
 			{ id: 'spectatorRoleId', name: 'Rôle Spectateur', type: 'role' },
+			{ id: 'invulnerabilityRoleId', name: 'Rôle Invulnérabilité (N1)', type: 'role' },
 			{ id: 'inscriptionVoiceChannelId', name: 'Vocal Inscription', type: 'channel' },
 			{ id: 'inscriptionChannelId', name: 'Salon Inscription', type: 'channel' },
 			{ id: 'gameMjChannelId', name: 'Salon MJ', type: 'channel' },
@@ -35,8 +36,8 @@ export class ServerConfigMessageBuilder {
 			// Ajout de la section actuelle
 			container.addSectionComponents(this.buildConfigSection(field.id, field.name, field.type, val as string));
 
-			// 2. Un en dessous de Rôle Joueur Mort
-			if (field.id === 'spectatorRoleId') {
+			// 2. Un séparateur en dessous du dernier rôle (Invulnérabilité Nuit 1)
+			if (field.id === 'invulnerabilityRoleId') {
 				container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
 			}
 
