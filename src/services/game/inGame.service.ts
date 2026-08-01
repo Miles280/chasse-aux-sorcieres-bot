@@ -151,7 +151,13 @@ export class InGameService {
 	/**
 	 * Gère la chronologie du débat.
 	 */
-	public async runDebateTimeline(guild: any, voteChannel: TextChannel, players: GamePlayerInterface[], durationMinutes: number) {
+	public async runDebateTimeline(
+		guild: any,
+		voteChannel: TextChannel,
+		players: GamePlayerInterface[],
+		durationMinutes: number,
+		isSousDebat: boolean
+	) {
 		const guildId = guild.id;
 		const endTimeUnix = Math.floor(Date.now() / 1000) + durationMinutes * 60;
 		let isCancelled = false;
@@ -186,12 +192,13 @@ export class InGameService {
 
 			// 2. Message de début
 			let startMsg: any = null;
+			const firstTilte = isSousDebat ? 'Le sous-débat est ouvert !' : 'Le débat est ouvert !';
 			if (voteChannel) {
 				startMsg = await voteChannel
 					.send({
 						embeds: [
 							Embeds.successEmbed({
-								title: 'Le débat est ouvert !',
+								title: firstTilte,
 								message: `Vous pouvez parler. Fin du temps imparti <t:${endTimeUnix}:R>.`
 							})
 						]
@@ -254,13 +261,14 @@ export class InGameService {
 			}
 
 			// 5. Modification de l'embed de fin
+			const secondTilte = isSousDebat ? 'Fin du sous-débat !' : 'Fin du débat !';
 			if (voteChannel) {
 				if (startMsg) {
 					await startMsg
 						.edit({
 							embeds: [
 								Embeds.errorEmbed({
-									title: 'Fin du débat !',
+									title: secondTilte,
 									message: "Il est l'heure de voter pour ceux ne l'ayant pas encore fait."
 								})
 							]

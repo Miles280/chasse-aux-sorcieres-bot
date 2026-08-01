@@ -40,7 +40,7 @@ export class DebateCommand extends Command {
 		const voteChannel = voteChannelId ? (guild.channels.cache.get(voteChannelId) as TextChannel) : (interaction.channel as TextChannel);
 
 		// 2. On lance la gestion du chrono en tâche de fond
-		container.inGameService.runDebateTimeline(guild, voteChannel, game.gamePlayers ?? [], durationMinutes);
+		container.inGameService.runDebateTimeline(guild, voteChannel, game.gamePlayers ?? [], durationMinutes, false);
 
 		// 3. Confirmation immédiate au MJ
 		return interaction.editReply({

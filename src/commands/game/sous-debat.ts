@@ -115,7 +115,7 @@ export class SousDebatCommand extends Command {
 		const voteChannel = voteChannelId ? (guild.channels.cache.get(voteChannelId) as TextChannel) : (interaction.channel as TextChannel);
 
 		// 6. Lancement du chrono de 2 minutes, uniquement sur les membres sélectionnés
-		container.inGameService.runDebateTimeline(guild, voteChannel, selectedPlayers, 2);
+		container.inGameService.runDebateTimeline(guild, voteChannel, selectedPlayers, 2, true);
 
 		// 7. Confirmation immédiate au MJ
 		const mentions = uniqueUsers.map((u) => `<@${u.id}>`).join(', ');

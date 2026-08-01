@@ -185,7 +185,7 @@ export class ChangePhaseHandler extends InteractionHandler {
 
 		// 6. Lancement automatique du débat (S'il y en a un de paramétré via la modale)
 		if (step === 'day' && debateMinutes > 0 && voteChannelTarget && activeInteraction.guild) {
-			return container.inGameService.runDebateTimeline(activeInteraction.guild, voteChannelTarget, game.gamePlayers, debateMinutes);
+			return container.inGameService.runDebateTimeline(activeInteraction.guild, voteChannelTarget, game.gamePlayers, debateMinutes, false);
 		}
 	}
 }
