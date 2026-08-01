@@ -155,6 +155,12 @@ export class ChangePhaseHandler extends InteractionHandler {
 											await member.roles.add(config.deadPlayerRoleId).catch(console.error);
 										}
 
+										try {
+											await member.voice.setMute(false, 'Joueur mort sur la partie');
+										} catch (error) {
+											console.error(`[Mute Error] Échec pour ${member.id}:`, (error as Error).message);
+										}
+
 										await container.discordService.moveMemberToVc(
 											activeInteraction.guild!,
 											member.id,

@@ -118,6 +118,12 @@ export class KillCommand extends Command {
 					await member.roles.add(config.deadPlayerRoleId);
 				}
 
+				try {
+					await member.voice.setMute(false, 'Joueur mort sur la partie');
+				} catch (error) {
+					console.error(`[Mute Error] Échec pour ${member.id}:`, (error as Error).message);
+				}
+
 				// B. Move dans le channel vocal de l'Au-delà (Si le joueur est actuellement en vocal)
 				await container.discordService.moveMemberToVc(interaction.guild!, member.id, game.discordChannels['deadVoiceId']);
 			}

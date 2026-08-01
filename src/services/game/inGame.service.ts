@@ -221,14 +221,33 @@ export class InGameService {
 
 			if (isCancelled) return;
 
-			// 4. Fin du débat normale et remute
+			// 4. Fin du débat normale et remute sécurisé
 			for (const player of players) {
-				if (!player.isAlive || player.isSpectator) continue;
 				if (!player.user?.discordId) continue;
 
 				try {
+					// Fetch force la récupération des données fraîches, y compris les nouveaux rôles
 					const member = await guild.members.fetch(player.user.discordId);
-					await member.voice.setMute(true, 'Fin du temps de débat');
+
+					const configResponse = await container.serverConfigService.getConfig(guild.id);
+					if (!configResponse.success) {
+						return console.warn('Erreur dans la récupération de la config');
+					}
+					const config = configResponse.data;
+
+					const isDeadOnDiscord = member.roles.cache.has(config.deadPlayerRoleId);
+					const isSpectator = member.roles.cache.has(config.spectatorRoleId);
+
+					// S'il est mort ou spectateur, on l'ignore totalement : on ne le mute pas.
+					if (isDeadOnDiscord || isSpectator) {
+						console.log(`[Débat Skip] ${member.user.tag} est mort/spectateur. On ne le server-mute pas.`);
+						continue;
+					}
+
+					// S'il a survécu ET qu'il est actuellement dans un salon vocal (n'importe lequel)
+					if (member.voice.channelId) {
+						await member.voice.setMute(true, 'Fin du temps de débat');
+					}
 				} catch (error) {
 					console.error(`[Mute Error] Échec pour ${player.user.discordId}:`, (error as Error).message);
 				}

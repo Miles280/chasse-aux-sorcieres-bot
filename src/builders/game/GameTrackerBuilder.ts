@@ -22,7 +22,7 @@ export class GameTrackerMessageBuilder {
 
 		lines.push(`# __Chasse aux Sorcières de Nistrium__`);
 		lines.push(`${emojis.crown} **Maître du Jeu** : <@${game.gameMaster.discordId}>`);
-		lines.push(`📅 **Temps actuel** : Jour ${game.dayNumber} — Phase : \`${phaseNames[currentStep] || currentStep}\``);
+		lines.push(`📅 **Temps actuel** : Tour ${game.dayNumber} — Phase : \`${phaseNames[currentStep] || currentStep}\``);
 		lines.push('');
 		lines.push(`${emojis.alive} **Joueurs en vie** (${alivePlayers.length}/${activePlayers.length}) : ${allMentionsAlivePlayers}`);
 		lines.push('');
@@ -124,7 +124,7 @@ export class GameTrackerMessageBuilder {
 
 		// 1. EN-TÊTE (Avec ajout du Jour et de la Phase actuelle)
 		lines.push(`${emojis.crown} **Maître du Jeu** : <@${game.gameMaster.discordId}>`);
-		lines.push(`📅 **Temps actuel** : Jour ${game.dayNumber} — Phase : \`${phaseNames[currentStep] || currentStep}\``);
+		lines.push(`📅 **Temps actuel** : Tour ${game.dayNumber} — Phase : \`${phaseNames[currentStep] || currentStep}\``);
 		lines.push('');
 		lines.push(`${emojis.alive} **Joueurs en vie** (${alivePlayers.length}/${activePlayers.length}) : ${allMentionsAlivePlayers}`);
 		lines.push('');

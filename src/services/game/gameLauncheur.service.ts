@@ -453,7 +453,7 @@ Le meurtre des sorcières est considéré comme un déplacement.`;
 				{ id: everyoneId, deny: [PermissionFlagsBits.ViewChannel] },
 				{ id: playerRoleId, deny: [PermissionFlagsBits.ViewChannel] },
 				{ id: deadRoleId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
-				{ id: specRoleId, allow: [PermissionFlagsBits.ViewChannel], deny: [PermissionFlagsBits.SendMessages] },
+				{ id: specRoleId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
 				{
 					id: mjRoleId,
 					allow: [
