@@ -156,23 +156,35 @@ export class InGameService {
 		voteChannel: TextChannel,
 		players: GamePlayerInterface[],
 		durationMinutes: number,
-		isSousDebat: boolean
+		isSousDebat: boolean,
+		gameId?: number,
+		game?: any,
+		playerRoleId?: string
 	) {
 		const guildId = guild.id;
 		const endTimeUnix = Math.floor(Date.now() / 1000) + durationMinutes * 60;
-		let isCancelled = false;
+
+		let cancelReason: string | null = null;
 
 		// On enregistre l'annulation pour ce serveur
-		DebateManager.register(guildId, () => {
-			isCancelled = true;
+		DebateManager.register(guildId, (reason: string) => {
+			cancelReason = reason;
 		});
 
 		// Fonction utilitaire de sleep interruptible
 		const interruptibleSleep = async (ms: number) => {
 			const start = Date.now();
 			while (Date.now() - start < ms) {
-				if (isCancelled) throw new Error('DEBATE_CANCELLED');
-				await sleep(5000); // Vérifie toutes les 5 secondes si on a annulé
+				// 1. Un nouveau débat a été lancé (ou arrêt brutal) : On coupe tout !
+				if (cancelReason === 'OVERRIDE' || cancelReason === 'STOP') {
+					throw new Error('DEBATE_CANCELLED');
+				}
+				// 2. Le MJ a cliqué sur le bouton "Passer au Crépuscule" : On saute le timer !
+				if (cancelReason === 'FORCE_DUSK') {
+					return;
+				}
+
+				await sleep(2000); // 2 secondes (plus réactif si le MJ clique)
 			}
 		};
 
@@ -214,19 +226,20 @@ export class InGameService {
 				const warningDelay = durationMs - oneMinuteMs;
 				await interruptibleSleep(warningDelay);
 
-				if (isCancelled) return; // Sécurité
-
-				if (voteChannel) {
-					const warningMsg = await voteChannel.send({ content: "**Il ne reste plus qu'une minute de débat !**" }).catch(() => null);
-					if (warningMsg) setTimeout(() => warningMsg.delete().catch(() => null), 10_000);
+				// Si on a forcé le crépuscule pendant la première partie, on ne veut pas
+				// envoyer le message "Il reste 1 minute", on veut passer direct à la suite.
+				if (!cancelReason) {
+					if (voteChannel) {
+						const warningMsg = await voteChannel.send({ content: "**Il ne reste plus qu'une minute de débat !**" }).catch(() => null);
+						if (warningMsg) setTimeout(() => warningMsg.delete().catch(() => null), 10_000);
+					}
+					await interruptibleSleep(oneMinuteMs);
 				}
-
-				await interruptibleSleep(oneMinuteMs);
 			} else {
 				await interruptibleSleep(durationMs);
 			}
 
-			if (isCancelled) return;
+			if (cancelReason === 'OVERRIDE' || cancelReason === 'STOP') return;
 
 			// 4. Fin du débat normale et remute sécurisé
 			for (const player of players) {
@@ -279,9 +292,32 @@ export class InGameService {
 				const endPingMsg = await voteChannel.send({ content: '**Le débat est terminé !** Place aux votes.' }).catch(() => null);
 				if (endPingMsg) setTimeout(() => endPingMsg.delete().catch(() => null), 10_000);
 			}
+
+			// 6. Passage automatique au crépuscule
+			if (!isSousDebat && !cancelReason && gameId && game && playerRoleId) {
+				console.log('Passage automatique au Crépuscule...');
+				try {
+					// 1. Maj de l'API ET récupération de la nouvelle version du jeu (qui est en 'dusk')
+					const response = await container.inGameService.updateStep(gameId, 'dusk');
+
+					if (response.success) {
+						const updatedGame = response.data; // <-- Le jeu à jour !
+
+						// 2. Maj des permissions (fermeture du chat textuel)
+						await container.inGameService.updatePhasePermissions(guild, updatedGame.discordChannels, 'dusk', playerRoleId);
+
+						// 3. Maj des trackers en lui passant le JEU À JOUR
+						await container.inGameService.updateTrackers(guild, updatedGame);
+					} else {
+						console.error("L'API a refusé le passage au crépuscule.");
+					}
+				} catch (error) {
+					console.error('Erreur lors du passage auto au Crépuscule :', error);
+				}
+			}
 		} catch (error: any) {
 			if (error.message === 'DEBATE_CANCELLED') {
-				console.log(`[Débat] Le débat sur le serveur ${guild.name} a été stoppé suite à la fin de la partie.`);
+				console.log(`[Débat] Le débat sur le serveur ${guild.name} a été stoppé.`);
 			} else {
 				console.error('[Débat Error]', error);
 			}
@@ -292,28 +328,28 @@ export class InGameService {
 	}
 }
 
-// Une Map pour stocker les fonctions d'annulation par ID de guilde ou de partie
-const activeDebates = new Map<string, () => void>();
+// Une Map pour stocker les fonctions d'annulation par ID de guilde, en passant la RAISON
+const activeDebates = new Map<string, (reason: string) => void>();
 
 export const DebateManager = {
-	// Enregistre un débat en cours avec sa fonction d'annulation
-	register(guildId: string, cancelFunction: () => void) {
-		// S'il y avait déjà un débat, on l'annule proprement avant
+	// Enregistre un débat en cours
+	register(guildId: string, cancelFunction: (reason: string) => void) {
+		// S'il y avait déjà un débat, on l'annule avec la raison "OVERRIDE" (écrasement)
 		if (activeDebates.has(guildId)) {
-			activeDebates.get(guildId)!();
+			activeDebates.get(guildId)!('OVERRIDE');
 		}
 		activeDebates.set(guildId, cancelFunction);
 	},
 
-	// Arrête le débat en cours (appelé par /finish)
-	stop(guildId: string) {
+	// Arrête le débat en cours (appelé par le bouton du MJ ou une commande /finish)
+	// On permet de passer une raison personnalisée, par défaut 'STOP'
+	stop(guildId: string, reason: string = 'STOP') {
 		if (activeDebates.has(guildId)) {
-			activeDebates.get(guildId)!();
+			activeDebates.get(guildId)!(reason);
 			activeDebates.delete(guildId);
 		}
 	},
 
-	// Nettoie après la fin normale du débat
 	clear(guildId: string) {
 		activeDebates.delete(guildId);
 	}

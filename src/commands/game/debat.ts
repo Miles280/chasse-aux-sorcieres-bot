@@ -36,13 +36,22 @@ export class DebateCommand extends Command {
 		}
 		const game = gameResponse.data;
 
+		// 2. Récupération de la configuration pour le playerRoleId
+		const configResponse = await container.serverConfigService.getConfig(guild.id);
+		if (!configResponse.success) {
+			return interaction.editReply({
+				embeds: [Embeds.errorEmbed({ title: 'Erreur', message: 'Erreur lors de la récupération des configs du serveur.' })]
+			});
+		}
+		const playerRoleId = configResponse.data.playerRoleId;
+
 		const voteChannelId = game.discordChannels['votesChannelId'];
 		const voteChannel = voteChannelId ? (guild.channels.cache.get(voteChannelId) as TextChannel) : (interaction.channel as TextChannel);
 
-		// 2. On lance la gestion du chrono en tâche de fond
-		container.inGameService.runDebateTimeline(guild, voteChannel, game.gamePlayers ?? [], durationMinutes, false);
+		// 3. On lance la gestion du chrono en tâche de fond (avec les 8 paramètres !)
+		container.inGameService.runDebateTimeline(guild, voteChannel, game.gamePlayers ?? [], durationMinutes, false, game.id, game, playerRoleId);
 
-		// 3. Confirmation immédiate au MJ
+		// 4. Confirmation immédiate au MJ
 		return interaction.editReply({
 			embeds: [
 				Embeds.successEmbed({

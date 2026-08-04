@@ -4,6 +4,7 @@ import { ButtonInteraction, MessageFlags, ModalBuilder, TextInputBuilder, TextIn
 import { emojis } from '../../../utils/emojis';
 import { NightDeathPlayer } from '../../../models/game/Game.interface';
 import * as Embeds from '../../../utils/embeds';
+import { DebateManager } from '../../../services/game/inGame.service';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.Button
@@ -20,7 +21,7 @@ export class ChangePhaseHandler extends InteractionHandler {
 		let activeInteraction: any = interaction; // Permet de gérer la réponse sur la modale ou le bouton
 		let debateMinutes = 0;
 
-		// 0. Interception de la phase "jour" pour la modale
+		// 0. Interception des phases spécifiques
 		if (step === 'day') {
 			const modal = new ModalBuilder().setCustomId(`debate:modal:${interaction.id}`).setTitle('Lancement du Jour');
 
@@ -52,6 +53,19 @@ export class ChangePhaseHandler extends InteractionHandler {
 				// Si le MJ ferme la modale sans valider ou prend plus d'une minute, on annule.
 				return;
 			}
+		} else if (step === 'dusk') {
+			// Le MJ a cliqué sur le bouton pour forcer la fin du débat
+			DebateManager.stop(activeInteraction.guildId!, 'FORCE_DUSK');
+
+			await activeInteraction.reply({
+				embeds: [
+					Embeds.successEmbed({
+						title: 'Fin du débat avancée.',
+						message: `Passage au crépuscule manuel en cours...`
+					})
+				],
+				flags: [MessageFlags.Ephemeral]
+			});
 		} else {
 			await activeInteraction.deferUpdate();
 		}
@@ -185,7 +199,16 @@ export class ChangePhaseHandler extends InteractionHandler {
 
 		// 6. Lancement automatique du débat (S'il y en a un de paramétré via la modale)
 		if (step === 'day' && debateMinutes > 0 && voteChannelTarget && activeInteraction.guild) {
-			return container.inGameService.runDebateTimeline(activeInteraction.guild, voteChannelTarget, game.gamePlayers, debateMinutes, false);
+			return container.inGameService.runDebateTimeline(
+				activeInteraction.guild,
+				voteChannelTarget,
+				game.gamePlayers,
+				debateMinutes,
+				false,
+				gameId,
+				game,
+				playerRoleId!
+			);
 		}
 	}
 }
