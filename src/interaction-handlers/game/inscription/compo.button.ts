@@ -136,7 +136,9 @@ export class CompositionButtonHandler extends InteractionHandler {
 
 		// 2. Filtrage : On ne garde que les rôles qui ne sont PAS dans la compo
 		const existingRoleIds = new Set(compoResponse.data.composition.map((r) => r.id));
-		const filteredRoles = rolesResponse.data.filter((role) => !existingRoleIds.has(role.id));
+		const filteredRoles = rolesResponse.data
+			.filter((role) => !existingRoleIds.has(role.id))
+			.sort((a, b) => a.minPlayer - b.minPlayer || a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
 
 		// 3. Cas particulier : si tous les rôles sont déjà présents
 		if (filteredRoles.length === 0) {
@@ -208,7 +210,9 @@ export class CompositionButtonHandler extends InteractionHandler {
 			});
 		}
 
-		const roles = response.data.composition;
+		const roles = response.data.composition.sort(
+			(a, b) => a.minPlayer - b.minPlayer || a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' })
+		);
 
 		if (roles.length === 0) {
 			return interaction.reply({
