@@ -112,11 +112,11 @@ export class ChangePhaseHandler extends InteractionHandler {
 					const aliveWitches = game.gamePlayers.filter((p: any) => p.isAlive === true && p.trueRole?.camp === 'witch');
 
 					if (aliveWitches.length > 0) {
-						const pings = aliveWitches.map((p: any) => `<@${p.user.discordId}>`).join(', ');
+						const pings = aliveWitches.map((p: any) => `<@${p.user.discordId}>`).join('\n');
 						const rpMessage =
 							step === 'night'
-								? `La nuit tombe, vous vous retrouvez toutes dans votre antre...\n${pings}`
-								: `L'aube se lève, vous vous séparez... Jusqu'à ce soir.\n${pings}`;
+								? `## La nuit tombe sur Nistrium...\nLes portes de l'Antre s'ouvrent.\nVous vous retrouvez enfin entre vous, loin des regards du village.\n\n${pings}`
+								: `## L'aube approche...\nIl est temps de quitter l'Antre et de retourner parmi les villageois.\nVos échanges devront attendre la prochaine nuit.\n\n${pings}`;
 
 						await witchesChannel.send(rpMessage);
 					}

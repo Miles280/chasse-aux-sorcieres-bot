@@ -49,19 +49,33 @@ export class InGameService {
 	 * Gère l'ouverture et la fermeture des salons selon la phase
 	 */
 	public async updatePhasePermissions(guild: any, channels: any, step: string, roleId: string) {
-		// Fonction utilitaire locale pour modifier rapidement un salon
+		// 1. Utilitaire pour la permission d'envoyer des messages
 		const setSpeakPermission = async (channelId: string | undefined, canSpeak: boolean) => {
 			if (!channelId) return;
 			try {
 				const channel = await guild.channels.fetch(channelId);
-				// On s'assure qu'on peut bien éditer les permissions de ce salon
 				if (channel && 'permissionOverwrites' in channel) {
 					await (channel as TextChannel | VoiceChannel).permissionOverwrites.edit(roleId, {
 						SendMessages: canSpeak
 					});
 				}
 			} catch (error) {
-				console.error(`Impossible de modifier les perms du salon ${channelId}:`, error);
+				console.error(`Impossible de modifier la permission d'écriture du salon ${channelId}:`, error);
+			}
+		};
+
+		// 2. Utilitaire pour la permission d'ajouter des réactions
+		const setAddReactionsPermission = async (channelId: string | undefined, canReact: boolean) => {
+			if (!channelId) return;
+			try {
+				const channel = await guild.channels.fetch(channelId);
+				if (channel && 'permissionOverwrites' in channel) {
+					await (channel as TextChannel | VoiceChannel).permissionOverwrites.edit(roleId, {
+						AddReactions: canReact
+					});
+				}
+			} catch (error) {
+				console.error(`Impossible de modifier la permission de réaction du salon ${channelId}:`, error);
 			}
 		};
 
@@ -71,16 +85,20 @@ export class InGameService {
 				await setSpeakPermission(channels.debatChannelId, false);
 				await setSpeakPermission(channels.votesChannelId, false);
 				await setSpeakPermission(channels.witchesChannelId, true);
+				await setAddReactionsPermission(channels.witchesChannelId, true);
 				break;
 			case 'dawn':
 				await setSpeakPermission(channels.witchesChannelId, false);
+				await setAddReactionsPermission(channels.witchesChannelId, false);
 				break;
 			case 'day':
 				await setSpeakPermission(channels.debatChannelId, true);
 				await setSpeakPermission(channels.votesChannelId, true);
+				await setAddReactionsPermission(channels.debatChannelId, true);
 				break;
 			case 'dusk':
 				await setSpeakPermission(channels.debatChannelId, false);
+				await setAddReactionsPermission(channels.debatChannelId, false);
 				// Le salon de vote reste ouvert implicitement
 				break;
 		}

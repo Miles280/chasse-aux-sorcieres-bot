@@ -345,8 +345,8 @@ export class GameLauncherService {
 		const deadRoleId = config.deadPlayerRoleId;
 		const specRoleId = config.spectatorRoleId;
 
-		// Permissions de base pour Débat et Votes (Tous voient, seuls Vivants écrivent)
-		const publicGameOverwrites: OverwriteResolvable[] = [
+		// Permissions de base pour Débat
+		const debateOverwrites: OverwriteResolvable[] = [
 			{ id: everyoneId, deny: [PermissionFlagsBits.ViewChannel] },
 			{ id: playerRoleId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
 			{ id: deadRoleId, allow: [PermissionFlagsBits.ViewChannel], deny: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.AddReactions] },
@@ -368,14 +368,37 @@ export class GameLauncherService {
 			name: '『✒️』𝐃𝐞́𝐛𝐚𝐭-𝐄𝐜𝐫𝐢𝐭',
 			type: ChannelType.GuildText,
 			parent: categoryId,
-			permissionOverwrites: publicGameOverwrites
+			permissionOverwrites: debateOverwrites
 		});
+
+		// Permissions de base pour Votes
+		const votesOverwrites: OverwriteResolvable[] = [
+			{ id: everyoneId, deny: [PermissionFlagsBits.ViewChannel] },
+			{
+				id: playerRoleId,
+				allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
+				deny: [PermissionFlagsBits.AddReactions]
+			},
+			{ id: deadRoleId, allow: [PermissionFlagsBits.ViewChannel], deny: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.AddReactions] },
+			{ id: specRoleId, allow: [PermissionFlagsBits.ViewChannel], deny: [PermissionFlagsBits.SendMessages] },
+			{
+				id: mjRoleId,
+				allow: [
+					PermissionFlagsBits.ViewChannel,
+					PermissionFlagsBits.SendMessages,
+					PermissionFlagsBits.ManageChannels,
+					PermissionFlagsBits.ManageMessages,
+					PermissionFlagsBits.ManageRoles,
+					PermissionFlagsBits.PinMessages
+				]
+			}
+		].filter(Boolean) as OverwriteResolvable[];
 
 		const votesChannel = await guild.channels.create({
 			name: '『📮』𝐕𝐨𝐭𝐞𝐬',
 			type: ChannelType.GuildText,
 			parent: categoryId,
-			permissionOverwrites: publicGameOverwrites
+			permissionOverwrites: votesOverwrites
 		});
 
 		// Salon Sorcières
@@ -417,29 +440,42 @@ export class GameLauncherService {
 		// --- ENVOI DU MESSAGE ET PING DES SORCIÈRES ---
 		const witchesMentions = witches.map((witch) => `<@${witch.discordId}>`).join(', ');
 
-		const witchesRulesMessage = `${witchesMentions}\n
-# Règles chez les sorcières 🔥
+		const witchesRulesMessage1 = `# Bienvenue dans votre Antre, chères Sorcières !\n${witchesMentions}`;
 
-⚠️ Vous n’avez pas le droit de parler dans ce salon pendant la journée ! ☀️
+		const witchesRulesMessage2 = `À partir de maintenant, vous aurez __accès à ce salon textuel toutes les nuits__. Il sera néanmoins __bloqué pendant les autres phases de jeu__.
+Vous pouvez vous __partager toutes les informations__ que vous souhaitez ici : vos rôles, vos informations ou vos stratégies.
 
-Durant la première nuit, vous ne choisissez pas votre victime : la Main du Destin (l’aléatoire) décide à votre place.
-⚠️ Vous pouvez contester la Main du Destin si vous avez une raison valable.
-*Exemple : vous avez utilisé votre pouvoir sur la victime désignée…*
+**Votre objectif est simple** : éliminer tous les Villageois et les autres nuisibles qui ne sont pas de votre camp.
 
-Lors des nuits suivantes, vous devrez décider de votre victime, mais aussi choisir laquelle d’entre vous ira la tuer.
-La sorcière chargée du meurtre ne peut pas utiliser son pouvoir cette nuit-là, sauf si elle est la dernière sorcière encore en vie.
+## __Éliminer un joueur__ :
 
-Vous pouvez attaquer votre victime de deux manières :
-• **Meurtre** → fonctionne uniquement sur les personnes ayant le __flux villageois__.
-• **Rituel** → fonctionne uniquement sur les personnes ayant le __flux indépendant__.
+Chaque nuit, les Sorcières peuvent tenter d'éliminer un joueur de la partie.
 
-Quand le Maître du Jeu vous appelle, même si vous allez tuer, répondez dans votre salon que vous n’utilisez pas votre pouvoir.
+Pour cela, vous devez choisir :
+- __La victime__ que vous souhaitez éliminer.
+- __La Sorcière__ qui sera chargée de l'attaquer.
+- __La méthode utilisée__ pour l'éliminer.
 
-__Trivia :__
-Vous pouvez choisir de ne pas attaquer, ou même vous attaquer entre vous si la situation l’exige.
-Le meurtre des sorcières est considéré comme un déplacement.`;
+La Sorcière désignée pour effectuer l'attaque est considérée comme s'étant déplacée et **ne peut donc pas utiliser son propre pouvoir cette nuit-là**, sauf si elle est la dernière Sorcière encore en vie.
+Vous pouvez également décider de **ne pas attaquer** ou, si nécessaire, de désigner une autre Sorcière comme victime.
 
-		await witchesChannel.send({ content: witchesRulesMessage });
+### Les méthodes d'attaque :
+
+* **Meurtre** → fonctionne uniquement sur les joueurs ayant le **flux villageois**.
+* **Rituel** → fonctionne uniquement sur les joueurs ayant le **flux indépendant**.
+> Le flux est une caractéristique indépendante du rôle et du camp d'un joueur. Il détermine seulement la manière dont certaines actions peuvent l'affecter. 
+> Par défaut, les Villageois ont le flux villageois et les Indépendants ont le flux indépendant, mais certains rôles peuvent modifier le flux d'un joueur sans changer son camp ni son objectif.
+
+## __Première nuit__ :
+
+La première nuit est particulière : vous ne choisissez pas votre victime.
+La __Main du Destin__ désigne aléatoirement le joueur qui sera attaqué.
+Vous pouvez contester la décision de la Main du Destin si une situation particulière le justifie.
+
+-# PS : Même si vous êtes désignée pour effectuer l'attaque, vous devez répondre dans votre salon personnel que vous n'utilisez pas votre pouvoir.`;
+
+		await witchesChannel.send({ content: witchesRulesMessage1 });
+		await witchesChannel.send({ content: witchesRulesMessage2 });
 		// ----------------------------------------------
 
 		const roleChannels = await this.setupRoleSpecificChannels(guild, config, categoryId, distribution);
@@ -549,7 +585,12 @@ Le meurtre des sorcières est considéré comme un déplacement.`;
 			permissionOverwrites.push({
 				id: roleId,
 				allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory],
-				deny: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.SendMessagesInThreads, PermissionFlagsBits.CreatePublicThreads]
+				deny: [
+					PermissionFlagsBits.SendMessages,
+					PermissionFlagsBits.SendMessagesInThreads,
+					PermissionFlagsBits.CreatePublicThreads,
+					PermissionFlagsBits.AddReactions
+				]
 			});
 		}
 
@@ -683,8 +724,8 @@ Le meurtre des sorcières est considéré comme un déplacement.`;
 
 			await carnetThread.send({
 				content:
-					`Salut <@${assignment.discordId}> !\n\n` +
-					`Voici ton espace personnel pour cette partie. Tu peux y noter tout ce que tu veux : tes réflexions, tes suspicions, ou tes brouillons de messages.`
+					`Salut <@${assignment.discordId}> !\n` +
+					`Voici ton espace personnel pour cette partie. Tu peux y noter tout ce que tu veux : tes réflexions, tes suspicions, tes brouillons de messages, ou tout ce que tu veux d'autres.`
 			});
 
 			// On stocke le salon créé associé au discordId du joueur

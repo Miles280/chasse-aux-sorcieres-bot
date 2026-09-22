@@ -66,36 +66,26 @@ export class DiscordService {
 	}
 
 	moveMemberToVc = async (guild: Guild, discordId: string, targetChannel: any) => {
-		// 1. Essai de récupération du membre
+		// 1. Récupération du membre
 		const member = await guild.members.fetch(discordId).catch((err) => {
 			console.error(`❌ Erreur lors du fetch du membre (${discordId}) :`, err);
 			return null;
 		});
 
-		if (!member) {
-			console.error(`⚠️ Membre introuvable sur le serveur Discord avec l'ID : ${discordId}`);
-			return;
-		}
+		if (!member) return;
 
-		// 2. Vérification de la présence dans un salon vocal
-		if (!member.voice.channelId) {
-			console.log(`ℹ️ ${member.user.tag} (${discordId}) n'est connecté dans AUCUN salon vocal.`);
-			return;
-		}
+		// 2. Vérification de la présence en vocal
+		if (!member.voice.channelId) return;
 
-		// 3. Vérification si le joueur est déjà dans le bon salon (évite un appel inutile)
+		// 3. Vérification si déjà dans le bon salon
 		const targetChannelId = typeof targetChannel === 'string' ? targetChannel : targetChannel?.id;
-		if (member.voice.channelId === targetChannelId) {
-			console.log(`ℹ️ ${member.user.tag} est déjà dans le salon cible.`);
-			return;
-		}
+		if (member.voice.channelId === targetChannelId) return;
 
-		// 4. Tentative de déplacement
+		// 4. Déplacement
 		try {
 			await member.voice.setChannel(targetChannel);
-			console.log(`✅ ${member.user.tag} a été déplacé vers ${targetChannelId || 'le salon cible'}.`);
 		} catch (e) {
-			console.error(`❌ Impossible de move ${member.user.tag} (${discordId}) :`, e);
+			console.error(`❌ Impossible de déplacer \({member.user.tag} (\){discordId}) :`, e);
 		}
 	};
 }
