@@ -86,9 +86,7 @@ export class FinishGameCommand extends Command {
 						const member = await guild.members.fetch(discordId);
 
 						await member.voice.setMute(false, 'Fin de la partie');
-					} catch (error) {
-						console.error(`[Mute Error] Impossible de demute le joueur ${discordId}:`, error);
-					}
+					} catch (error) {}
 				}
 			}
 		}
