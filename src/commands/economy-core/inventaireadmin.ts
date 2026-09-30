@@ -1,7 +1,7 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { Subcommand } from '@sapphire/plugin-subcommands';
 import { container } from '@sapphire/framework';
-import { InteractionContextType, MessageFlags } from 'discord.js';
+import { InteractionContextType, MessageFlags, PermissionFlagsBits } from 'discord.js';
 import * as Embeds from '../../utils/embeds';
 
 @ApplyOptions<Subcommand.Options>({
@@ -19,6 +19,7 @@ export class InventaireAdminCommand extends Subcommand {
 				.setName(this.name)
 				.setDescription(this.description)
 				.setContexts([InteractionContextType.Guild])
+				.setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
 
 				.addSubcommand((sub) =>
 					sub
