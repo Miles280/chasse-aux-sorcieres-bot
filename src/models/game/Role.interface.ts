@@ -1,5 +1,5 @@
-import { Alignment } from '../enums/Alignment';
-import { Camp } from '../enums/Camp';
+import { Alignment } from '../../enums/Alignment';
+import { Camp } from '../../enums/Camp';
 
 export interface RoleInterface {
 	id: number;

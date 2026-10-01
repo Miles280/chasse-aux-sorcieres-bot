@@ -1,7 +1,7 @@
 import { Currency } from '../../enums/Currency';
-import { Item, Shop } from '../../models/Shop.interface';
 import { ApiClient } from './../apiClient.service';
 import { ApiResponse, ValidationResponse } from '../../models/ApiResponse.interface';
+import { Item, Shop } from '../../models/economy-core/Shop.interface';
 
 export class ShopService {
 	constructor(private api: ApiClient) {}

@@ -54,3 +54,19 @@ Rappel : Le jeu __ne se joue pas sur le site__, mais uniquement ici sur Discord.
 			text: 'Utilisez le bouton ci-dessous pour visiter le site.'
 		});
 }
+
+export function infoEmbed({ message, member, title }: { message: string; member?: GuildMember; title?: string }): EmbedBuilder {
+	const embed = new EmbedBuilder().setDescription(message).setColor(colors.purpleWitch);
+
+	if (member) {
+		embed.setAuthor({
+			name: member.displayName,
+			iconURL: member.user.displayAvatarURL()
+		});
+	}
+
+	if (title) {
+		embed.setTitle(`${emojis.greencheck} ${title}`);
+	}
+	return embed;
+}

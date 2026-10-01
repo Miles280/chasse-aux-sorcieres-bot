@@ -1,8 +1,8 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from 'discord.js';
 import { Currency } from '../../enums/Currency';
-import { LeaderboardData } from '../../models/Economy.interface';
 import { emojis } from '../../utils/emojis';
 import { colors } from '../../utils/customColors';
+import { LeaderboardData } from '../../models/economy-core/Economy.interface';
 
 export class LeaderboardMessageBuilder {
 	public static build(currency: Currency, currentPage: number, data: LeaderboardData) {

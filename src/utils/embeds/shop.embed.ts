@@ -1,7 +1,7 @@
 import { EmbedBuilder, GuildMember } from 'discord.js';
-import { Inventory, Item } from '../../models/Shop.interface';
 import { emojis } from '../emojis';
 import { colors } from '../customColors';
+import { Inventory, Item } from '../../models/economy-core/Shop.interface';
 
 export function itemInfoEmbed(item: Item) {
 	const fields = [];

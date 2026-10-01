@@ -1,7 +1,7 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, GuildMember } from 'discord.js';
 import { Currency } from '../../enums/Currency';
+import { Item } from '../../models/economy-core/Shop.interface';
 import * as Embeds from '../../utils/embeds';
-import { Item } from '../../models/Shop.interface';
 
 interface SellOptions {
 	seller: GuildMember;

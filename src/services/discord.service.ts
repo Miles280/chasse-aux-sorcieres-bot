@@ -64,4 +64,28 @@ export class DiscordService {
 	hasAnyRole(member: GuildMember, roleIds: string[]): boolean {
 		return member.roles.cache.some((role) => roleIds.includes(role.id));
 	}
+
+	moveMemberToVc = async (guild: Guild, discordId: string, targetChannel: any) => {
+		// 1. Récupération du membre
+		const member = await guild.members.fetch(discordId).catch((err) => {
+			console.error(`❌ Erreur lors du fetch du membre (${discordId}) :`, err);
+			return null;
+		});
+
+		if (!member) return;
+
+		// 2. Vérification de la présence en vocal
+		if (!member.voice.channelId) return;
+
+		// 3. Vérification si déjà dans le bon salon
+		const targetChannelId = typeof targetChannel === 'string' ? targetChannel : targetChannel?.id;
+		if (member.voice.channelId === targetChannelId) return;
+
+		// 4. Déplacement
+		try {
+			await member.voice.setChannel(targetChannel);
+		} catch (e) {
+			console.error(`❌ Impossible de déplacer \({member.user.tag} (\){discordId}) :`, e);
+		}
+	};
 }

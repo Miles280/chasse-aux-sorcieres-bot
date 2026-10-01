@@ -1,6 +1,6 @@
 import { Currency } from '../../enums/Currency';
 import { ApiResponse, ValidationResponse } from '../../models/ApiResponse.interface';
-import { Inventory } from '../../models/Shop.interface';
+import { Inventory } from '../../models/economy-core/Shop.interface';
 import { ApiClient } from './../apiClient.service';
 
 export class InventoryService {

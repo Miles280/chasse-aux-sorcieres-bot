@@ -9,9 +9,9 @@ import {
 	SectionBuilder
 } from 'discord.js';
 import { Currency } from '../../enums/Currency';
-import { Shop, Item } from '../../models/Shop.interface';
 import { emojis, emojisV2 } from '../../utils/emojis';
 import { colors } from '../../utils/customColors';
+import { Item, Shop } from '../../models/economy-core/Shop.interface';
 
 export class ShopMessageBuilder {
 	/**

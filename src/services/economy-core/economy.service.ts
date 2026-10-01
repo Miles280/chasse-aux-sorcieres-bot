@@ -1,7 +1,14 @@
 import { ApiClient } from './../apiClient.service';
 import { Currency } from '../../enums/Currency';
-import { BalanceUpdate, ConversionData, ConversionRates, DailyReward, TransactionHistory, UserBalance } from '../../models/Economy.interface';
 import { ApiResponse } from '../../models/ApiResponse.interface';
+import {
+	BalanceUpdate,
+	ConversionData,
+	ConversionRates,
+	DailyReward,
+	TransactionHistory,
+	UserBalance
+} from '../../models/economy-core/Economy.interface';
 
 export class EconomyService {
 	constructor(private api: ApiClient) {}

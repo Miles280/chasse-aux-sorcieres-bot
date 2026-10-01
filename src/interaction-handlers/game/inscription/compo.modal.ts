@@ -2,7 +2,7 @@ import { container, InteractionHandler, InteractionHandlerTypes } from '@sapphir
 import { ApplyOptions } from '@sapphire/decorators';
 import { GuildMember, MessageFlags, ModalSubmitInteraction } from 'discord.js';
 import { InscriptionMessageBuilder } from '../../../builders/game/InscriptionMessage.builder';
-import { GameData } from '../../../models/Game.interface';
+import { GameData } from '../../../models/game/Game.interface';
 import * as Embeds from '../../../utils/embeds';
 
 @ApplyOptions<InteractionHandler.Options>({
@@ -69,7 +69,7 @@ export class CompositionModalHandler extends InteractionHandler {
 
 		// On sépare les IDs pour l'API et les noms pour l'affichage
 		const selectedIds = selectedData.map((d) => d.id);
-		const roleNames = selectedData.map((d) => `> ${d.name}`).join('\n');
+		const roleNames = selectedData.map((d) => `- ${d.name}`).join('\n');
 
 		// 2. Mise à jour en base de données
 		const response = await container.inscriptionService.addRolesToGame(game.id, selectedIds);

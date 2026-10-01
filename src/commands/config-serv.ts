@@ -27,6 +27,7 @@ export class ConfigCommand extends Command {
 		const response = await container.serverConfigService.getConfig(interaction.guildId);
 
 		if (!response.success) {
+			console.log(response.error);
 			return interaction.editReply({
 				embeds: [Embeds.errorEmbed({ title: 'Erreur', message: "Impossible de joindre l'API." })]
 			});

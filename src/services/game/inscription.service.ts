@@ -1,12 +1,12 @@
 import { ApiClient } from './../apiClient.service';
 import { ApiResponse } from '../../models/ApiResponse.interface';
-import { CompoData, GameData } from '../../models/Game.interface';
 import { ButtonInteraction, GuildTextBasedChannel, MessageFlags } from 'discord.js';
 import { InscriptionMessageBuilder } from '../../builders/game/InscriptionMessage.builder';
 import { container } from '@sapphire/framework';
 import { ServerConfig } from '../../models/ServerConfig.interface';
-import { InscriptionAction, InscriptionInteractionContext } from '../../models/Inscription.interface';
+import { InscriptionAction, InscriptionInteractionContext } from '../../models/game/Inscription.interface';
 import * as Embeds from '../../utils/embeds';
+import { CompoData, GameData } from '../../models/game/Game.interface';
 
 export class InscriptionService {
 	constructor(private api: ApiClient) {}
@@ -148,8 +148,10 @@ export class InscriptionService {
 		// 3. MISE À JOUR DU MESSAGE PUBLIC (celui où on a cliqué)
 		const meta = InscriptionMessageBuilder.extractGameMetaFromMessage(interaction.message);
 
+		const activePlayersCount = gameData.gamePlayers?.filter((p) => !p.isSpectator).length || 0;
+
 		let currentState = ctx.state;
-		if (currentState === 'opened' && meta.maxPlayers && gameData.players.length >= meta.maxPlayers) {
+		if (currentState === 'opened' && meta.maxPlayers && activePlayersCount >= meta.maxPlayers) {
 			currentState = 'closed';
 		}
 
@@ -198,7 +200,7 @@ export class InscriptionService {
 		};
 
 		return interaction.followUp({
-			embeds: [Embeds.successEmbed({ title: 'Action effectué', message: successMessages[action] })],
+			embeds: [Embeds.successEmbed({ title: 'Action effectuée', message: successMessages[action] })],
 			flags: MessageFlags.Ephemeral
 		});
 	}

@@ -9,3 +9,8 @@ export interface PaginationData {
 	totalPages: number;
 	totalItems: number;
 }
+
+export interface UserInterface {
+	id: number;
+	discordId: string;
+}

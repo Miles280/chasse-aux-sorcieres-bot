@@ -1,0 +1,77 @@
+import { ApplyOptions } from '@sapphire/decorators';
+import { InteractionHandler, InteractionHandlerTypes, container } from '@sapphire/framework';
+import { ButtonInteraction } from 'discord.js';
+import { GameMessageBuilder } from '../../../builders/game/GameMessage.builder';
+import * as Embeds from '../../../utils/embeds';
+
+@ApplyOptions<InteractionHandler.Options>({
+	interactionHandlerType: InteractionHandlerTypes.Button
+})
+export class LaunchHandler extends InteractionHandler {
+	public override parse(interaction: ButtonInteraction) {
+		return interaction.customId.startsWith('launch:button:') ? this.some() : this.none();
+	}
+
+	public override async run(interaction: ButtonInteraction) {
+		await interaction.deferUpdate();
+
+		// 1. Extraction des données du customId
+		const [, , action, gameIdRaw, gameMode] = interaction.customId.split(':');
+		const gameId = Number(gameIdRaw);
+
+		const waitingGameRes = await container.inscriptionService.getWaitingGame();
+		if (!waitingGameRes.success || !waitingGameRes.data) {
+			return interaction.editReply({
+				embeds: [Embeds.errorEmbed({ title: 'Erreur', message: "Aucune partie n'est prête à être lancée." })]
+			});
+		}
+
+		const game = waitingGameRes.data;
+
+		try {
+			if (action === 'reroll') {
+				// --- PHASE 1 : PREVIEW (REROLL / VALIDER) ---
+				const previewRes = await container.gameLauncherService.getPreview(gameId);
+
+				if (!previewRes.success) {
+					return interaction.editReply({
+						embeds: [Embeds.errorEmbed({ title: 'Erreur', message: previewRes.error || 'Erreur API' })],
+						components: []
+					});
+				}
+
+				const distribution = previewRes.data.distribution;
+				const message = GameMessageBuilder.buildPreviewDistribution(gameId, gameMode, distribution);
+
+				container.gameLauncherService.setPreviewCache(gameId, distribution);
+
+				return interaction.editReply(message);
+			} else {
+				// --- PHASE 2 : FAST START (On délègue tout au service) ---
+				const distribution = container.gameLauncherService.getPreviewCache(gameId);
+
+				await container.gameLauncherService.processLaunch(interaction.guild!, game, distribution);
+
+				return interaction.editReply({
+					embeds: [
+						Embeds.successEmbed({
+							title: 'Lancement réalisé !',
+							message: 'La partie a été lancée avec succès et les salons sont créés !'
+						})
+					],
+					components: [] // Nettoie les boutons pour qu'on ne puisse plus cliquer dessus
+				});
+			}
+		} catch (error: any) {
+			console.error(error);
+			return interaction.editReply({
+				embeds: [
+					Embeds.errorEmbed({
+						message: error.message
+					})
+				],
+				components: []
+			});
+		}
+	}
+}

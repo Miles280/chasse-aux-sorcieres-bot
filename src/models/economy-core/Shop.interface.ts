@@ -1,6 +1,6 @@
-import { Currency } from '../enums/Currency';
-import { ShopType } from '../enums/ShopType';
-import { PaginationData } from './ApiResponse.interface';
+import { Currency } from '../../enums/Currency';
+import { ShopType } from '../../enums/ShopType';
+import { PaginationData } from '../ApiResponse.interface';
 
 export interface Item {
 	id: number;

@@ -1,6 +1,6 @@
-import { Currency } from '../enums/Currency';
-import { TransactionType } from '../enums/TransactionType';
-import { PaginationData } from './ApiResponse.interface';
+import { Currency } from '../../enums/Currency';
+import { TransactionType } from '../../enums/TransactionType';
+import { PaginationData } from '../ApiResponse.interface';
 
 export interface UserBalance {
 	gems: number;
