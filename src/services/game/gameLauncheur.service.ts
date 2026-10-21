@@ -197,7 +197,7 @@ export class GameLauncherService {
 			permissionOverwrites: [
 				{
 					id: everyoneId,
-					deny: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect]
+					deny: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect, PermissionFlagsBits.SendMessages, 1n << 48n]
 				},
 				{
 					id: playerRoleId,
@@ -256,7 +256,7 @@ export class GameLauncherService {
 			permissionOverwrites: [
 				{
 					id: everyoneId,
-					deny: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect]
+					deny: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect, PermissionFlagsBits.SendMessages, 1n << 48n]
 				},
 				{
 					id: playerRoleId,
