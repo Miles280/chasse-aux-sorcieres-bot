@@ -810,10 +810,6 @@ Vous pouvez contester la décision de la Main du Destin si une situation particu
 				}
 			];
 
-			fanatique.forEach((player) => {
-				fanatiqueOverwrites.push({ id: player.discordId, allow: [PermissionFlagsBits.ViewChannel] });
-			});
-
 			const channel = await guild.channels.create({
 				name: '『🏮』𝐂𝐮𝐥𝐭𝐞-𝐝𝐮-𝐅𝐚𝐧𝐚𝐭𝐢𝐪𝐮𝐞',
 				type: ChannelType.GuildText,
