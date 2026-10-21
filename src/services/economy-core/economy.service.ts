@@ -6,6 +6,7 @@ import {
 	ConversionData,
 	ConversionRates,
 	DailyReward,
+	LeaderboardData,
 	TransactionHistory,
 	UserBalance
 } from '../../models/economy-core/Economy.interface';
@@ -49,12 +50,12 @@ export class EconomyService {
 		return await this.api.get<ConversionRates>(`/economy/rates/${discordId}`);
 	}
 
-	async getLeaderboard(currency: Currency, page: number = 1): Promise<ApiResponse<any>> {
-		const queryParams = new URLSearchParams({
-			currency: currency,
-			page: String(page)
+	async getLeaderboard(currency: Currency, page: number = 1, memberIds: string[] = []): Promise<ApiResponse<LeaderboardData>> {
+		return await this.api.post<LeaderboardData>('/economy/leaderboard', {
+			currency,
+			page,
+			memberIds
 		});
-		return await this.api.get<any>(`/economy/leaderboard?${queryParams.toString()}`);
 	}
 
 	async daily(discordId: string): Promise<ApiResponse<DailyReward>> {
