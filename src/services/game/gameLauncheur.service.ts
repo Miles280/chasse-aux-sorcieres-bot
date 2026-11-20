@@ -727,7 +727,8 @@ Vous pouvez contester la décision de la Main du Destin si une situation particu
 			await carnetThread.send({
 				content:
 					`Salut <@${assignment.discordId}> !\n` +
-					`Voici ton espace personnel pour cette partie. Tu peux y noter tout ce que tu veux : tes réflexions, tes suspicions, tes brouillons de messages, ou tout ce que tu veux d'autres.`
+					`Voici ton espace personnel pour cette partie. Tu peux y noter tout ce que tu veux : tes réflexions, tes suspicions, tes brouillons de messages, ou tout ce que tu veux d'autres.\n` +
+					`-# PS : N'oublie pas de suivre les deux catégories de jeu dans <id:browse> pour voir tous les salons !`
 			});
 
 			// On stocke le salon créé associé au discordId du joueur
