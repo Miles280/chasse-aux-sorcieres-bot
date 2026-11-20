@@ -194,6 +194,7 @@ export class GameLauncherService {
 			name: '『⛲』𝐏𝐥𝐚𝐜𝐞 𝐏𝐮𝐛𝐥𝐢𝐪𝐮𝐞',
 			type: ChannelType.GuildVoice,
 			parent: categoryId,
+			userLimit: 99,
 			permissionOverwrites: [
 				{
 					id: everyoneId,
@@ -253,6 +254,7 @@ export class GameLauncherService {
 			name: `『👼』𝐋'𝐀𝐮-𝐝𝐞𝐥𝐚̀`,
 			type: ChannelType.GuildVoice,
 			parent: categoryId,
+			userLimit: 99,
 			permissionOverwrites: [
 				{
 					id: everyoneId,
