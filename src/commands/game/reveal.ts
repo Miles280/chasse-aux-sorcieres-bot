@@ -1,7 +1,6 @@
 import { ApplyOptions } from '@sapphire/decorators';
-import { Command } from '@sapphire/framework';
-import { InteractionContextType, MessageFlags, PermissionFlagsBits } from 'discord.js';
-import { container } from '@sapphire/framework';
+import { Command, container } from '@sapphire/framework';
+import { ChatInputCommandInteraction, InteractionContextType, MessageFlags, PermissionFlagsBits } from 'discord.js';
 import * as Embeds from '../../utils/embeds';
 
 @ApplyOptions<Command.Options>({
@@ -22,13 +21,20 @@ export class RevealCommand extends Command {
 						.setDescription('Le joueur concerné par cette action.')
 						.setRequired(true)
 				)
+				.addStringOption((opt) =>
+					opt //
+						.setName('fake')
+						.setDescription('Le faux rôle sous lequel révéler le joueur.')
+						.setAutocomplete(true)
+				)
 		);
 	}
 
-	public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
+	public override async chatInputRun(interaction: ChatInputCommandInteraction) {
 		await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
 
 		const targetUser = interaction.options.getUser('joueur', true);
+		const fakeRoleId = interaction.options.getString('fake');
 
 		try {
 			// Récupérer la partie en cours pour ce serveur
@@ -40,8 +46,8 @@ export class RevealCommand extends Command {
 			}
 			const game = activeGameResponse.data;
 
-			// Appel à l'API Symfony pour enregistrer le reveal
-			const revealResponse = await container.inGameService.revealPlayer(game.id, targetUser.id);
+			// Appel à l'API Symfony pour enregistrer le reveal (avec fakeRoleId)
+			const revealResponse = await container.inGameService.revealPlayer(game.id, targetUser.id, fakeRoleId ? Number(fakeRoleId) : null);
 
 			if (!revealResponse.success) {
 				return interaction.editReply({
@@ -66,9 +72,10 @@ export class RevealCommand extends Command {
 				if (voteChannel && voteChannel.isTextBased()) {
 					const revealPlayerData = updatedGame.gamePlayers?.find((p: any) => p.user.discordId === targetUser.id);
 
-					let roleText = `Son rôle est **${revealPlayerData?.revealedRole?.name}**.`;
+					const roleName = revealPlayerData?.revealedRole?.name ?? 'Inconnu';
+					let roleText = `Son rôle est **${roleName}**.`;
 
-					// --- PERSONNALISATION DE LA PHRASE SELON LA CAUSE ---
+					// --- PERSONNALISATION DE LA PHRASE ---
 					let title = '## 👁️ Révélation !';
 					let loreText = `L'identité secrète de l'un d'entre vous est tombée.`;
 					let actionText = `${targetUser.toString()} a été révélé`;
@@ -80,7 +87,7 @@ export class RevealCommand extends Command {
 				}
 			}
 
-			// Mise à jour des Trackers (Appel de ta propre méthode de mise à jour)
+			// Mise à jour des Trackers
 			if (interaction.guild) {
 				await container.inGameService.updateTrackers(interaction.guild, updatedGame);
 			}
@@ -90,7 +97,7 @@ export class RevealCommand extends Command {
 				embeds: [
 					Embeds.successEmbed({
 						title: 'Reveal appliqué avec succès',
-						message: `Le joueur ${targetUser.toString()} a été révélé publiquement et l'annonce a été envoyée.`
+						message: `Le joueur ${targetUser.toString()} a été révélé publiquement${fakeRoleId ? ' (sous un faux rôle)' : ''} et l'annonce a été envoyée.`
 					})
 				]
 			});

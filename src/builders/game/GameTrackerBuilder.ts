@@ -42,28 +42,23 @@ export class GameTrackerMessageBuilder {
 			occupants: []
 		}));
 
-		// On assigne chaque joueur révélé (vrai ou faux rôle) à son slot de rôle correspondant
+		// Attribution des joueurs révélés (dans l'ordre d'inscription)
 		for (const player of activePlayers) {
 			if (player.revealedRole !== null) {
 				const targetRoleName = player.revealedRole.name;
-				let slot = displaySlots.find((s) => s.roleName === targetRoleName);
+				const matchingSlots = displaySlots.filter((s) => s.roleName === targetRoleName);
 
-				if (!slot) {
-					slot = {
-						camp: player.revealedRole.camp!,
-						roleName: targetRoleName,
-						occupants: []
-					};
-					displaySlots.push(slot);
-				}
+				if (matchingSlots.length === 0) continue;
 
-				slot.occupants.push({
+				// Prend un slot libre en priorité, sinon se greffe sur le dernier slot de ce rôle
+				const targetSlot = matchingSlots.find((s) => s.occupants.length === 0) ?? matchingSlots[matchingSlots.length - 1];
+
+				targetSlot.occupants.push({
 					player,
 					isAlive: player.isAlive
 				});
 			}
 		}
-
 		let globalIndex = 1;
 
 		for (const [campKey, config] of Object.entries(this.CAMP_ORDER)) {

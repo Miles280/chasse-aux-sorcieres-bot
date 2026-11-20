@@ -21,10 +21,19 @@ export class ClassementCommand extends Command {
 	}
 
 	public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
+		await interaction.deferReply();
+
+		if (!interaction.guild) return;
+
 		const page = interaction.options.getInteger('page') ?? 1;
 		const defaultCurrency: Currency = Currency.RUBIES;
 
-		const response = await container.economyService.getLeaderboard(defaultCurrency, page);
+		// Récupération de tous les IDs des membres présents sur le serveur
+		await interaction.guild.members.fetch();
+		const memberIds = Array.from(interaction.guild.members.cache.keys());
+
+		// Passage du tableau memberIds au service
+		const response = await container.economyService.getLeaderboard(defaultCurrency, page, memberIds);
 
 		if (!response.success) {
 			return interaction.reply({
@@ -35,7 +44,7 @@ export class ClassementCommand extends Command {
 
 		const messageOptions = LeaderboardMessageBuilder.build(defaultCurrency, page, response.data);
 
-		return interaction.reply({
+		return interaction.editReply({
 			...messageOptions
 		});
 	}

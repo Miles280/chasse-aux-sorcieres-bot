@@ -29,8 +29,8 @@ export class InGameService {
 		return await this.api.post<GameData>(`/game/${gameId}/kill`, { ...data });
 	}
 
-	async revealPlayer(gameId: number, discordId: string): Promise<ApiResponse<GameData>> {
-		return await this.api.post<GameData>(`/game/${gameId}/reveal`, { discordId });
+	async revealPlayer(gameId: number, discordId: string, fakeRoleId?: number | null): Promise<ApiResponse<GameData>> {
+		return await this.api.post<GameData>(`/game/${gameId}/reveal`, { discordId, fakeRoleId });
 	}
 
 	async getNightDeaths(gameId: number): Promise<ApiResponse<NightDeathPlayer[]>> {

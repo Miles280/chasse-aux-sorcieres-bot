@@ -14,9 +14,6 @@ export class LeaderboardButtonHandler extends InteractionHandler {
 	}
 
 	public override async run(interaction: ButtonInteraction) {
-		// Exemples de customId :
-		// - leaderboard:page:next:rubies:1
-		// - leaderboard:switch:gems:1
 		const [, action, targetOrDirection, currencyRaw, currentPage] = interaction.customId.split(':');
 
 		let currency = currencyRaw as Currency;
@@ -26,7 +23,6 @@ export class LeaderboardButtonHandler extends InteractionHandler {
 		if (action === 'switch') {
 			const member = interaction.member as GuildMember;
 
-			// Vérification Admin via ton DiscordService
 			if (!container.discordService.hasStaffRole(member)) {
 				return interaction.reply({
 					embeds: [Embeds.errorEmbed({ message: 'Seul le staff peut modifier la monnaie affichée dans le classement.' })],
@@ -34,8 +30,8 @@ export class LeaderboardButtonHandler extends InteractionHandler {
 				});
 			}
 
-			currency = targetOrDirection as Currency; // targetOrDirection contient la monnaie cible ici
-			page = 1; // On reset à la page 1 lors d'un changement de monnaie
+			currency = targetOrDirection as Currency;
+			page = 1;
 		}
 		// -- LOGIQUE PAGINATION --
 		else if (action === 'page') {
@@ -43,18 +39,29 @@ export class LeaderboardButtonHandler extends InteractionHandler {
 			if (targetOrDirection === 'prev') page--;
 		}
 
-		// Récupération des données API
-		const response = await container.economyService.getLeaderboard(currency, page);
+		await interaction.deferUpdate();
+
+		if (!interaction.guild) return;
+
+		// Récupération des IDs des membres du serveur
+		if (interaction.guild.members.cache.size === 0) {
+			await interaction.guild.members.fetch();
+		}
+		const memberIds = Array.from(interaction.guild.members.cache.keys());
+
+		// Récupération des données API filtrées
+		const response = await container.economyService.getLeaderboard(currency, page, memberIds);
 
 		if (!response.success) {
-			return interaction.reply({
-				embeds: [Embeds.errorEmbed({ message: response.error })],
+			return interaction.followUp({
+				embeds: [Embeds.errorEmbed({ message: response.error ?? 'Erreur de chargement du classement.' })],
 				flags: [MessageFlags.Ephemeral]
 			});
 		}
 
+		// Construction et mise à jour du message
 		const messageOptions = LeaderboardMessageBuilder.build(currency, page, response.data);
 
-		return interaction.update(messageOptions);
+		return interaction.editReply(messageOptions);
 	}
 }
