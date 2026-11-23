@@ -104,6 +104,9 @@ export class InGameService {
 		}
 	}
 
+	/**
+	 * Met à jour les messages de suivis de partie joueurs et MJ
+	 */
 	public async updateTrackers(guild: Guild, game: any): Promise<void> {
 		// --- 0. RÉCUPÉRATION DE LA CONFIG SERVEUR ---
 		const configResponse = await container.serverConfigService.getConfig(guild.id);

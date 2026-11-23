@@ -842,12 +842,8 @@ Vous pouvez contester la décision de la Main du Destin si une situation particu
 				}
 			];
 
-			conspirateur.forEach((player) => {
-				conspirateurOverwrites.push({ id: player.discordId, allow: [PermissionFlagsBits.ViewChannel] });
-			});
-
 			const channel = await guild.channels.create({
-				name: '『📓』𝐔𝐫𝐧𝐞-𝐍𝐨𝐢𝐫',
+				name: '『📓』𝐔𝐫𝐧𝐞-𝐍𝐨𝐢𝐫𝐞',
 				type: ChannelType.GuildText,
 				parent: categoryId,
 				permissionOverwrites: conspirateurOverwrites

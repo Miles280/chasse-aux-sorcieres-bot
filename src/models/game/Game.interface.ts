@@ -41,6 +41,9 @@ export interface DiscordChannelsInterface {
 	votesChannelId?: string;
 	witchesChannelId?: string;
 	graveyardChannelId?: string;
+	conspirateurChannelId?: string;
+	fanatiqueChannelId?: string;
+	ogreNainChannelId: string;
 }
 
 export interface CompoData {
