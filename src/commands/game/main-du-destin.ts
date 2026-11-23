@@ -1,9 +1,9 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { Command, container } from '@sapphire/framework';
 import { ChatInputCommandInteraction, InteractionContextType, MessageFlags, PermissionFlagsBits } from 'discord.js';
-import * as Embeds from '../../utils/embeds';
-import { Camp } from '../../enums/Camp';
 import { GameMessageBuilder } from '../../builders/game/GameMessage.builder';
+import { Camp } from '../../enums/Camp';
+import * as Embeds from '../../utils/embeds';
 
 @ApplyOptions<Command.Options>({
 	name: 'main-du-destin',

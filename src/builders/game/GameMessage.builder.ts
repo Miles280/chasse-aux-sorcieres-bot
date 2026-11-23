@@ -1,4 +1,12 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from 'discord.js';
+import {
+	ActionRowBuilder,
+	ButtonBuilder,
+	ButtonStyle,
+	EmbedBuilder,
+	Guild,
+	StringSelectMenuBuilder,
+	StringSelectMenuOptionBuilder
+} from 'discord.js';
 import { emojis } from '../../utils/emojis';
 import { colors } from '../../utils/customColors';
 import { GamePlayerInterface, RoleDistribution } from '../../models/game/Game.interface';
@@ -137,6 +145,77 @@ export class GameMessageBuilder {
 				.setEmoji('✅'),
 			new ButtonBuilder().setCustomId(`main-du-destin:button:reroll`).setLabel('Reroll').setStyle(ButtonStyle.Primary).setEmoji('🔄')
 		);
+
+		return { embeds: [embed], components: [actionRow] };
+	}
+
+	public static buildUrneNoire(players: GamePlayerInterface[], guild: Guild) {
+		const embed = new EmbedBuilder()
+			.setTitle(`${emojis.purplecheck} Urne Noire`)
+			.setDescription("Sélectionnez ci-dessous les joueurs que vous souhaitez ajouter à l'**Urne Noire**.")
+			.setColor(colors.purpleWitch);
+
+		const options = players
+			.filter((p) => !p.isSpectator && p.user?.discordId)
+			.slice(0, 25)
+			.map((player) => {
+				const discordId = player.user!.discordId;
+				const member = guild.members.cache.get(discordId);
+				const displayName = member?.displayName!;
+
+				return new StringSelectMenuOptionBuilder().setLabel(displayName).setValue(discordId);
+			});
+
+		if (options.length === 0) {
+			embed.setDescription('*Aucun joueur disponible à ajouter à l’Urne Noire.*');
+			return { embeds: [embed], components: [] };
+		}
+
+		const selectMenu = new StringSelectMenuBuilder()
+			.setCustomId('urne-noire:select')
+			.setPlaceholder("Choisir les membres pour l'Urne Noire...")
+			.setMinValues(1)
+			.setMaxValues(options.length)
+			.addOptions(options);
+
+		const actionRow = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu);
+
+		return { embeds: [embed], components: [actionRow] };
+	}
+
+	public static buildCulte(players: GamePlayerInterface[], guild: Guild) {
+		const eligiblePlayers = players.filter((p) => !p.isSpectator && p.user?.discordId);
+		const expectedCount = Math.floor(eligiblePlayers.length / 2);
+
+		const embed = new EmbedBuilder()
+			.setTitle(`${emojis.purplecheck} Le Culte`)
+			.setDescription(
+				`Sélectionnez les joueurs recrutés secrètement dans le **Culte**.\n` +
+					`*(Taille recommandée : **${expectedCount}** joueur(s) pour ${eligiblePlayers.length} participants)*`
+			)
+			.setColor(colors.purpleWitch);
+
+		const options = eligiblePlayers.slice(0, 25).map((player) => {
+			const discordId = player.user!.discordId;
+			const member = guild.members.cache.get(discordId);
+			const displayName = member?.displayName!;
+
+			return new StringSelectMenuOptionBuilder().setLabel(displayName).setValue(discordId);
+		});
+
+		if (options.length === 0) {
+			embed.setDescription('*Aucun joueur disponible pour le Culte.*');
+			return { embeds: [embed], components: [] };
+		}
+
+		const selectMenu = new StringSelectMenuBuilder()
+			.setCustomId('culte:select')
+			.setPlaceholder('Choisir du Culte...')
+			.setMinValues(1)
+			.setMaxValues(options.length)
+			.addOptions(options);
+
+		const actionRow = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu);
 
 		return { embeds: [embed], components: [actionRow] };
 	}
