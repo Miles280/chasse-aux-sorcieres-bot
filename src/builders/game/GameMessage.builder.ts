@@ -114,4 +114,30 @@ export class GameMessageBuilder {
 
 		return { embeds: [embed], components: [actionRow] };
 	}
+
+	/**
+	 * Construit le message pour la Main du Destin (avec ou sans boutons de confirmation MJ).
+	 */
+	public static buildMainDuDestin(userDiscordId: string, withConfirmation: boolean = true) {
+		const description = withConfirmation
+			? `La main du destin a désigné <@${userDiscordId}>.\nSouhaitez-vous envoyer ce résultat aux Sorcières ?`
+			: `Le destin a frappé : le joueur désigné est <@${userDiscordId}>.`;
+
+		const embed = new EmbedBuilder().setTitle(`${emojis.purplecheck} Main du Destin`).setDescription(description).setColor(colors.purpleWitch);
+
+		if (!withConfirmation) {
+			return { embeds: [embed], components: [] };
+		}
+
+		const actionRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+			new ButtonBuilder()
+				.setCustomId(`main-du-destin:button:confirm:${userDiscordId}`)
+				.setLabel('Valider')
+				.setStyle(ButtonStyle.Success)
+				.setEmoji('✅'),
+			new ButtonBuilder().setCustomId(`main-du-destin:button:reroll`).setLabel('Reroll').setStyle(ButtonStyle.Primary).setEmoji('🔄')
+		);
+
+		return { embeds: [embed], components: [actionRow] };
+	}
 }

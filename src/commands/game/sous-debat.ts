@@ -45,8 +45,6 @@ export class SousDebatCommand extends Command {
 						.setDescription('Cinquième membre du sous-débat.')
 						.setRequired(false)
 				);
-
-			return builder;
 		});
 	}
 
